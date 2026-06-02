@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { -webkit-tap-highlight-color: transparent; }
+  /* Visible, on-brand focus ring for the cohesive concept surfaces. Scoped so
+     it never alters the production app. Each root sets --cf to its accent. */
+  .concept-focus :focus-visible {
+    outline: 2px solid var(--cf, #5f8fa6);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  body { @apply bg-gray-950 text-gray-100 overscroll-none; }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 80px); }
+}
+
+@layer utilities {
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .safe-pt-3 { padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem); }
+  .safe-pt-4 { padding-top: calc(env(safe-area-inset-top, 0px) + 1rem); }
+  .safe-top-4 { top: calc(env(safe-area-inset-top, 0px) + 1rem); }
+}

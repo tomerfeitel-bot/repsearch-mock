@@ -1,0 +1,19 @@
+{
+  "name": "repsearch-v2-server",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^3.3.7",
+    "node-cron": "^4.2.1",
+    "node-sqlite3-wasm": "^0.8.57"
+  }
+}
