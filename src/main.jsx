@@ -7,11 +7,6 @@ import { WorkoutProvider } from './hooks/useWorkout.jsx'
 import App from './App.jsx'
 import './index.css'
 
-// Mock sandbox: seed a token so the app boots straight into the logged-in UI.
-if (import.meta.env.VITE_MOCK && !localStorage.getItem('token')) {
-  localStorage.setItem('token', 'mock-token')
-}
-
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>

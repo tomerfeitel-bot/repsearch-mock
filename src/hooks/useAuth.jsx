@@ -3,12 +3,31 @@ import { api } from '../lib/api.js'
 
 const AuthContext = createContext(null)
 
+const MOCK_USER = {
+  id: 'me',
+  email: 'you@repsearch.app',
+  username: 'tomer',
+  onboarded: 1,
+  is_private: 0,
+  research_opt_in: 1,
+  bio: 'Intermediate lifter chasing a 4-plate deadlift. PPL, 5x/week.',
+  goal: 'hypertrophy',
+  gender: 'man',
+  experience_level: 'intermediate',
+  split_type: 'Push/Pull/Legs',
+  enhancement_status: 'natural',
+  preferred_units: 'kg',
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(() => localStorage.getItem('token'))
-  const [loading, setLoading] = useState(true)
+  const isMock = !!import.meta.env.VITE_MOCK
+
+  const [user, setUser] = useState(isMock ? MOCK_USER : null)
+  const [token, setToken] = useState(isMock ? 'mock-token' : () => localStorage.getItem('token'))
+  const [loading, setLoading] = useState(!isMock)
 
   const refresh = useCallback(async () => {
+    if (isMock) return
     const t = localStorage.getItem('token')
     if (!t) { setLoading(false); return }
     try {
@@ -21,7 +40,7 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isMock])
 
   useEffect(() => { refresh() }, [refresh])
 
