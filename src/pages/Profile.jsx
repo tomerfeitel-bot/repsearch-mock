@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useToast } from '../components/ui/Toast.jsx'
 import ProfileSummary from '../components/profile/ProfileSummary.jsx'
@@ -185,6 +186,7 @@ function EditProfileMenu({ user, updateUser, refresh, toast, onClose }) {
 }
 
 function GearMenu({ user, updateUser, refresh, logout, toast }) {
+  const navigate = useNavigate()
   const [form, setForm] = useState(() => normalizeUser(user))
   const [saving, setSaving] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -241,6 +243,18 @@ function GearMenu({ user, updateUser, refresh, logout, toast }) {
         <Toggle label="Private profile" checked={!!form.is_private} onChange={v => setField('is_private', v)} />
         <button disabled={saving} onClick={saveProfile} className="mt-4 w-full min-h-11 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] disabled:opacity-60 text-sm font-semibold text-white transition">
           {saving ? 'Saving...' : 'Save changes'}
+        </button>
+      </Panel>
+
+      <Panel title="Design">
+        <button
+          onClick={() => navigate('/concepts')}
+          className="w-full min-h-11 flex items-center justify-between rounded-xl bg-gray-800 hover:bg-gray-700 active:scale-[0.98] px-4 text-sm font-semibold text-gray-100 transition"
+        >
+          <span>Concept pages</span>
+          <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
         </button>
       </Panel>
 
