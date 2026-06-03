@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useToast } from '../components/ui/Toast.jsx'
 import ProfileSummary from '../components/profile/ProfileSummary.jsx'
@@ -59,6 +60,7 @@ const EDIT_GROUPS = [
 
 export default function Profile() {
   const { user, logout, refresh, updateUser } = useAuth()
+  const navigate = useNavigate()
   const toast = useToast()
   const [tab, setTab] = useState('my profile')
   const [gearOpen, setGearOpen] = useState(false)
@@ -86,6 +88,13 @@ export default function Profile() {
       <header className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-gray-800">
         <div className="px-4 safe-pt-4 pb-2 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white">Profile</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/concepts')}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-600/20 text-indigo-300 border border-indigo-600/30 hover:bg-indigo-600/30 active:scale-95 transition"
+            >
+              Concepts
+            </button>
           <button
             onClick={() => setGearOpen(true)}
             aria-label="Settings"
@@ -96,6 +105,7 @@ export default function Profile() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </button>
+          </div>
         </div>
         <div className="px-4 pb-3 flex gap-1.5">
           {TABS.map(t => (
