@@ -131,12 +131,14 @@ export const MODERN = {
   positive: '#2f7d4f',
   negative: '#bd463e',
 
-  // per-element gradient recipes (varied angle/order so each accent surface fades its own way)
+  // per-element gradient recipes — deliberately different stop brightness per surface so each
+  // accent area fades its own way (dark forest→slate→marine for CTA, darker marine→teal→black-teal
+  // for vote, vivid mint→ocean→blue for FAB, asymmetric alpha for the soft wash)
   g: {
-    ctaBg: 'linear-gradient(120deg,#1f7d6c,#16778a,#236d92)', ctaInk: '#ffffff',
-    voteBg: 'linear-gradient(210deg,#1f7d6c,#16778a,#236d92)', voteInk: '#ffffff',
-    fabBg: 'linear-gradient(60deg,#236d92,#16778a,#1f7d6c)', fabInk: '#ffffff',
-    softBg: 'linear-gradient(135deg,#1f7d6c2b,#16778a20,#236d922b)', softInk: '#0f494a',
+    ctaBg: 'linear-gradient(118deg,#124c43,#0d4f67,#153d68)', ctaInk: '#ffffff',
+    voteBg: 'linear-gradient(205deg,#153d68,#0c4555,#0a2d2d)', voteInk: '#ffffff',
+    fabBg: 'linear-gradient(50deg,#2fb09a,#1aaac8,#2690c0)', fabInk: '#ffffff',
+    softBg: 'linear-gradient(135deg,#1f7d6c40,#16778a1c,#236d923c)', softInk: '#0f494a',
   },
 
   // identity
