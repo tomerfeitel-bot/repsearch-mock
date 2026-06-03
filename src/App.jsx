@@ -15,6 +15,7 @@ import ConceptWorkout from './pages/ConceptWorkout.jsx'
 import ConceptCommunity from './pages/ConceptCommunity.jsx'
 import ConceptCohesive from './pages/ConceptCohesive.jsx'
 import ConceptCommunityModern from './pages/ConceptCommunityModern.jsx'
+import ConceptShowcase from './pages/ConceptShowcase.jsx'
 import Profile from './pages/Profile.jsx'
 import UserProfile from './pages/UserProfile.jsx'
 import PublicWorkout from './pages/PublicWorkout.jsx'
@@ -58,8 +59,9 @@ export default function App() {
     )
   }
 
-  const hideNav = HIDE_NAV_PATHS.includes(location.pathname)
-  const showFloatingWorkoutBar = !!wo.workout && !wo.workout.finalizedAt && !FLOATING_WORKOUT_HIDDEN_PATHS.includes(location.pathname)
+  const isPalette = location.pathname.startsWith('/concepts/palette/')
+  const hideNav = HIDE_NAV_PATHS.includes(location.pathname) || isPalette
+  const showFloatingWorkoutBar = !!wo.workout && !wo.workout.finalizedAt && !FLOATING_WORKOUT_HIDDEN_PATHS.includes(location.pathname) && !isPalette
 
   return (
     <div className="min-h-screen">
@@ -81,6 +83,7 @@ export default function App() {
           <Route path="/concepts/community" element={<ConceptCommunity />} />
           <Route path="/concepts/cohesive" element={<ConceptCohesive />} />
           <Route path="/concepts/community-modern" element={<ConceptCommunityModern />} />
+          <Route path="/concepts/palette/:paletteId" element={<ConceptShowcase />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/user/:username" element={<UserProfile />} />
           <Route path="/user/:username/workout/:id" element={<PublicWorkout />} />
