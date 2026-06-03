@@ -2,14 +2,15 @@
   "name": "RepSearch",
   "short_name": "RepSearch",
   "description": "Your AI-powered fitness research tool",
-  "start_url": "/",
+  "start_url": "/repsearch-mock/",
+  "scope": "/repsearch-mock/",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#030712",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/repsearch-mock/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

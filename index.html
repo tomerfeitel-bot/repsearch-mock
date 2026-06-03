@@ -8,6 +8,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#030712" />
     <title>RepSearch</title>
+    <script>
+      (function() {
+        var r = sessionStorage.getItem('spa-redirect');
+        if (r) { sessionStorage.removeItem('spa-redirect'); history.replaceState(null, null, r); }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
