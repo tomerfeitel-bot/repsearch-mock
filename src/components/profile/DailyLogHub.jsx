@@ -274,7 +274,7 @@ export default function DailyLogHub({ user, updateUser, refresh, toast }) {
       <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-white">Citizen-science research</div>
+            <div className="text-sm font-semibold text-gray-100">Citizen-science research</div>
             <p className="mt-1 text-xs text-gray-300 leading-relaxed">
               {research
                 ? `You are contributing ${variableCount} variable${variableCount === 1 ? '' : 's'} to anonymous fitness research.`
@@ -362,7 +362,7 @@ function Stepper({ value, onChange, step = 1, min = -Infinity, max = Infinity, s
   }
   return (
     <div className="flex items-center gap-2">
-      <button onClick={() => bump(-1)} className="w-8 h-8 rounded-lg bg-gray-950 border border-gray-800 text-gray-300 hover:text-white active:scale-95 transition touch-manipulation">−</button>
+      <button onClick={() => bump(-1)} className="w-8 h-8 rounded-lg bg-gray-950 border border-gray-800 text-gray-300 hover:text-gray-100 active:scale-95 transition touch-manipulation">−</button>
       <div className="w-20 text-center">
         <input
           type="number"
@@ -371,11 +371,11 @@ function Stepper({ value, onChange, step = 1, min = -Infinity, max = Infinity, s
           step={step}
           onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
           onBlur={handleBlur}
-          className="w-full bg-transparent text-center font-mono tabular-nums text-base text-white focus:outline-none touch-manipulation"
+          className="w-full bg-transparent text-center font-mono tabular-nums text-base text-gray-100 focus:outline-none touch-manipulation"
         />
         {suffix && num != null && <span className="text-[10px] text-gray-500">{suffix}</span>}
       </div>
-      <button onClick={() => bump(1)} className="w-8 h-8 rounded-lg bg-gray-950 border border-gray-800 text-gray-300 hover:text-white active:scale-95 transition touch-manipulation">+</button>
+      <button onClick={() => bump(1)} className="w-8 h-8 rounded-lg bg-gray-950 border border-gray-800 text-gray-300 hover:text-gray-100 active:scale-95 transition touch-manipulation">+</button>
     </div>
   )
 }
@@ -401,7 +401,7 @@ function Select({ value, onChange, options }) {
     <select
       value={value ?? ''}
       onChange={e => onChange(e.target.value)}
-      className="mt-1 w-full min-h-11 rounded-xl bg-gray-950 border border-gray-800 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      className="mt-1 w-full min-h-11 rounded-xl bg-gray-950 border border-gray-800 px-3 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
     >
       <option value="">Not set</option>
       {options.map(o => <option key={o} value={o}>{human(o)}</option>)}
@@ -419,12 +419,12 @@ function SupplementRow({ supplement, onUpdate }) {
         value={supplement.amount ?? ''}
         placeholder="Amt"
         onChange={e => onUpdate('amount', e.target.value === '' ? null : Number(e.target.value))}
-        className="w-16 min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-2 text-sm text-white text-center font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-16 min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-2 text-sm text-gray-100 text-center font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
       <select
         value={supplement.unit ?? ''}
         onChange={e => onUpdate('unit', e.target.value || null)}
-        className="w-16 min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-16 min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-1 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         <option value="">—</option>
         {SUPPLEMENT_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
@@ -432,7 +432,7 @@ function SupplementRow({ supplement, onUpdate }) {
       <select
         value={supplement.frequency ?? ''}
         onChange={e => onUpdate('frequency', e.target.value || null)}
-        className="w-28 min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-28 min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-1 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         <option value="">Freq</option>
         {SUPPLEMENT_FREQUENCY.map(f => <option key={f} value={f}>{human(f)}</option>)}
@@ -450,7 +450,7 @@ function MiniInput({ label, value, onChange }) {
         inputMode="decimal"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="mt-1 w-full min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-3 text-sm text-white font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="mt-1 w-full min-h-10 rounded-lg bg-gray-950 border border-gray-800 px-3 text-sm text-gray-100 font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </label>
   )

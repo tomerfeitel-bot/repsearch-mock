@@ -362,7 +362,7 @@ function AdvancedIntro({ onContinue, onSkip }) {
         <div className="inline-block rounded-full bg-indigo-600/15 px-3 py-1 text-xs font-medium text-indigo-300">
           Optional baseline
         </div>
-        <h1 className="text-3xl font-bold text-white">Add the context that makes the research sharper.</h1>
+        <h1 className="text-3xl font-bold text-gray-100">Add the context that makes the research sharper.</h1>
         <p className="text-gray-400 leading-relaxed">
           These are current baseline values: sleep, nutrition, supplements, cardio, and measurements change over time and can be updated later.
         </p>
@@ -431,7 +431,7 @@ function AdvancedForm({ basics, data, setData, onSave, onSkip, submitting }) {
             const supplement = SUPPLEMENTS.find(s => s.v === key)
             return (
               <div key={key} className="rounded-2xl border border-gray-800 bg-gray-900 p-3">
-                <div className="mb-3 text-sm font-medium text-white">{supplement?.label || key}</div>
+                <div className="mb-3 text-sm font-medium text-gray-100">{supplement?.label || key}</div>
                 {key === 'other' && (
                   <input
                     type="text"
@@ -549,7 +549,7 @@ function AdvancedForm({ basics, data, setData, onSave, onSkip, submitting }) {
 function Header({ title, subtitle }) {
   return (
     <div className="mb-7 space-y-3">
-      <h1 className="pt-2 text-3xl font-bold text-white">{title}</h1>
+      <h1 className="pt-2 text-3xl font-bold text-gray-100">{title}</h1>
       {subtitle && <p className="text-sm leading-relaxed text-gray-400">{subtitle}</p>}
     </div>
   )
@@ -587,7 +587,7 @@ function ChoiceGrid({ value, onChange, options }) {
           onClick={() => onChange(o.v)}
           className={
             'min-h-14 rounded-2xl border px-4 py-3 text-left transition-colors ' +
-            (value === o.v ? 'bg-indigo-600/10 border-indigo-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-200 hover:border-gray-700')
+            (value === o.v ? 'bg-indigo-600/10 border-indigo-500 text-gray-100' : 'bg-gray-900 border-gray-800 text-gray-200 hover:border-gray-700')
           }
         >
           <div className="font-medium">{o.label}</div>
@@ -619,7 +619,7 @@ function TrainingAgeSlider({ value, onChange }) {
   const index = Math.max(0, TRAINING_AGE_VALUES.indexOf(Number(value)))
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-900 p-4">
-      <div className="mb-3 text-center text-2xl font-bold tabular-nums text-white">{formatTrainingAge(value)}</div>
+      <div className="mb-3 text-center text-2xl font-bold tabular-nums text-gray-100">{formatTrainingAge(value)}</div>
       <input
         type="range"
         min="0"
@@ -642,7 +642,7 @@ function WheelMetric({ label, value, values, displayValue, displayLabel, toMetri
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-900 p-3">
       <div className="mb-1 text-xs uppercase tracking-wider text-gray-500">{label}</div>
-      <div className="mb-2 h-7 text-lg font-bold text-white">{current === '' ? '-' : (displayLabel ? displayLabel(current) : current)} <span className="text-xs text-gray-500">{unitMode}</span></div>
+      <div className="mb-2 h-7 text-lg font-bold text-gray-100">{current === '' ? '-' : (displayLabel ? displayLabel(current) : current)} <span className="text-xs text-gray-500">{unitMode}</span></div>
       <WheelPicker
         value={current}
         values={values}
@@ -667,7 +667,7 @@ function WheelPicker({ value, values, labelFor = String, onChange, onClear }) {
             key={v}
             type="button"
             onClick={() => onChange(v)}
-            className={'relative z-10 block h-9 w-full snap-center text-center text-sm tabular-nums transition ' + (Number(v) === selected ? 'font-bold text-white' : 'text-gray-500')}
+            className={'relative z-10 block h-9 w-full snap-center text-center text-sm tabular-nums transition ' + (Number(v) === selected ? 'font-bold text-gray-100' : 'text-gray-500')}
           >
             {labelFor(v)}
           </button>
@@ -759,7 +759,7 @@ function FooterBar({ onNext, nextLabel = 'Continue', canNext = true, submitting,
 }
 
 function inputClass(extra = '') {
-  return `w-full min-h-11 rounded-xl border border-gray-800 bg-gray-900 px-3 text-sm text-white outline-none transition focus:border-indigo-600 ${extra}`
+  return `w-full min-h-11 rounded-xl border border-gray-800 bg-gray-900 px-3 text-sm text-gray-100 outline-none transition focus:border-indigo-600 ${extra}`
 }
 
 function range(min, max, step) {

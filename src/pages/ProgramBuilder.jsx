@@ -275,7 +275,7 @@ export default function ProgramBuilder() {
             Close
           </button>
           <div className="text-center min-w-0">
-            <div className="text-lg font-bold text-white truncate">{program.name || 'Untitled program'}</div>
+            <div className="text-lg font-bold text-gray-100 truncate">{program.name || 'Untitled program'}</div>
             <div className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5">
               <span className="font-mono tabular-nums">{totals.sessions}</span> sessions - open-ended
             </div>
@@ -332,13 +332,13 @@ function ProgramMeta({ program, onChange }) {
         value={program.name}
         onChange={e => onChange({ name: e.target.value })}
         placeholder="Program name"
-        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-white font-semibold outline-none"
+        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-gray-100 font-semibold outline-none"
       />
       <input
         value={program.description}
         onChange={e => onChange({ description: e.target.value })}
         placeholder="Who this is for and how to run it"
-        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-sm text-gray-100 outline-none"
       />
       <div className="grid grid-cols-3 gap-1.5">
         {STRICTNESS.map(s => (
@@ -362,7 +362,7 @@ function BlockEditor({ block, canRemove, onChange, onRemove, onPickTemplate, onU
         <input
           value={block.name}
           onChange={e => onChange({ name: e.target.value })}
-          className="min-w-0 flex-1 bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2 text-white font-semibold outline-none"
+          className="min-w-0 flex-1 bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2 text-gray-100 font-semibold outline-none"
           placeholder="Block name"
         />
         {canRemove && (
@@ -374,7 +374,7 @@ function BlockEditor({ block, canRemove, onChange, onRemove, onPickTemplate, onU
       <input
         value={block.description}
         onChange={e => onChange({ description: e.target.value })}
-        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2 text-sm text-white outline-none"
+        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2 text-sm text-gray-100 outline-none"
         placeholder="Optional block note: volume, strength, deload..."
       />
       {block.sessions.length === 0 && (
@@ -420,7 +420,7 @@ function SessionCard({ session, index, first, last, onChange, onMove, onDuplicat
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-full bg-indigo-600/20 text-indigo-200 flex items-center justify-center text-xs font-mono">{index + 1}</div>
         <div className="min-w-0 flex-1">
-          <div className="font-semibold text-white truncate">{session.session_label || session.template_name}</div>
+          <div className="font-semibold text-gray-100 truncate">{session.session_label || session.template_name}</div>
           <div className="text-xs text-gray-500 truncate">{session.template_name}</div>
         </div>
         <div className="flex gap-1">
@@ -432,13 +432,13 @@ function SessionCard({ session, index, first, last, onChange, onMove, onDuplicat
         value={session.session_label}
         onChange={e => onChange({ session_label: e.target.value })}
         placeholder="Optional session label"
-        className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg px-3 py-2 text-sm text-white outline-none"
+        className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg px-3 py-2 text-sm text-gray-100 outline-none"
       />
       <input
         value={session.session_note}
         onChange={e => onChange({ session_note: e.target.value })}
         placeholder="Optional session note"
-        className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg px-3 py-2 text-sm text-white outline-none"
+        className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg px-3 py-2 text-sm text-gray-100 outline-none"
       />
       <div className="grid grid-cols-2 gap-2">
         {TIMING.map(item => (
@@ -475,7 +475,7 @@ function SmallNumber({ label, value, onChange }) {
         type="number"
         value={value ?? ''}
         onChange={e => onChange(e.target.value)}
-        className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg px-2 py-2 text-sm text-white outline-none"
+        className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg px-2 py-2 text-sm text-gray-100 outline-none"
       />
     </label>
   )
@@ -499,7 +499,7 @@ function TemplatePicker({ open, onClose, templates, onPick, onCreate }) {
             onClick={() => onPick(template)}
             className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-3"
           >
-            <div className="font-semibold text-white truncate">{template.name}</div>
+            <div className="font-semibold text-gray-100 truncate">{template.name}</div>
             <div className="text-xs text-gray-500 mt-1">{template.visibility} - {template.usage_count || 0} uses</div>
           </button>
         ))}
@@ -517,7 +517,7 @@ function SaveProgramSheet({ open, onClose, program, onChange, onSave, saving }) 
           <input
             value={program.name}
             onChange={e => onChange({ name: e.target.value })}
-            className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-3 text-white outline-none"
+            className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-3 text-gray-100 outline-none"
           />
         </label>
         <div className="space-y-2">

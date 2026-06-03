@@ -54,7 +54,7 @@ export default function RestTimerPill({ active, durationSec = 90, startedAt = 0,
           <button
             type="button"
             onClick={() => onRestart?.(Math.max(15, durationSec - 15))}
-            className="h-9 rounded-xl bg-gray-950/60 px-3 text-xs font-semibold text-gray-300 hover:text-white"
+            className="h-9 rounded-xl bg-gray-950/60 px-3 text-xs font-semibold text-gray-300 hover:text-gray-100"
           >
             -15s
           </button>
@@ -68,7 +68,7 @@ export default function RestTimerPill({ active, durationSec = 90, startedAt = 0,
           <button
             type="button"
             onClick={() => onRestart?.(Math.min(600, durationSec + 15))}
-            className="h-9 rounded-xl bg-gray-950/60 px-3 text-xs font-semibold text-gray-300 hover:text-white"
+            className="h-9 rounded-xl bg-gray-950/60 px-3 text-xs font-semibold text-gray-300 hover:text-gray-100"
           >
             +15s
           </button>
@@ -79,7 +79,7 @@ export default function RestTimerPill({ active, durationSec = 90, startedAt = 0,
               key={seconds}
               type="button"
               onClick={() => onRestart?.(seconds)}
-              className="flex-1 rounded-lg bg-gray-950/40 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:text-white"
+              className="flex-1 rounded-lg bg-gray-950/40 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:text-gray-100"
             >
               {formatRest(seconds)}
             </button>
@@ -87,14 +87,14 @@ export default function RestTimerPill({ active, durationSec = 90, startedAt = 0,
           <button
             type="button"
             onClick={() => onRestart?.(durationSec)}
-            className="rounded-lg bg-gray-950/40 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:text-white"
+            className="rounded-lg bg-gray-950/40 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:text-gray-100"
           >
             Restart
           </button>
           <button
             type="button"
             onClick={onDismiss}
-            className="rounded-lg bg-gray-950/40 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:text-white"
+            className="rounded-lg bg-gray-950/40 px-2 py-1 text-[11px] font-semibold text-gray-300 hover:text-gray-100"
           >
             Dismiss
           </button>

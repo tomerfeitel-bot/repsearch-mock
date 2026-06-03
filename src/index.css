@@ -3,6 +3,30 @@
 @tailwind utilities;
 
 @layer base {
+  /* Rubber Brass design tokens. Light "gym hardware" palette: off-white canvas,
+     white surfaces, graphite-black accent, warm brass secondary. Adapted from the
+     PALETTE10 concept (src/lib/paletteCollections.js). These drive both the
+     Tailwind scale remap (tailwind.config.js) and the inline-styled pages. */
+  :root {
+    --bg:            #f7f8f4;
+    --surface:       #ffffff;
+    --surface-alt:   #e9ece6;
+    --border:        #d5dcd2;
+    --border-strong: #b0bab0;
+    --text:          #151817;
+    --text-muted:    #58615b;
+    --ink-soft:      #454c47;
+    --accent:        #242825;
+    --accent-ink:    #ffffff;
+    --accent-soft:   rgba(36, 40, 37, 0.11);
+    --positive:      #506343;
+    --negative:      #9b463d;
+    --brass:         #a77b3f;
+    --brass-soft:    rgba(167, 123, 63, 0.16);
+    --hero-fade:     rgba(167, 123, 63, 0.23);
+    --radius:        18px;
+  }
+
   * { -webkit-tap-highlight-color: transparent; }
   /* Visible, on-brand focus ring for the cohesive concept surfaces. Scoped so
      it never alters the production app. Each root sets --cf to its accent. */
@@ -11,7 +35,7 @@
     outline-offset: 2px;
     border-radius: 6px;
   }
-  body { @apply bg-gray-950 text-gray-100 overscroll-none; }
+  body { @apply overscroll-none; background: var(--bg); color: var(--text); }
   input[type="number"] { -moz-appearance: textfield; }
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }

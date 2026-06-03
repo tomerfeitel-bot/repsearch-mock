@@ -98,7 +98,7 @@ export default function PlansTab() {
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          className="w-9 h-9 shrink-0 rounded-full border border-gray-800 bg-gray-900 text-gray-300 hover:text-white hover:border-gray-700"
+          className="w-9 h-9 shrink-0 rounded-full border border-gray-800 bg-gray-900 text-gray-300 hover:text-gray-100 hover:border-gray-700"
           aria-label="Create"
         >
           +
@@ -170,7 +170,7 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
                 className="w-full rounded-xl bg-gray-950 border border-gray-800 p-3 flex items-center gap-2"
               >
                 <button onClick={() => { onClose(); onDraft(draft) }} className="min-w-0 flex-1 text-left">
-                  <div className="font-medium text-white truncate">{draft.name}</div>
+                  <div className="font-medium text-gray-100 truncate">{draft.name}</div>
                   <div className="mt-1 text-xs text-gray-500">Private draft</div>
                 </button>
                 <button
@@ -192,7 +192,7 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
                 className="w-full rounded-xl bg-gray-950 border border-gray-800 p-3 flex items-center gap-2"
               >
                 <button onClick={() => { onClose(); onProgramDraft(draft) }} className="min-w-0 flex-1 text-left">
-                  <div className="font-medium text-white truncate">{draft.name}</div>
+                  <div className="font-medium text-gray-100 truncate">{draft.name}</div>
                   <div className="mt-1 text-xs text-gray-500">Private program draft</div>
                 </button>
                 <button
@@ -210,14 +210,14 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
           onClick={() => { onClose(); onTemplate() }}
           className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4"
         >
-          <div className="font-semibold text-white">Template</div>
+          <div className="font-semibold text-gray-100">Template</div>
           <div className="mt-1 text-xs text-gray-500">Build a reusable workout in the full template builder.</div>
         </button>
         <button
           onClick={() => { onClose(); onProgram() }}
           className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4"
         >
-          <div className="font-semibold text-white">Program</div>
+          <div className="font-semibold text-gray-100">Program</div>
           <div className="mt-1 text-xs text-gray-500">Create a multi-week plan from saved templates.</div>
         </button>
         </div>
@@ -323,7 +323,7 @@ function Templates({ templates, onChanged }) {
         {templates.map(t => (
           <div key={t.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-3 flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-white truncate">{t.name}</div>
+              <div className="font-medium text-gray-100 truncate">{t.name}</div>
               <div className="text-xs text-gray-500 truncate">
                 {t.creator_username ? `by ${t.creator_username} · ` : ''}{strictnessLabel(t.strictness)} · used {t.usage_count || 0}x
               </div>
@@ -380,11 +380,11 @@ function ProgramCard({ program, onOpen, onStarted }) {
           <span className="ml-auto text-[10px] text-gray-500 uppercase tracking-wider">Open-ended</span>
         </div>
         <div>
-          <div className="font-bold text-white text-lg leading-tight line-clamp-2">{program.name}</div>
+          <div className="font-bold text-gray-100 text-lg leading-tight line-clamp-2">{program.name}</div>
           {program.description && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{program.description}</div>}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
-          <span className="font-mono tabular-nums text-white text-xl">{program.proof?.hero || `${program.enrollment_count || 0} started`}</span>
+          <span className="font-mono tabular-nums text-gray-100 text-xl">{program.proof?.hero || `${program.enrollment_count || 0} started`}</span>
           <span>{proofStatus(program.proof?.status)}</span>
           <span className="px-2 py-1 rounded-full bg-gray-950 border border-gray-800">open-ended</span>
         </div>
@@ -509,7 +509,7 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
           <div className="flex items-center justify-between gap-2">
             <div>
               <div className="text-xs uppercase tracking-wider text-gray-500">Next session</div>
-              <div className="mt-1 text-sm font-semibold text-white">
+              <div className="mt-1 text-sm font-semibold text-gray-100">
                 {detailError || nextSession?.session_label || nextSession?.template_name || (full ? 'Start the program to queue a session' : 'Loading program...')}
               </div>
               {full?.phase?.next_suggested_at && <div className="mt-1 text-xs text-gray-500">Suggested {new Date(full.phase.next_suggested_at).toLocaleDateString()}</div>}
@@ -536,7 +536,7 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
             <div className="text-xs uppercase tracking-wider text-gray-500">Structure</div>
             {full.blocks.map(block => (
               <div key={block.id} className="space-y-2">
-                <div className="text-sm font-semibold text-white">{block.name}</div>
+                <div className="text-sm font-semibold text-gray-100">{block.name}</div>
                 {(full.workouts || []).filter(w => w.block_id === block.id).map((session, idx) => (
                   <div key={session.id} className="flex gap-2 text-xs text-gray-400">
                     <span className="font-mono text-gray-500">{idx + 1}</span>
@@ -620,7 +620,7 @@ export function StartProgramSheet({ open, onClose, program, onStarted }) {
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-3 text-white outline-none"
+            className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-3 text-gray-100 outline-none"
           />
         </label>
         <label className="flex gap-3 rounded-xl bg-gray-950 border border-gray-800 p-3">
@@ -645,15 +645,15 @@ function DecisionSheet({ open, onClose, onPick }) {
     <Sheet open={open} onClose={onClose} title="Timing decision">
       <div className="p-4 space-y-2">
         <button onClick={() => onPick('continue')} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4">
-          <div className="font-semibold text-white">Continue with next session</div>
+          <div className="font-semibold text-gray-100">Continue with next session</div>
           <div className="mt-1 text-xs text-gray-500">Keep the program order and mark timing as handled.</div>
         </button>
         <button onClick={() => onPick('shift')} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4">
-          <div className="font-semibold text-white">Shift future suggestions</div>
+          <div className="font-semibold text-gray-100">Shift future suggestions</div>
           <div className="mt-1 text-xs text-gray-500">Keep the session but reset the timing track.</div>
         </button>
         <button onClick={() => onPick('skip_adapt')} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4">
-          <div className="font-semibold text-white">Skip / mark adapted</div>
+          <div className="font-semibold text-gray-100">Skip / mark adapted</div>
           <div className="mt-1 text-xs text-gray-500">Record that this run moved away from the written plan.</div>
         </button>
       </div>
@@ -664,7 +664,7 @@ function DecisionSheet({ open, onClose, onPick }) {
 function ProofStat({ label, value }) {
   return (
     <div className="rounded-2xl bg-gray-950 border border-gray-800 p-3">
-      <div className="font-mono text-2xl text-white">{value}</div>
+      <div className="font-mono text-2xl text-gray-100">{value}</div>
       <div className="text-[10px] uppercase tracking-wider text-gray-500">{label}</div>
     </div>
   )

@@ -8,7 +8,9 @@ import LiftsTab from '../components/progress/LiftsTab.jsx'
 import BodyTab from '../components/progress/BodyTab.jsx'
 import RecordsTab from '../components/progress/RecordsTab.jsx'
 import CompareTab from '../components/progress/CompareTab.jsx'
-import { PROGRESS_BG, PROGRESS_TEXT, PROGRESS_BORDER, PROGRESS_CARD, PROGRESS_MUTED } from '../lib/progressTheme.js'
+import BubbleHeader from '../components/ui/BubbleHeader.jsx'
+import PillTabs from '../components/ui/PillTabs.jsx'
+import { PROGRESS_BG, PROGRESS_TEXT } from '../lib/progressTheme.js'
 
 const TABS = ['history', 'lifts', 'body', 'records', 'compare']
 const TAB_LABELS = { body: 'Lifestyle & Body' }
@@ -60,27 +62,16 @@ export default function Progress() {
 
   return (
     <div className="min-h-screen pb-24" style={{ background: PROGRESS_BG, color: PROGRESS_TEXT }}>
-      <header className="sticky top-0 z-10 backdrop-blur" style={{ background: `${PROGRESS_BG}ee`, borderBottom: `1px solid ${PROGRESS_BORDER}` }}>
-        <div className="px-4 safe-pt-4 pb-2">
-          <h1 className="font-serif font-bold text-3xl" style={{ color: PROGRESS_TEXT }}>Progress</h1>
-        </div>
-        <div className="px-4 pb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
-          {TABS.map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors capitalize"
-              style={{
-                background: tab === t ? PROGRESS_TEXT : 'transparent',
-                color: tab === t ? PROGRESS_CARD : PROGRESS_MUTED,
-                border: `1px solid ${tab === t ? PROGRESS_TEXT : PROGRESS_BORDER}`,
-              }}
-            >
-              {TAB_LABELS[t] || t}
-            </button>
-          ))}
-        </div>
-      </header>
+      <BubbleHeader label="Training log" title="Progress" />
+      <div className="px-4 pb-3">
+        <PillTabs
+          tabs={TABS.map(t => ({ value: t, label: TAB_LABELS[t] || (t[0].toUpperCase() + t.slice(1)) }))}
+          value={tab}
+          onChange={setTab}
+          scroll
+          ariaLabel="Progress sections"
+        />
+      </div>
 
       <main className="p-4">
         {tab === 'history' && (

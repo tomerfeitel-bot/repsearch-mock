@@ -25,7 +25,7 @@ export default function ProfileSummary({ data, loading, privateView = false, onF
       <div className="p-4">
         <Card className="text-center py-8">
           <Avatar username={user?.username} size="xl" className="mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white">{user?.username}</h2>
+          <h2 className="text-xl font-bold text-gray-100">{user?.username}</h2>
           <p className="mt-2 text-sm text-gray-400">Profile is private.</p>
           {!viewer.is_self && (
             <button
@@ -67,7 +67,7 @@ function IdentityCard({ user, stats, viewer, onFollow, followBusy, onEditProfile
         <Avatar username={user?.username} size="xl" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-white truncate">{user?.username}</h2>
+            <h2 className="text-xl font-bold text-gray-100 truncate">{user?.username}</h2>
             {user?.is_private ? <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">Private</span> : null}
           </div>
           <p className="mt-1 text-sm text-gray-400 leading-relaxed">{user?.bio || 'No bio yet.'}</p>
@@ -78,7 +78,7 @@ function IdentityCard({ user, stats, viewer, onFollow, followBusy, onEditProfile
           {viewer?.is_self && onEditProfile && (
             <button
               onClick={onEditProfile}
-              className="mt-4 min-h-10 px-4 rounded-xl border border-gray-800 text-gray-300 hover:bg-gray-900 hover:text-white active:scale-[0.98] text-sm font-semibold transition"
+              className="mt-4 min-h-10 px-4 rounded-xl border border-gray-800 text-gray-300 hover:bg-gray-900 hover:text-gray-100 active:scale-[0.98] text-sm font-semibold transition"
             >
               Edit profile
             </button>
@@ -129,12 +129,12 @@ function WidgetGrid({ user }) {
     <div className="grid grid-cols-2 gap-2">
       {hasSleep && (
         <Widget icon="🌙" label="Sleep">
-          <div className="font-mono tabular-nums text-2xl font-bold text-white">{Number(sleep).toFixed(2).replace(/\.?0+$/, '')}<span className="text-sm text-gray-500">h</span></div>
+          <div className="font-mono tabular-nums text-2xl font-bold text-gray-100">{Number(sleep).toFixed(2).replace(/\.?0+$/, '')}<span className="text-sm text-gray-500">h</span></div>
         </Widget>
       )}
       {hasNutrition && (
         <Widget icon="🍽️" label="Nutrition">
-          {user.latest_calories != null && <div className="font-mono tabular-nums text-lg font-bold text-white">{user.latest_calories}<span className="text-xs text-gray-500"> kcal</span></div>}
+          {user.latest_calories != null && <div className="font-mono tabular-nums text-lg font-bold text-gray-100">{user.latest_calories}<span className="text-xs text-gray-500"> kcal</span></div>}
           {user.protein_g_per_kg != null && <div className="text-xs text-gray-400 font-mono">{user.protein_g_per_kg} g/kg protein</div>}
           {user.nutrition_phase && <div className="text-[11px] text-gray-500 capitalize">{user.nutrition_phase}</div>}
           {supplements.length > 0 && <div className="mt-1 text-[11px] text-gray-500 truncate">{supplements.map(s => s.replaceAll('_', ' ')).join(', ')}</div>}
@@ -154,7 +154,7 @@ function WidgetGrid({ user }) {
       )}
       {hasSplit && (
         <Widget icon="🗓️" label="Split">
-          <div className="text-lg font-bold text-white">{user.split_type}</div>
+          <div className="text-lg font-bold text-gray-100">{user.split_type}</div>
           {user.derived_weekly_frequency != null && (
             <div className="mt-0.5 text-xs text-gray-400 font-mono">~{user.derived_weekly_frequency}x/week</div>
           )}
@@ -188,7 +188,7 @@ function StatsHero({ stats, trainingAge }) {
 function Stat({ label, value, suffix = '' }) {
   return (
     <Card className="text-center">
-      <div className="font-mono tabular-nums text-2xl font-bold text-white">{value}<span className="text-sm text-gray-500">{suffix}</span></div>
+      <div className="font-mono tabular-nums text-2xl font-bold text-gray-100">{value}<span className="text-sm text-gray-500">{suffix}</span></div>
       <div className="mt-1 text-[11px] uppercase tracking-wider text-gray-500">{label}</div>
     </Card>
   )
@@ -204,7 +204,7 @@ function TopLifts({ lifts }) {
             <div className="text-xs uppercase tracking-wider text-gray-500">{lift.label}</div>
             {lift.pr ? (
               <>
-                <div className="mt-2 font-mono tabular-nums text-2xl font-bold text-white">{lift.pr.weight_kg}<span className="text-sm text-gray-500">kg × {lift.pr.reps}</span></div>
+                <div className="mt-2 font-mono tabular-nums text-2xl font-bold text-gray-100">{lift.pr.weight_kg}<span className="text-sm text-gray-500">kg × {lift.pr.reps}</span></div>
                 <div className="mt-1 text-[11px] text-gray-500 truncate">{lift.pr.exercise_name || exerciseById.get(lift.pr.exercise_id)?.name || lift.pr.exercise_id}</div>
               </>
             ) : (
@@ -278,7 +278,7 @@ function RecentWorkouts({ workouts, username }) {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="font-mono tabular-nums text-3xl font-bold text-white">{w.duration_min || 0}<span className="text-sm text-gray-500"> min</span></div>
+                  <div className="font-mono tabular-nums text-3xl font-bold text-gray-100">{w.duration_min || 0}<span className="text-sm text-gray-500"> min</span></div>
                   <div className="mt-1 text-sm text-gray-400">{w.workout_day || w.workout_split_type || 'Workout'}</div>
                 </div>
                 <div className="text-[11px] text-gray-500 font-mono">{w.date ? timeAgo(`${w.date}T12:00:00.000Z`) : ''}</div>

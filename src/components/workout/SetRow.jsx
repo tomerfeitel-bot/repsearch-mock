@@ -82,7 +82,7 @@ export default function SetRow({
             value={set.weight_kg ?? ''}
             onChange={e => onChange({ weight_kg: e.target.value === '' ? null : e.target.value })}
             placeholder="-"
-            className={'w-full text-center bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg py-2 text-white font-mono tabular-nums outline-none ' + ((set.weight_kg == null || set.weight_kg === '') ? 'placeholder:text-gray-600' : '')}
+            className={'w-full text-center bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg py-2 text-gray-100 font-mono tabular-nums outline-none ' + ((set.weight_kg == null || set.weight_kg === '') ? 'placeholder:text-gray-600' : '')}
           />
         </div>
 
@@ -98,7 +98,7 @@ export default function SetRow({
             value={set.reps ?? ''}
             onChange={e => onChange({ reps: e.target.value === '' ? null : e.target.value })}
             placeholder="-"
-            className={'w-full text-center bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg py-2 text-white font-mono tabular-nums outline-none ' + ((set.reps == null || set.reps === '') ? 'placeholder:text-gray-600' : '')}
+            className={'w-full text-center bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg py-2 text-gray-100 font-mono tabular-nums outline-none ' + ((set.reps == null || set.reps === '') ? 'placeholder:text-gray-600' : '')}
           />
         </div>
 
@@ -258,11 +258,11 @@ function ResearchPill({ field, label, value, completed, editing, onEdit, onChang
 function MiniRirTicker({ value, onChange }) {
   const options = [
     { value: 0, color: 'bg-red-600 text-white' },
-    { value: 1, color: 'bg-orange-600 text-white' },
+    { value: 1, color: 'bg-orange-600 text-gray-100' },
     { value: 2, color: 'bg-amber-500 text-gray-950' },
-    { value: 3, color: 'bg-lime-600 text-white' },
+    { value: 3, color: 'bg-lime-600 text-gray-100' },
     { value: 4, color: 'bg-emerald-600 text-white' },
-    { value: '5+', color: 'bg-sky-600 text-white' },
+    { value: '5+', color: 'bg-sky-600 text-gray-100' },
   ]
   return (
     <div className="flex items-center gap-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 px-1 py-0.5">

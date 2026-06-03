@@ -38,7 +38,6 @@ export default function PaletteWorkout({ P }) {
   const r = P.radius
   const isMarine = P.tags.includes('navy')
   const isEmber = P.tags.includes('amber')
-  const isGrove = P.tags.includes('earthy')
   const isQuartz = P.tags.includes('lavender')
 
   const totalSets = exercises.reduce((n, e) => n + e.sets.filter(s => s.done).length, 0)
@@ -60,6 +59,77 @@ export default function PaletteWorkout({ P }) {
     boxShadow: isQuartz ? '0 2px 10px rgba(109,40,217,0.08),0 1px 2px rgba(0,0,0,0.04)'
       : isEmber && elevated ? `0 4px 24px rgba(217,124,30,0.10)` : 'none',
   })
+
+  if (P.style === 'strava') {
+    return (
+      <div className="min-h-screen pb-32" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3" style={{ background: P.bg }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold" style={{ color: P.textMuted }}>Push day · live activity</div>
+              <h1 className="text-2xl font-black tracking-tight">Morning Lift</h1>
+            </div>
+            <button className="h-9 px-4 text-xs font-bold rounded-full" style={{ background: P.accent, color: P.accentInk }}>Finish</button>
+          </div>
+          <div className="mt-4 overflow-hidden" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="h-32 p-4 flex flex-col justify-between" style={{ background: `linear-gradient(135deg, ${P.chartFill}, ${P.surfaceAlt})` }}>
+              <div className="flex justify-between text-xs font-semibold" style={{ color: P.textMuted }}><span>Chest + triceps</span><span>42m</span></div>
+              <div className="grid grid-cols-3 gap-3">
+                {[['Sets', totalSets], ['Volume', `${Math.round(totalVol / 100) / 10}t`], ['Rest', '0:45']].map(([l, v]) => (
+                  <div key={l}><div className="text-2xl font-black font-mono">{v}</div><div className="text-[10px]" style={{ color: P.textMuted }}>{l}</div></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </header>
+        <WorkoutStack exercises={exercises} P={P} r={r} isMarine={false} cardStyle={cardStyle} markDone={markDone} />
+      </div>
+    )
+  }
+
+  if (P.style === 'reddit') {
+    return (
+      <div className="min-h-screen pb-32" style={{ background: P.bg, color: P.text }}>
+        <header className="sticky top-0 z-20 px-3 pt-3 pb-2" style={{ background: P.bg, borderBottom: `1px solid ${P.border}` }}>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg flex items-center justify-center font-black" style={{ background: P.accent, color: P.accentInk }}>L</div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-black leading-tight">r/logbook · Push Day</h1>
+              <p className="text-[11px]" style={{ color: P.textMuted }}>{totalSets} sets checked · {Math.round(totalVol).toLocaleString()} kg</p>
+            </div>
+            <div className="px-2.5 py-1 rounded-full text-xs font-bold font-mono" style={{ background: P.accentSoft, color: P.accent }}>0:45</div>
+          </div>
+        </header>
+        <WorkoutStack exercises={exercises} P={P} r={r} isMarine={false} cardStyle={cardStyle} markDone={markDone} compact />
+      </div>
+    )
+  }
+
+  if (P.style === 'signal') {
+    return (
+      <div className="min-h-screen pb-32" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3">
+          <div className="p-3" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="h-36 rounded-2xl p-4 flex flex-col justify-between" style={{ background: `linear-gradient(135deg, ${P.surfaceAlt}, ${P.heroFade || 'rgba(143,216,78,0.20)'})` }}>
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold" style={{ color: P.accent }}>CORE WORKOUT</span>
+                <button className="h-8 px-4 text-xs font-black rounded-full" style={{ background: P.accent, color: P.accentInk }}>Finish</button>
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight">Push Strength</h1>
+                <div className="mt-2 flex gap-2">
+                  {[['sets', totalSets], ['kg', Math.round(totalVol).toLocaleString()], ['rest', '0:45']].map(([l, v]) => (
+                    <div key={l} className="px-3 py-1.5 rounded-full text-xs font-bold font-mono" style={{ background: P.accentSoft, color: l === 'rest' ? P.accent : P.text }}>{v} {l}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+        <WorkoutStack exercises={exercises} P={P} r={r} isMarine={false} cardStyle={cardStyle} markDone={markDone} />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen pb-32" style={{ background: P.bg, color: P.text }}>
@@ -98,7 +168,7 @@ export default function PaletteWorkout({ P }) {
 
       <div className="px-4 pt-4 space-y-3">
         {exercises.map(ex => (
-          <ExerciseCard key={ex.id} ex={ex} P={P} r={r} isMarine={isMarine} isEmber={isEmber} cardStyle={cardStyle}
+          <ExerciseCard key={ex.id} ex={ex} P={P} r={r} isMarine={isMarine} cardStyle={cardStyle}
             onMarkDone={(sid) => markDone(ex.id, sid)} />
         ))}
 
@@ -116,9 +186,22 @@ export default function PaletteWorkout({ P }) {
   )
 }
 
-function ExerciseCard({ ex, P, r, isMarine, isEmber, cardStyle, onMarkDone }) {
-  const isGrove = P.tags.includes('earthy')
+function WorkoutStack({ exercises, P, r, isMarine, cardStyle, markDone, compact }) {
+  return (
+    <div className={`${compact ? 'px-2 pt-2 space-y-1.5' : 'px-4 pt-3 space-y-3'}`}>
+      {exercises.map(ex => (
+        <ExerciseCard key={ex.id} ex={ex} P={P} r={r} isMarine={isMarine} cardStyle={cardStyle}
+          onMarkDone={(sid) => markDone(ex.id, sid)} />
+      ))}
+      <button className="w-full h-11 flex items-center justify-center gap-2 text-sm font-semibold"
+        style={{ border: `1px dashed ${P.border}`, borderRadius: r, color: P.textMuted, background: 'transparent' }}>
+        <IconPlus size={16} /> Add exercise
+      </button>
+    </div>
+  )
+}
 
+function ExerciseCard({ ex, P, r, isMarine, cardStyle, onMarkDone }) {
   return (
     <div style={cardStyle(true)}>
       {/* Exercise header */}

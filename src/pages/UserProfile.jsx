@@ -46,7 +46,7 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen pb-24 bg-gray-950">
       <header className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-gray-800 px-4 safe-pt-4 pb-3">
-        <h1 className="text-2xl font-bold text-white">{username}</h1>
+        <h1 className="text-2xl font-bold text-gray-100">{username}</h1>
       </header>
       <ProfileSummary
         data={data}

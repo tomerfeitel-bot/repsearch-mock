@@ -1,35 +1,37 @@
 // Single source of truth for muscle group colors.
 // Used by exercise card left-border, calendar heatmap, PR list, and volume chips.
 
+// Hues are tuned to read as both text and a 4px accent on the light Rubber Brass
+// surfaces (each clears ~4.5:1 on white) while keeping its original identity.
 const PALETTE = {
-  'Chest':       '#ef4444',
-  'Upper Chest': '#ef4444',
-  'Mid Chest':   '#ef4444',
-  'Lower Chest': '#ef4444',
-  'Back':        '#3b82f6',
-  'Lats':        '#3b82f6',
-  'Upper Back':  '#3b82f6',
-  'Lower Back':  '#3b82f6',
-  'Traps':       '#3b82f6',
-  'Shoulders':   '#f59e0b',
-  'Front Delts': '#f59e0b',
-  'Side Delts':  '#f59e0b',
-  'Rear Delts':  '#f59e0b',
-  'Biceps':      '#a855f7',
-  'Triceps':     '#a855f7',
-  'Forearms':    '#a855f7',
-  'Quads':       '#22c55e',
-  'Hamstrings':  '#22c55e',
-  'Glutes':      '#22c55e',
-  'Calves':      '#22c55e',
-  'Adductors':   '#22c55e',
-  'Abductors':   '#22c55e',
-  'Core':        '#fb923c',
-  'Abs':         '#fb923c',
-  'Obliques':    '#fb923c',
+  'Chest':       '#be3b30',
+  'Upper Chest': '#be3b30',
+  'Mid Chest':   '#be3b30',
+  'Lower Chest': '#be3b30',
+  'Back':        '#2563eb',
+  'Lats':        '#2563eb',
+  'Upper Back':  '#2563eb',
+  'Lower Back':  '#2563eb',
+  'Traps':       '#2563eb',
+  'Shoulders':   '#b45309',
+  'Front Delts': '#b45309',
+  'Side Delts':  '#b45309',
+  'Rear Delts':  '#b45309',
+  'Biceps':      '#7c3aed',
+  'Triceps':     '#7c3aed',
+  'Forearms':    '#7c3aed',
+  'Quads':       '#15803d',
+  'Hamstrings':  '#15803d',
+  'Glutes':      '#15803d',
+  'Calves':      '#15803d',
+  'Adductors':   '#15803d',
+  'Abductors':   '#15803d',
+  'Core':        '#c2410c',
+  'Abs':         '#c2410c',
+  'Obliques':    '#c2410c',
 }
 
-const FALLBACK = '#6b7280'
+const FALLBACK = '#5b6560'
 
 export function muscleColor(muscle) {
   if (!muscle) return FALLBACK

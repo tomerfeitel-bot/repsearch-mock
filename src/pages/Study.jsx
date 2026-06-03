@@ -7,6 +7,8 @@ import { useToast } from '../components/ui/Toast.jsx'
 import FilterRow from '../components/study/FilterRow.jsx'
 import ExploreSearchBar from '../components/study/ExploreSearchBar.jsx'
 import { SingleResultChart, CompareResultChart } from '../components/study/ResultsChart.jsx'
+import BubbleHeader from '../components/ui/BubbleHeader.jsx'
+import PillTabs from '../components/ui/PillTabs.jsx'
 import { SEED_EXERCISES, EQUIPMENT_TYPES } from '../lib/exercises.js'
 import {
   STUDY_ACCENT,
@@ -66,7 +68,7 @@ const SESSION_FOCUS = [
 // Top-level muscle groups to show in the exercise browser chips
 const TOP_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Glutes', 'Triceps', 'Biceps', 'Core', 'Traps', 'Forearms', 'Calves']
 
-const SELECT_CLS = 'w-full rounded-xl bg-gray-900 px-3 py-3 text-sm text-white outline-none'
+const SELECT_CLS = 'w-full rounded-xl bg-gray-900 px-3 py-3 text-sm text-gray-100 outline-none'
 
 function sanitizeFilters(filters) {
   return filters.filter(f => {
@@ -379,35 +381,19 @@ export default function Study() {
 
   return (
     <div className="min-h-screen pb-28" style={{ background: STUDY_BG, color: STUDY_TEXT }}>
-      <header
-        className="sticky top-0 z-20 space-y-3 px-4 pb-3 safe-pt-4"
-        style={{ background: 'rgba(13, 17, 23, 0.96)', borderBottom: `1px solid ${STUDY_BORDER}` }}
-      >
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Study</h1>
-          <p className="text-xs" style={{ color: STUDY_MUTED }}>For You / Explore / Evidence</p>
-        </div>
-        <div className="grid grid-cols-3 rounded-xl p-1" style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER}` }}>
-          {[
-            ['foryou', 'For You'],
-            ['explore', 'Explore'],
-            ['evidence', 'Evidence'],
-          ].map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className="rounded-lg py-2 text-xs font-semibold transition-colors"
-              style={{
-                background: tab === key ? STUDY_ACCENT : 'transparent',
-                color: tab === key ? STUDY_BG : STUDY_MUTED,
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </header>
+      <BubbleHeader label="Research engine" title="Study" />
+      <div className="px-4 pb-3">
+        <PillTabs
+          tabs={[
+            { value: 'foryou', label: 'For You' },
+            { value: 'explore', label: 'Explore' },
+            { value: 'evidence', label: 'Evidence' },
+          ]}
+          value={tab}
+          onChange={setTab}
+          ariaLabel="Study sections"
+        />
+      </div>
 
       <main className="space-y-6 px-4 py-5">
         {programId && (
@@ -2306,7 +2292,7 @@ function FilterPanel({ title, label, setLabel, filters, setFilters, accent = STU
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: accent === STUDY_BORDER ? STUDY_MUTED : accent }}>{title}</p>
         {setLabel && (
-          <input value={label} onChange={e => setLabel(e.target.value)} className="max-w-[120px] rounded-lg bg-gray-900 px-2 py-1 text-xs text-white outline-none" />
+          <input value={label} onChange={e => setLabel(e.target.value)} className="max-w-[120px] rounded-lg bg-gray-900 px-2 py-1 text-xs text-gray-100 outline-none" />
         )}
       </div>
       {filters.length === 0 && <p className="py-2 text-xs font-mono" style={{ color: STUDY_MUTED }}>Whole opted-in population.</p>}

@@ -216,29 +216,36 @@ export default function ActiveWorkout() {
   return (
     <div className="pb-32">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 bg-gray-950/95 backdrop-blur border-b border-gray-800">
-        <div className="px-4 safe-pt-3 pb-2 flex items-center justify-between gap-2">
-          <button
-            onClick={() => setDiscardOpen(true)}
-            className="text-sm text-gray-500 hover:text-red-400 px-2 py-2 min-w-[44px]"
-            aria-label="Discard workout"
-          >
-            Discard
-          </button>
-          <div className="text-center">
-            <div className="text-2xl font-mono tabular-nums font-bold text-white">{formatElapsed(wo.elapsedSec)}</div>
-            <div className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5">
-              <span className="font-mono tabular-nums">{totals.totalSets}</span> sets - <span className="font-mono tabular-nums">{Math.round(totals.volume)}</span> kg
+      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: 'var(--bg)' }}>
+        <div className="px-4 safe-pt-3 pb-2">
+          <div className="p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+            <div
+              className="rounded-2xl p-3 flex items-center justify-between gap-2"
+              style={{ background: 'linear-gradient(135deg, var(--surface-alt), var(--hero-fade))' }}
+            >
+              <button
+                onClick={() => setDiscardOpen(true)}
+                className="text-sm text-gray-500 hover:text-red-400 px-2 py-2 min-w-[44px]"
+                aria-label="Discard workout"
+              >
+                Discard
+              </button>
+              <div className="text-center">
+                <div className="text-2xl font-mono tabular-nums font-bold text-gray-100">{formatElapsed(wo.elapsedSec)}</div>
+                <div className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5">
+                  <span className="font-mono tabular-nums">{totals.totalSets}</span> sets - <span className="font-mono tabular-nums">{Math.round(totals.volume)}</span> kg
+                </div>
+                <SaveStatus status={wo.syncStatus} error={wo.syncError} />
+              </div>
+              <button
+                onClick={() => { if (!finalized) { setSaveError(''); setFinishOpen(true) } }}
+                disabled={finalized}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-500 text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                {finalized ? 'Saved' : 'Finish'}
+              </button>
             </div>
-            <SaveStatus status={wo.syncStatus} error={wo.syncError} />
           </div>
-          <button
-            onClick={() => { if (!finalized) { setSaveError(''); setFinishOpen(true) } }}
-            disabled={finalized}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-500 text-white text-sm font-semibold rounded-xl transition-colors"
-          >
-            {finalized ? 'Saved' : 'Finish'}
-          </button>
         </div>
         <div className="px-4 pb-2 flex justify-center">
           <button
@@ -584,7 +591,7 @@ function RemoveExerciseSheet({ target, onClose, onRemove }) {
     <Sheet open={!!target} onClose={onClose} title="Delete exercise">
       <div className="p-4 space-y-4">
         <div>
-          <div className="text-lg font-semibold text-white">{exercise?.exerciseName || 'Exercise'}</div>
+          <div className="text-lg font-semibold text-gray-100">{exercise?.exerciseName || 'Exercise'}</div>
           <div className="mt-1 text-sm text-gray-400">
             {loggedSets > 0
               ? `Deleting this exercise removes ${loggedSets} logged set${loggedSets === 1 ? '' : 's'} from the active workout.`

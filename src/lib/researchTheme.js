@@ -2,18 +2,20 @@
 // accent, monospace numbers. Mirrors the whitelists in server/research/queryEngine.js
 // so the UI can't construct queries the backend will reject.
 
-export const STUDY_BG = '#0d1117'
-export const STUDY_CARD = '#161b22'
-export const STUDY_BORDER = '#1f2630'
-export const STUDY_BORDER_STRONG = '#2d3441'
-export const STUDY_TEXT = '#e6edf3'
-export const STUDY_MUTED = '#8b949e'
-export const STUDY_DIM = '#586069'
-export const STUDY_ACCENT = '#7CA982'        // sage green
-export const STUDY_ACCENT_DIM = '#4f6e54'
-export const STUDY_ACCENT_FAINT = 'rgba(124, 169, 130, 0.12)'
-export const STUDY_COMPARE_A = '#7CA982'
-export const STUDY_COMPARE_B = '#c08a5a'     // warm clay against sage
+// Rubber Brass palette (light "gym hardware") for the Study page. Graphite is
+// the primary mark, brass the warm second series.
+export const STUDY_BG = '#f7f8f4'
+export const STUDY_CARD = '#ffffff'
+export const STUDY_BORDER = '#d5dcd2'
+export const STUDY_BORDER_STRONG = '#b0bab0'
+export const STUDY_TEXT = '#151817'
+export const STUDY_MUTED = '#58615b'
+export const STUDY_DIM = '#8a948c'
+export const STUDY_ACCENT = '#242825'        // graphite
+export const STUDY_ACCENT_DIM = '#6b726c'
+export const STUDY_ACCENT_FAINT = 'rgba(36, 40, 37, 0.10)'
+export const STUDY_COMPARE_A = '#242825'     // graphite
+export const STUDY_COMPARE_B = '#a77b3f'     // brass against graphite
 
 // Field categories shown in the filter picker, grouped for readability.
 // Keys must match server/research/queryEngine.js FIELD_TABLE.

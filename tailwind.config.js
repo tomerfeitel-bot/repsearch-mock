@@ -4,7 +4,58 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: '#6366f1',
+        // Rubber Brass re-theme. The app was authored dark (gray-950 canvas,
+        // indigo accent). We invert the gray ramp to a light "gym hardware"
+        // surface ramp and point the accent scales at graphite + brass, so the
+        // hundreds of existing utility classes flip to the light palette with
+        // no per-class edits. Hex (not var()) so Tailwind /opacity modifiers
+        // (e.g. bg-gray-950/95, bg-indigo-600/15) keep generating valid colors.
+        brand: '#242825',
+        // Inverted neutral ramp: low shades = dark ink (were light text),
+        // high shades = light surfaces (were dark backgrounds).
+        gray: {
+          50:  '#0d0f0e',
+          100: '#151817', // --text
+          200: '#1e2220',
+          300: '#2c322e',
+          400: '#454c47', // --ink-soft (dim text, hints)
+          500: '#58615b', // --text-muted
+          600: '#8a948c', // dividers / dimmest text
+          700: '#b0bab0', // --border-strong (off-track, strong borders)
+          750: '#c5cdc4', // hover surface
+          800: '#d5dcd2', // --border (borders + light button surface)
+          850: '#e2e7e0', // hover surface
+          900: '#ffffff', // --surface (cards)
+          950: '#f7f8f4', // --bg (page canvas)
+        },
+        // Accent scale → graphite, with brass for the lighter "accent text" shades.
+        indigo: {
+          100: '#ece9e3',
+          200: '#7a5a2c', // brass text (darker for AA on white)
+          300: '#8a6633', // brass text / link hover
+          400: '#242825', // active nav, links, focus border
+          500: '#242825', // --accent
+          600: '#242825', // --accent (primary buttons)
+          700: '#0d0f0e', // pressed
+        },
+        // Semantic scales retuned so /15-style tints + -300 text read on light.
+        emerald: {
+          300: '#2f6e4a', 400: '#2f6e4a', 500: '#506343', 600: '#506343',
+        },
+        amber: {
+          300: '#8a6010', 400: '#8a6010', 500: '#a77b3f', 600: '#a77b3f',
+        },
+        sky: {
+          300: '#2b6a86', 400: '#2b6a86', 500: '#3f7da0', 600: '#3f7da0',
+        },
+        // Upvote accent (Reddit-style). 600 kept default for Avatar fills.
+        orange: {
+          300: '#c2410c', 400: '#c2410c',
+        },
+        red: {
+          300: '#9b463d', 400: '#9b463d', 500: '#9b463d', 600: '#9b463d',
+          900: '#c98f88', 950: '#f0e3e1',
+        },
         // Progress page warm palette
         warm: {
           bg: '#ddd0c2',

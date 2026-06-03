@@ -58,6 +58,16 @@ export default function PaletteCommunity({ P }) {
     ? { background: P.accent, color: P.accentInk, boxShadow: `0 4px 24px rgba(217,124,30,0.22)` }
     : { background: P.accent, color: P.accentInk }
 
+  if (P.style === 'strava') {
+    return <StravaCommunity P={P} r={r} visible={visible} kind={kind} setKind={setKind} sort={sort} setSort={setSort} query={query} setQuery={setQuery} react={react} save={save} composing={composing} setComposing={setComposing} fabStyle={fabStyle} />
+  }
+  if (P.style === 'reddit') {
+    return <ForumCommunity P={P} r={r} visible={visible} kind={kind} setKind={setKind} sort={sort} setSort={setSort} query={query} setQuery={setQuery} vote={vote} react={react} save={save} composing={composing} setComposing={setComposing} fabStyle={fabStyle} />
+  }
+  if (P.style === 'signal') {
+    return <SignalCommunity P={P} r={r} visible={visible} kind={kind} setKind={setKind} sort={sort} setSort={setSort} query={query} setQuery={setQuery} vote={vote} react={react} save={save} composing={composing} setComposing={setComposing} fabStyle={fabStyle} />
+  }
+
   return (
     <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
       <header className="sticky top-0 z-20 px-4 pt-4 pb-3" style={{
@@ -129,6 +139,197 @@ export default function PaletteCommunity({ P }) {
       </button>
 
       {composing && <Composer P={P} r={r} onClose={() => setComposing(false)} />}
+    </div>
+  )
+}
+
+function StravaCommunity({ P, r, visible, kind, setKind, sort, setSort, query, setQuery, react, save, composing, setComposing, fabStyle }) {
+  const featured = visible[0]
+  return (
+    <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+      <header className="px-4 pt-5 pb-3" style={{ background: P.bg }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight">Feed</h1>
+            <p className="text-xs mt-0.5" style={{ color: P.textMuted }}>Following activity and research notes</p>
+          </div>
+          <button className="h-9 px-4 rounded-full text-xs font-bold" style={{ background: P.accent, color: P.accentInk }}>Record</button>
+        </div>
+        <div className="mt-4 grid grid-cols-3 overflow-hidden" style={{ border: `1px solid ${P.border}`, borderRadius: r, background: P.surface }}>
+          {[['12', 'sessions'], ['48k', 'kg volume'], ['9', 'kudos']].map(([v, l], i) => (
+            <div key={l} className="p-3" style={{ borderLeft: i ? `1px solid ${P.border}` : 'none' }}>
+              <div className="text-lg font-black font-mono">{v}</div>
+              <div className="text-[10px]" style={{ color: P.textMuted }}>{l}</div>
+            </div>
+          ))}
+        </div>
+        <FeedControls P={P} r={r} kind={kind} setKind={setKind} sort={sort} setSort={setSort} query={query} setQuery={setQuery} compact />
+      </header>
+
+      {featured && (
+        <section className="px-4 pt-1">
+          <div className="overflow-hidden" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="h-32 p-4 flex flex-col justify-end" style={{ background: `linear-gradient(135deg, ${P.chartFill}, ${P.surfaceAlt})` }}>
+              <div className="text-xs font-semibold" style={{ color: P.textMuted }}>Featured session</div>
+              <div className="text-xl font-black tracking-tight">{featured.title || 'Heavy push day'}</div>
+            </div>
+            <div className="p-3 flex items-center gap-3">
+              <ActivityAvatar P={P} label={featured.username} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold truncate">{featured.username}</div>
+                <div className="text-xs" style={{ color: P.textMuted }}>{timeAgo(featured.created_at)} · {featured.comment_count} comments</div>
+              </div>
+              <button onClick={() => react(featured.id, 'respect')} className="h-9 px-4 rounded-full text-xs font-bold" style={{ background: P.accentSoft, color: P.accent }}>Kudos</button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <ul className="px-4 pt-3 space-y-2.5">
+        {visible.slice(1).map(post => (
+          <li key={post.id} className="p-3.5" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="flex gap-3">
+              <ActivityAvatar P={P} label={post.username} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-xs" style={{ color: P.textMuted }}>
+                  <span className="font-bold" style={{ color: P.text }}>{post.username}</span>
+                  <span>{timeAgo(post.created_at)}</span>
+                </div>
+                <h3 className="mt-1 text-sm font-bold leading-snug">{post.title}</h3>
+                {post.body && <p className="mt-1 text-sm leading-relaxed line-clamp-2" style={{ color: P.textMuted }}>{post.body}</p>}
+                <div className="mt-3 flex items-center gap-2 text-xs font-semibold" style={{ color: P.textMuted }}>
+                  <button onClick={() => react(post.id, 'respect')} style={{ color: post.myReaction === 'respect' ? P.accent : P.textMuted }}>Kudos {post.reactions.respect}</button>
+                  <button onClick={() => save(post.id)} style={{ color: post.saved ? P.accent : P.textMuted }}>Save</button>
+                  <span className="ml-auto font-mono">{post.score} pts</span>
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <button onClick={() => setComposing(true)} aria-label="Create post" className="fixed right-5 bottom-6 z-30 inline-flex items-center gap-2 h-12 pl-4 pr-5 rounded-full font-semibold" style={fabStyle}><IconPlus size={18} /> Post</button>
+      {composing && <Composer P={P} r={r} onClose={() => setComposing(false)} />}
+    </div>
+  )
+}
+
+function ForumCommunity({ P, r, visible, kind, setKind, sort, setSort, query, setQuery, vote, react, save, composing, setComposing, fabStyle }) {
+  return (
+    <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+      <header className="sticky top-0 z-20 px-3 pt-3 pb-2" style={{ background: P.bg, borderBottom: `1px solid ${P.border}` }}>
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-9 rounded-lg flex items-center justify-center font-black" style={{ background: P.accent, color: P.accentInk }}>R</div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-black leading-tight">r/repsearch</h1>
+            <p className="text-[11px]" style={{ color: P.textMuted }}>{visible.length} posts · evidence-first strength talk</p>
+          </div>
+          <button className="h-8 px-3 rounded-full text-xs font-bold" style={{ background: P.accent, color: P.accentInk }}>Join</button>
+        </div>
+        <FeedControls P={P} r={r} kind={kind} setKind={setKind} sort={sort} setSort={setSort} query={query} setQuery={setQuery} />
+      </header>
+      <ul className="px-2 pt-2 space-y-1.5">
+        {visible.map(post => (
+          <PostCard key={post.id} post={post} P={P} r={r} onVote={vote} onReact={react} onSave={save} />
+        ))}
+      </ul>
+      <button onClick={() => setComposing(true)} aria-label="Create post" className="fixed right-5 bottom-6 z-30 inline-flex items-center gap-2 h-12 pl-4 pr-5 rounded-full font-semibold" style={fabStyle}><IconPlus size={18} /> Post</button>
+      {composing && <Composer P={P} r={r} onClose={() => setComposing(false)} />}
+    </div>
+  )
+}
+
+function SignalCommunity({ P, r, visible, kind, setKind, sort, setSort, query, setQuery, vote, react, save, composing, setComposing, fabStyle }) {
+  return (
+    <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+      <header className="px-4 pt-5 pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold" style={{ color: P.accent }}>LIVE BOARD</p>
+            <h1 className="text-2xl font-black tracking-tight">Training Pulse</h1>
+          </div>
+          <div className="h-11 w-11 rounded-full flex items-center justify-center font-black" style={{ background: P.accent, color: P.accentInk }}>IV</div>
+        </div>
+        <div className="mt-4 p-3 overflow-hidden" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+          <div className="h-28 rounded-xl p-3 flex flex-col justify-between" style={{ background: `linear-gradient(135deg, ${P.surfaceAlt}, ${P.heroFade || 'rgba(82,199,184,0.18)'})` }}>
+            <div className="flex items-center gap-2 text-xs font-semibold" style={{ color: P.textMuted }}>
+              <span className="px-2 py-1 rounded-full" style={{ background: P.accent, color: P.accentInk }}>Hot</span>
+              <span>{visible.length} new signals</span>
+            </div>
+            <div>
+              <div className="text-3xl font-black font-mono">+4.8%</div>
+              <div className="text-xs" style={{ color: P.textMuted }}>bench progression in matched cohorts</div>
+            </div>
+          </div>
+        </div>
+        <FeedControls P={P} r={r} kind={kind} setKind={setKind} sort={sort} setSort={setSort} query={query} setQuery={setQuery} compact />
+      </header>
+      <ul className="px-4 pt-1 space-y-2.5">
+        {visible.map(post => (
+          <li key={post.id} className="p-3" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="flex items-start gap-3">
+              <div className="w-12 shrink-0 text-center">
+                <button onClick={() => vote(post.id, 1)} className="h-8 w-8 rounded-full" style={{ background: post.viewer_vote === 1 ? P.accent : P.surfaceAlt, color: post.viewer_vote === 1 ? P.accentInk : P.textMuted }}><IconUp size={16} /></button>
+                <div className="text-xs font-black font-mono mt-1">{compactScore(post.score)}</div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-[11px]" style={{ color: P.textMuted }}>
+                  <span className="font-bold" style={{ color: P.accent }}>{KIND_META[post.kind]?.label || post.kind}</span>
+                  <span>u/{post.username}</span>
+                </div>
+                <h3 className="mt-1 text-sm font-black leading-snug">{post.title}</h3>
+                {post.body && <p className="mt-1 text-xs leading-relaxed line-clamp-2" style={{ color: P.textMuted }}>{post.body}</p>}
+                <div className="mt-3 flex gap-1.5">
+                  {REACTIONS.map(r2 => (
+                    <button key={r2.key} onClick={() => react(post.id, r2.key)} className="h-7 px-2 rounded-full text-xs font-bold" style={{ background: post.myReaction === r2.key ? P.accent : P.surfaceAlt, color: post.myReaction === r2.key ? P.accentInk : P.textMuted }}>{post.reactions[r2.key]}</button>
+                  ))}
+                  <button onClick={() => save(post.id)} className="ml-auto h-7 w-7 rounded-full flex items-center justify-center" style={{ color: post.saved ? P.accent : P.textMuted }}><IconBookmark size={14} filled={post.saved} /></button>
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <button onClick={() => setComposing(true)} aria-label="Create post" className="fixed right-5 bottom-6 z-30 inline-flex items-center gap-2 h-12 pl-4 pr-5 rounded-full font-semibold" style={fabStyle}><IconPlus size={18} /> Post</button>
+      {composing && <Composer P={P} r={r} onClose={() => setComposing(false)} />}
+    </div>
+  )
+}
+
+function FeedControls({ P, r, kind, setKind, sort, setSort, query, setQuery, compact }) {
+  return (
+    <>
+      <div className="mt-3 flex items-center gap-2 px-3 h-10" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+        <IconSearch size={16} style={{ color: P.textMuted }} />
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search posts" className="flex-1 bg-transparent text-sm outline-none" style={{ color: P.text }} />
+        {query && <button onClick={() => setQuery('')} style={{ color: P.textMuted }}><IconClose size={15} /></button>}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar flex-1">
+          {KINDS.map(k => {
+            const on = kind === k
+            const meta = KIND_META[k]
+            return (
+              <button key={k} onClick={() => setKind(k)} className="shrink-0 h-8 px-3 text-xs font-bold" style={{ borderRadius: r * 2, background: on ? P.accent : P.surface, color: on ? P.accentInk : P.textMuted, border: on ? 'none' : `1px solid ${P.border}` }}>
+                {k === 'all' ? 'All' : meta?.label || k}
+              </button>
+            )
+          })}
+        </div>
+        {!compact && (
+          <div className="flex gap-0.5 p-0.5" style={{ background: P.surfaceAlt, border: `1px solid ${P.border}`, borderRadius: r }}>
+            {SORTS.map(s => <button key={s} onClick={() => setSort(s)} className="h-7 px-2 text-xs font-bold" style={{ borderRadius: r - 2, background: sort === s ? P.accent : 'transparent', color: sort === s ? P.accentInk : P.textMuted }}>{s}</button>)}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+function ActivityAvatar({ P, label }) {
+  return (
+    <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-xs font-black" style={{ background: P.accentSoft, color: P.accent }}>
+      {label.slice(0, 2).toUpperCase()}
     </div>
   )
 }

@@ -259,7 +259,7 @@ export default function TemplateBuilder() {
             Close
           </button>
           <div className="text-center min-w-0">
-            <div className="text-lg font-bold text-white truncate">{template.name || 'Untitled template'}</div>
+            <div className="text-lg font-bold text-gray-100 truncate">{template.name || 'Untitled template'}</div>
             <div className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5">
               <span className="font-mono tabular-nums">{exercises.length}</span> exercises - <span className="font-mono tabular-nums">{totals.setCount}</span> sets
             </div>
@@ -331,13 +331,13 @@ function BuilderMeta({ template, onChange }) {
         value={template.name}
         onChange={e => onChange({ name: e.target.value })}
         placeholder="Template name"
-        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-white font-semibold outline-none"
+        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-gray-100 font-semibold outline-none"
       />
       <input
         value={template.description}
         onChange={e => onChange({ description: e.target.value })}
         placeholder="Short note: who this is for, how to run it"
-        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+        className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-2.5 text-sm text-gray-100 outline-none"
       />
       <div className="grid grid-cols-3 gap-1.5">
         {STRICTNESS.map(s => (
@@ -363,7 +363,7 @@ function SaveTemplateSheet({ open, onClose, template, onChange, onSave, saving }
           <input
             value={template.name}
             onChange={e => onChange({ name: e.target.value })}
-            className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-3 text-white outline-none"
+            className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-3 text-gray-100 outline-none"
           />
         </label>
         <div className="space-y-2">

@@ -56,7 +56,7 @@ export default function PublicWorkout() {
         <Link to={`/user/${owner.username}`} className="flex items-center gap-2">
           <Avatar username={owner.username} size="sm" />
           <div>
-            <div className="text-sm font-semibold text-white">{owner.username}</div>
+            <div className="text-sm font-semibold text-gray-100">{owner.username}</div>
             <div className="text-[11px] text-gray-500 font-mono">{workout.created_at ? timeAgo(workout.created_at) : workout.date}</div>
           </div>
         </Link>
@@ -66,7 +66,7 @@ export default function PublicWorkout() {
         <section className="rounded-2xl bg-gray-900 border border-gray-800 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="font-mono tabular-nums text-5xl font-bold text-white">{workout.duration_min || 0}<span className="text-base text-gray-500"> min</span></div>
+              <div className="font-mono tabular-nums text-5xl font-bold text-gray-100">{workout.duration_min || 0}<span className="text-base text-gray-500"> min</span></div>
               <div className="mt-2 text-sm text-gray-300">{workout.workout_day || workout.workout_split_type || 'Workout'} <span className="text-gray-500">· {totalSets} sets</span></div>
             </div>
             <span className="text-[11px] uppercase tracking-wider px-2 py-1 rounded-full bg-gray-800 text-gray-400">{workout.visibility}</span>
@@ -84,7 +84,7 @@ export default function PublicWorkout() {
               <div key={exerciseId} className="rounded-2xl bg-gray-900 border border-gray-800 p-4" style={{ borderLeft: `4px solid ${muscleColor(exercise?.primary_muscle)}` }}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="font-semibold text-white">{exercise?.name || exerciseId}</h2>
+                    <h2 className="font-semibold text-gray-100">{exercise?.name || exerciseId}</h2>
                     <p className="text-xs text-gray-500">{exercise?.primary_muscle || 'Exercise'} · {exercise?.equipment_type || 'Equipment'}</p>
                   </div>
                   <span className="text-xs font-mono text-gray-500">{sets.length} sets</span>

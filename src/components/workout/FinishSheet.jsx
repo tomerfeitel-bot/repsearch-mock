@@ -36,7 +36,7 @@ export default function FinishSheet({ open, onClose, onSave, saving, error = '',
             value={notes}
             onChange={e => setNotes(e.target.value)}
             placeholder="How did it go?"
-            className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 text-white py-3 px-4 rounded-2xl outline-none resize-none"
+            className="w-full bg-gray-900 border border-gray-800 focus:border-indigo-600 text-gray-100 py-3 px-4 rounded-2xl outline-none resize-none"
           />
         </Field>
         <Field label="Visibility">
@@ -170,7 +170,7 @@ function FinishAudit({ audit, onJumpToItem }) {
 function MiniStat({ label, value }) {
   return (
     <div className="rounded-xl bg-gray-950 px-2 py-2">
-      <div className="truncate font-mono tabular-nums text-sm font-semibold text-white">{value}</div>
+      <div className="truncate font-mono tabular-nums text-sm font-semibold text-gray-100">{value}</div>
       <div className="mt-0.5 text-[10px] uppercase tracking-wider text-gray-500">{label}</div>
     </div>
   )

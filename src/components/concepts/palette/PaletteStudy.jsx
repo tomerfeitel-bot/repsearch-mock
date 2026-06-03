@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ErrorBar } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { IconSearch, IconPlus, IconClose } from '../cohesive/_shared.jsx'
 
 const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Triceps', 'Biceps', 'Core']
@@ -55,6 +55,54 @@ export default function PaletteStudy({ P }) {
     setFilters(f => f.filter(x => x.id !== id))
   }
 
+  if (P.style === 'strava') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3">
+          <div className="flex items-end justify-between">
+            <div><div className="text-xs font-semibold" style={{ color: P.textMuted }}>Population research</div><h1 className="text-2xl font-black tracking-tight">Study</h1></div>
+            <div className="text-right"><div className="text-2xl font-black font-mono">4.2k</div><div className="text-[10px]" style={{ color: P.textMuted }}>athletes</div></div>
+          </div>
+          <StudyTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <StudyBody tab={tab} P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} selectedMuscle={selectedMuscle} setSelectedMuscle={setSelectedMuscle} filters={filters} addFilter={addFilter} removeFilter={removeFilter} hasResult={hasResult} setHasResult={setHasResult} />
+      </div>
+    )
+  }
+
+  if (P.style === 'reddit') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="sticky top-0 z-20 px-3 pt-3 pb-2" style={{ background: P.bg, borderBottom: `1px solid ${P.border}` }}>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg flex items-center justify-center font-black" style={{ background: P.accent, color: P.accentInk }}>S</div>
+            <div><h1 className="text-lg font-black">r/studybench</h1><p className="text-[11px]" style={{ color: P.textMuted }}>query builder · saved evidence</p></div>
+          </div>
+          <StudyTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <StudyBody tab={tab} P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} selectedMuscle={selectedMuscle} setSelectedMuscle={setSelectedMuscle} filters={filters} addFilter={addFilter} removeFilter={removeFilter} hasResult={hasResult} setHasResult={setHasResult} compact />
+      </div>
+    )
+  }
+
+  if (P.style === 'signal') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3">
+          <div className="p-3" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="rounded-2xl p-4" style={{ background: `linear-gradient(135deg, ${P.surfaceAlt}, ${P.heroFade || 'rgba(143,216,78,0.18)'})` }}>
+              <div className="text-xs font-bold" style={{ color: P.accent }}>RESEARCH ENGINE</div>
+              <h1 className="mt-2 text-2xl font-black">Study Console</h1>
+              <p className="mt-1 text-xs" style={{ color: P.textMuted }}>Stack filters, compare cohorts, protect sample size.</p>
+            </div>
+          </div>
+          <StudyTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <StudyBody tab={tab} P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} selectedMuscle={selectedMuscle} setSelectedMuscle={setSelectedMuscle} filters={filters} addFilter={addFilter} removeFilter={removeFilter} hasResult={hasResult} setHasResult={setHasResult} />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
       <header className="sticky top-0 z-20 px-4 pt-4 pb-3" style={{
@@ -86,13 +134,45 @@ export default function PaletteStudy({ P }) {
       <div className="px-4 pt-4">
         {tab === 'For You' && <ForYouTab P={P} r={r} cardStyle={cardStyle} />}
         {tab === 'Explore' && (
-          <ExploreTab P={P} r={r} cardStyle={cardStyle} isMarine={isMarine} isGrove={isGrove}
+          <ExploreTab P={P} r={r} cardStyle={cardStyle} isGrove={isGrove}
             selectedMuscle={selectedMuscle} setSelectedMuscle={setSelectedMuscle}
             filters={filters} addFilter={addFilter} removeFilter={removeFilter}
             hasResult={hasResult} setHasResult={setHasResult} />
         )}
-        {tab === 'Evidence' && <EvidenceTab P={P} r={r} cardStyle={cardStyle} />}
+        {tab === 'Evidence' && <EvidenceTab P={P} cardStyle={cardStyle} />}
       </div>
+    </div>
+  )
+}
+
+function StudyTabs({ P, r, tab, setTab }) {
+  return (
+    <div className="mt-3 flex gap-1 p-1" style={{ background: P.surfaceAlt, border: `1px solid ${P.border}`, borderRadius: r + 2 }}>
+      {['For You', 'Explore', 'Evidence'].map(t => {
+        const on = tab === t
+        return (
+          <button key={t} onClick={() => setTab(t)} aria-pressed={on}
+            className="flex-1 h-8 text-xs font-semibold transition-colors"
+            style={{ borderRadius: r, background: on ? P.accent : 'transparent', color: on ? P.accentInk : P.textMuted }}>
+            {t}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function StudyBody({ tab, P, r, cardStyle, isGrove, selectedMuscle, setSelectedMuscle, filters, addFilter, removeFilter, hasResult, setHasResult, compact }) {
+  return (
+    <div className={`${compact ? 'px-2 pt-2' : 'px-4 pt-4'}`}>
+      {tab === 'For You' && <ForYouTab P={P} r={r} cardStyle={cardStyle} />}
+      {tab === 'Explore' && (
+        <ExploreTab P={P} r={r} cardStyle={cardStyle} isGrove={isGrove}
+          selectedMuscle={selectedMuscle} setSelectedMuscle={setSelectedMuscle}
+          filters={filters} addFilter={addFilter} removeFilter={removeFilter}
+          hasResult={hasResult} setHasResult={setHasResult} />
+      )}
+      {tab === 'Evidence' && <EvidenceTab P={P} cardStyle={cardStyle} />}
     </div>
   )
 }
@@ -130,7 +210,7 @@ function ForYouTab({ P, r, cardStyle }) {
   )
 }
 
-function ExploreTab({ P, r, cardStyle, isMarine, isGrove, selectedMuscle, setSelectedMuscle, filters, addFilter, removeFilter, hasResult, setHasResult }) {
+function ExploreTab({ P, r, cardStyle, isGrove, selectedMuscle, setSelectedMuscle, filters, addFilter, removeFilter, hasResult, setHasResult }) {
   return (
     <div className="space-y-3">
       {/* Exercise picker */}
@@ -168,8 +248,8 @@ function ExploreTab({ P, r, cardStyle, isMarine, isGrove, selectedMuscle, setSel
       <div style={cardStyle} className="p-4">
         <SectionLabel P={P} isGrove={isGrove}>Cohort filters</SectionLabel>
         <div className="space-y-2">
-          {filters.map((f, i) => (
-            <FilterRow key={f.id} filter={f} idx={i} P={P} r={r} isMarine={isMarine}
+          {filters.map((f) => (
+            <FilterRow key={f.id} filter={f} P={P} r={r}
               onRemove={() => removeFilter(f.id)} />
           ))}
         </div>
@@ -214,7 +294,7 @@ function ExploreTab({ P, r, cardStyle, isMarine, isGrove, selectedMuscle, setSel
                 <YAxis tick={{ fontSize: 10, fill: P.textMuted }} axisLine={false} tickLine={false} width={32} />
                 <Tooltip
                   contentStyle={{ background: P.surface, border: `1px solid ${P.borderStrong}`, borderRadius: r, fontSize: 11 }}
-                  formatter={(v, n) => [v.toFixed(1) + '%', 'Rate']}
+                  formatter={(v) => [v.toFixed(1) + '%', 'Rate']}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
                   {MOCK_RESULTS.map((_, i) => (
@@ -235,7 +315,7 @@ function ExploreTab({ P, r, cardStyle, isMarine, isGrove, selectedMuscle, setSel
   )
 }
 
-function FilterRow({ filter, idx, P, r, isMarine, onRemove }) {
+function FilterRow({ filter, P, r, onRemove }) {
   return (
     <div className="flex items-center gap-1.5">
       {/* Field */}
@@ -272,7 +352,7 @@ function FilterRow({ filter, idx, P, r, isMarine, onRemove }) {
   )
 }
 
-function EvidenceTab({ P, r, cardStyle }) {
+function EvidenceTab({ P, cardStyle }) {
   const saved = [
     { q: 'Does RIR 1-2 produce more progression than RIR 3-4 on compounds?', result: '5.1% vs 3.7% · n=1,201', saved: '2d ago' },
     { q: 'How does training frequency interact with experience level?', result: '4–5×/wk optimal for intermediate · n=887', saved: '5d ago' },

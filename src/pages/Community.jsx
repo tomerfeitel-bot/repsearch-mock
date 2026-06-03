@@ -8,12 +8,15 @@ import PostCard from '../components/community/PostCard.jsx'
 import PostComposer from '../components/community/PostComposer.jsx'
 import DailyCheckinModal from '../components/community/DailyCheckinModal.jsx'
 import { Sheet } from '../components/ui/Sheet.jsx'
+import BubbleHeader, { BubbleAction } from '../components/ui/BubbleHeader.jsx'
+import PillTabs from '../components/ui/PillTabs.jsx'
+import PlansTab from '../components/community/PlansTab.jsx'
 import { POST_LABELS } from '../lib/postLabels.js'
 
-const TOP_TABS = [{ v: 'feed', label: 'Feed' }, { v: 'saved', label: 'Saved' }]
+const TOP_TABS = [{ v: 'feed', label: 'Feed' }, { v: 'saved', label: 'Saved' }, { v: 'plans', label: 'Plans' }]
 const SCOPES = [{ v: 'following', label: 'Following' }, { v: 'global', label: 'Global' }]
 const SORTS = [{ v: 'hot', label: 'Hot' }, { v: 'new', label: 'New' }, { v: 'top', label: 'Top' }]
-const KINDS = [{ v: '', label: 'All' }, { v: 'discussion', label: 'Discussion' }, { v: 'workout', label: 'Workout' }, { v: 'program', label: 'Program' }, { v: 'template', label: 'Template' }, { v: 'study', label: 'Study' }]
+const KINDS = [{ v: '', label: 'All' }, { v: 'discussion', label: 'Discussion' }, { v: 'workout', label: 'Workout' }, { v: 'study', label: 'Study' }]
 
 export default function Community() {
   const toast = useToast()
@@ -117,26 +120,29 @@ export default function Community() {
 
   return (
     <div className="min-h-screen pb-24">
-      <header className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-gray-800">
-        <div className="px-4 safe-pt-4 pb-2 flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-white flex-1">Community</h1>
-          <button
+      <BubbleHeader
+        label="Live board"
+        title="Community"
+        action={
+          <BubbleAction
             onClick={() => { setComposeKind(null); setComposeWorkoutId(null); setComposeOpen(true) }}
-            className="w-9 h-9 rounded-full border border-gray-800 bg-gray-900 text-gray-200 hover:border-indigo-500 hover:text-white transition-colors"
             aria-label="Create a post"
-          >+</button>
-        </div>
-        <div className="px-4 pb-3 flex gap-1">
-          {TOP_TABS.map(t => (
-            <button key={t.v} onClick={() => changeTab(t.v)} className={'px-4 py-1.5 text-sm font-medium border-b-2 transition-colors ' + (tab === t.v ? 'text-white border-indigo-500' : 'text-gray-500 border-transparent hover:text-gray-300')}>{t.label}</button>
-          ))}
-        </div>
-      </header>
+          >+ Post</BubbleAction>
+        }
+      />
+      <div className="px-4 pb-1">
+        <PillTabs
+          tabs={TOP_TABS.map(t => ({ value: t.v, label: t.label }))}
+          value={tab}
+          onChange={changeTab}
+          ariaLabel="Community feed scope"
+        />
+      </div>
 
       {tab === 'feed' && (
         <div className="px-4 pt-4 space-y-2">
           <form onSubmit={runSearch} className="flex gap-2">
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts" className="min-h-10 min-w-0 w-0 flex-1 rounded-2xl bg-gray-900 border border-gray-800 px-4 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:border-indigo-500" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts" className="min-h-10 min-w-0 w-0 flex-1 rounded-2xl bg-gray-900 border border-gray-800 px-4 text-sm text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500" />
             <button type="button" onClick={() => setFiltersOpen(true)} className="relative min-h-10 shrink-0 px-3 rounded-2xl bg-gray-900 border border-gray-800 text-sm font-semibold text-gray-200 hover:border-indigo-500">
               Filter
               {filterCount > 0 && <span className="ml-1 text-indigo-300">{filterCount}</span>}
@@ -155,22 +161,26 @@ export default function Community() {
         </div>
       )}
 
-      <div className="px-4 pt-4">
-        {listLoading && list.length === 0 && <Skeleton />}
-        {!listLoading && list.length === 0 && (
-          <div className="text-center py-16 text-sm text-gray-500 space-y-4">
-            <div>{tab === 'saved' ? 'No saved posts yet.' : 'Nothing here yet — start a discussion or share your training.'}</div>
-            {tab === 'feed' && <button onClick={() => setComposeOpen(true)} className="px-4 py-2 rounded-full bg-gray-900 border border-gray-800 text-gray-200 text-xs font-semibold hover:border-indigo-500">Create a post</button>}
-          </div>
-        )}
-        {list.map(item => <PostCard key={item.id} item={item} onVote={onVote} onToggleSave={onToggleSave} />)}
+      {tab === 'plans' ? (
+        <PlansTab />
+      ) : (
+        <div className="px-4 pt-4">
+          {listLoading && list.length === 0 && <Skeleton />}
+          {!listLoading && list.length === 0 && (
+            <div className="text-center py-16 text-sm text-gray-500 space-y-4">
+              <div>{tab === 'saved' ? 'No saved posts yet.' : 'Nothing here yet — start a discussion or share your training.'}</div>
+              {tab === 'feed' && <button onClick={() => setComposeOpen(true)} className="px-4 py-2 rounded-full bg-gray-900 border border-gray-800 text-gray-200 text-xs font-semibold hover:border-indigo-500">Create a post</button>}
+            </div>
+          )}
+          {list.map(item => <PostCard key={item.id} item={item} onVote={onVote} onToggleSave={onToggleSave} />)}
 
-        {tab === 'feed' && feedMeta.hasMore && (
-          <button onClick={handleLoadMore} disabled={loadingMore || feedLoading} className="w-full mt-2 py-3 rounded-2xl bg-gray-900 border border-gray-800 text-sm font-semibold text-gray-300 disabled:opacity-60">
-            {loadingMore ? 'Loading...' : 'Load more'}
-          </button>
-        )}
-      </div>
+          {tab === 'feed' && feedMeta.hasMore && (
+            <button onClick={handleLoadMore} disabled={loadingMore || feedLoading} className="w-full mt-2 py-3 rounded-2xl bg-gray-900 border border-gray-800 text-sm font-semibold text-gray-300 disabled:opacity-60">
+              {loadingMore ? 'Loading...' : 'Load more'}
+            </button>
+          )}
+        </div>
+      )}
 
       <DailyCheckinModal open={showDailyModal} loading={dailyLoading} onClose={dismissModal} onSubmit={submitCheckin} />
       <FilterSheet

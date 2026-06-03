@@ -26,7 +26,7 @@ export default function CelebrationCard({ visible, prsHit = [], summary, onDone,
       <div ref={rootRef} className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-gray-800 bg-gray-950 shadow-2xl shadow-black/70">
         <div className="border-b border-gray-800 px-4 py-4">
           <div className="text-xs uppercase tracking-wider text-indigo-300 font-semibold">{hasPR ? 'PRs hit' : 'Session complete'}</div>
-          <h2 className="mt-1 text-2xl font-bold text-white">Post-workout summary</h2>
+          <h2 className="mt-1 text-2xl font-bold text-gray-100">Post-workout summary</h2>
         </div>
 
         <div className="space-y-4 p-4">
@@ -48,7 +48,7 @@ export default function CelebrationCard({ visible, prsHit = [], summary, onDone,
               {prsHit.map((pr, i) => (
                 <div key={i} className="rounded-xl border border-indigo-700/50 bg-indigo-600/15 px-3 py-2">
                   <div className="text-sm text-indigo-200 font-medium">{pr.exercise_name || pr.exercise_id}</div>
-                  <div className="font-mono tabular-nums text-white">{pr.weight_kg}kg x {pr.reps}</div>
+                  <div className="font-mono tabular-nums text-gray-100">{pr.weight_kg}kg x {pr.reps}</div>
                 </div>
               ))}
             </section>
@@ -70,7 +70,7 @@ export default function CelebrationCard({ visible, prsHit = [], summary, onDone,
             ) : directGroups.map(group => (
               <div key={group.group} className="rounded-xl border border-gray-800 bg-gray-900 px-3 py-3">
                 <div className="flex items-center justify-between">
-                  <div className="font-semibold text-white" style={{ color: muscleColor(group.group) }}>{group.group}</div>
+                  <div className="font-semibold text-gray-100" style={{ color: muscleColor(group.group) }}>{group.group}</div>
                   <div className="font-mono tabular-nums text-sm text-gray-300">{group.total} sets</div>
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-1">
@@ -120,7 +120,7 @@ export default function CelebrationCard({ visible, prsHit = [], summary, onDone,
 function Stat({ label, value }) {
   return (
     <div className="rounded-xl bg-gray-900 px-2 py-3">
-      <div className="truncate font-mono tabular-nums text-lg font-bold text-white">{value}</div>
+      <div className="truncate font-mono tabular-nums text-lg font-bold text-gray-100">{value}</div>
       <div className="mt-1 text-[10px] uppercase tracking-wider text-gray-500">{label}</div>
     </div>
   )
@@ -130,7 +130,7 @@ function Panel({ label, value }) {
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900 px-3 py-3">
       <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
-      <div className="mt-1 font-mono tabular-nums text-lg font-semibold text-white">{value}</div>
+      <div className="mt-1 font-mono tabular-nums text-lg font-semibold text-gray-100">{value}</div>
     </div>
   )
 }

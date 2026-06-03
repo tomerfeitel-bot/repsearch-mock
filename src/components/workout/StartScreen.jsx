@@ -243,9 +243,12 @@ export default function StartScreen({ onStart, restoreError = '' }) {
 
   return (
     <div className="px-4 safe-pt-4 pb-24 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Start a workout</h1>
-        <p className="text-sm text-gray-500 mt-1">Pick the next planned session, a template, or today's split.</p>
+      <div className="p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, var(--surface-alt), var(--hero-fade))' }}>
+          <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>New session</span>
+          <h1 className="mt-1 text-2xl font-black tracking-tight" style={{ color: 'var(--text)' }}>Start a workout</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Pick the next planned session, a template, or today's split.</p>
+        </div>
       </div>
       {(restoreError || startLoadError) && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
@@ -261,7 +264,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
           ) : activeProgram?.completed ? (
             <div className="w-full bg-emerald-600/15 border border-emerald-500/40 rounded-2xl p-4">
               <div className="text-[11px] uppercase tracking-wider text-emerald-200/80 font-semibold">{activeProgram.program?.name}</div>
-              <div className="mt-1 font-semibold text-white text-lg">Program Complete!</div>
+              <div className="mt-1 font-semibold text-gray-100 text-lg">Program Complete!</div>
               <div className="text-xs text-emerald-100/80 mt-0.5">View summary or restart.</div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
@@ -286,7 +289,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
               className="w-full text-left bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 border border-indigo-400/50 rounded-2xl p-4 transition-colors"
             >
               <div className="text-[11px] uppercase tracking-wider text-indigo-100/80 font-semibold">{activeProgram.program?.name}</div>
-              <div className="mt-1 font-semibold text-white text-lg">{activeProgram.next_session?.session_label || activeProgram.next_session?.template_name || 'Next session'}</div>
+              <div className="mt-1 font-semibold text-gray-100 text-lg">{activeProgram.next_session?.session_label || activeProgram.next_session?.template_name || 'Next session'}</div>
               <div className="text-xs text-indigo-100/80 mt-0.5">
                 {activeProgram.phase?.next_suggested_at ? `Suggested ${formatSuggestedTime(activeProgram.phase.next_suggested_at)}` : 'Run the next programmed workout.'}
               </div>
@@ -312,7 +315,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
                   className="w-full text-left p-4 flex items-center justify-between hover:bg-gray-850 active:bg-gray-800 transition-colors"
                 >
                   <div>
-                    <div className="font-semibold text-white text-lg">{day}</div>
+                    <div className="font-semibold text-gray-100 text-lg">{day}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{DAY_HINTS[day] || ''}</div>
                   </div>
                   <span className="text-gray-500 text-lg font-mono leading-none">
@@ -325,7 +328,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
                     <button
                       type="button"
                       onClick={() => onStart({ dayLabel: day, exercises: [] })}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-750 active:bg-gray-700 text-sm font-semibold text-white transition-colors text-center"
+                      className="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-750 active:bg-gray-700 text-sm font-semibold text-gray-100 transition-colors text-center"
                     >
                       Start blank {day}
                     </button>
@@ -344,7 +347,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
                                 className="w-full text-left bg-gray-900 hover:bg-gray-850 active:bg-gray-800 border border-gray-800 rounded-xl p-3 flex justify-between items-center transition-colors"
                               >
                                 <div className="min-w-0 flex-1 pr-2">
-                                  <div className="font-medium text-sm text-white truncate">{t.name || 'Template'}</div>
+                                  <div className="font-medium text-sm text-gray-100 truncate">{t.name || 'Template'}</div>
                                   <div className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1.5">
                                     {showLabel && (
                                       <span className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">{otherLabel}</span>
@@ -374,7 +377,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
                               >
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="min-w-0">
-                                    <div className="font-medium text-sm text-white truncate">{getItemDayLabel(w) || w.name || 'Workout'}</div>
+                                    <div className="font-medium text-sm text-gray-100 truncate">{getItemDayLabel(w) || w.name || 'Workout'}</div>
                                     <div className="text-[11px] text-gray-500 mt-0.5 truncate">
                                       {summary.exerciseNames.slice(0, 3).join(', ')}
                                       {summary.exerciseNames.length > 3 ? ` +${summary.exerciseNames.length - 3}` : ''}
@@ -449,7 +452,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="font-medium text-white truncate">{w.workout_day || w.name || 'Workout'}</div>
+                    <div className="font-medium text-gray-100 truncate">{w.workout_day || w.name || 'Workout'}</div>
                     <div className="text-xs text-gray-500 mt-0.5 truncate">
                       {summary.exerciseNames.slice(0, 4).join(', ')}
                       {summary.exerciseNames.length > 4 ? ` +${summary.exerciseNames.length - 4}` : ''}

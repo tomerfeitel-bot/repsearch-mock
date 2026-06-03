@@ -95,7 +95,7 @@ export default function PostComposer({ open, onClose, onPosted, initialKind = nu
             <div className="text-sm text-gray-400">What do you want to share?</div>
             {POST_KINDS.map(k => (
               <button key={k.kind} onClick={() => setKind(k.kind)} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 hover:border-indigo-500 p-4 transition-colors">
-                <div className="font-semibold text-white">{k.label}</div>
+                <div className="font-semibold text-gray-100">{k.label}</div>
                 <div className="mt-1 text-xs text-gray-500">{k.blurb}</div>
               </button>
             ))}
@@ -140,14 +140,14 @@ export default function PostComposer({ open, onClose, onPosted, initialKind = nu
         {kind && (
           <div className="space-y-3">
             {kind === 'discussion' && (
-              <input value={title} onChange={e => setTitle(e.target.value.slice(0, 160))} placeholder="Title" className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 text-white py-3 px-4 rounded-2xl outline-none" />
+              <input value={title} onChange={e => setTitle(e.target.value.slice(0, 160))} placeholder="Title" className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 text-gray-100 py-3 px-4 rounded-2xl outline-none" />
             )}
             <textarea
               value={body}
               onChange={e => setBody(e.target.value.slice(0, 5000))}
               rows={3}
               placeholder={kind === 'discussion' ? 'Say more (optional)' : 'Why / open question (optional)'}
-              className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 text-white py-3 px-4 rounded-2xl outline-none resize-none"
+              className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 text-gray-100 py-3 px-4 rounded-2xl outline-none resize-none"
             />
             <div>
               <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Labels</div>
@@ -191,7 +191,7 @@ function LabeledSelect({ label, value, onChange, options }) {
   return (
     <label className="block">
       <span className="text-[11px] text-gray-500">{label}</span>
-      <select value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-gray-900 border border-gray-800 rounded-lg px-2 py-2 text-sm text-white outline-none">
+      <select value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-gray-900 border border-gray-800 rounded-lg px-2 py-2 text-sm text-gray-100 outline-none">
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
     </label>

@@ -208,7 +208,7 @@ export default function ExerciseCard({
         <div className="flex-1 p-3 pl-3 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-white truncate">{exercise.exerciseName}</div>
+              <div className="font-semibold text-gray-100 truncate">{exercise.exerciseName}</div>
               <div className="text-xs text-gray-500 mt-0.5">
                 {muscle}{exercise.equipment_type ? ` - ${exercise.equipment_type}` : ''}
               </div>
@@ -320,7 +320,7 @@ function SetActionSheet({ set, setNumber, onToggleWarmup, onDelete, onClose }) {
           <button
             type="button"
             onClick={onToggleWarmup}
-            className="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3.5 text-sm font-semibold text-white text-left active:bg-gray-700"
+            className="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3.5 text-sm font-semibold text-gray-100 text-left active:bg-gray-700"
           >
             {isWarmup ? 'Mark as working set' : 'Mark as warmup'}
           </button>
@@ -365,7 +365,7 @@ function PrecisionDrawer({
       <div className="relative w-full max-h-[82vh] overflow-y-auto rounded-2xl border border-gray-800 bg-gray-950 shadow-2xl shadow-black/60">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-800 bg-gray-950/95 px-4 py-3 backdrop-blur">
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-white">{exerciseName}</div>
+            <div className="truncate text-sm font-semibold text-gray-100">{exerciseName}</div>
             <div className="text-xs text-gray-500">Set {setNumber} precision</div>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm font-semibold text-gray-300 hover:bg-gray-700">
@@ -482,7 +482,7 @@ function ResearchInput({ field, value, onChange }) {
         value={value || ''}
         placeholder={field.placeholder}
         onChange={e => onChange(e.target.value)}
-        className="w-full bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-2 py-1.5 text-sm text-white outline-none"
+        className="w-full bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-2 py-1.5 text-sm text-gray-100 outline-none"
       />
     )
   }
@@ -490,7 +490,7 @@ function ResearchInput({ field, value, onChange }) {
     <select
       value={value ?? ''}
       onChange={e => onChange(e.target.value || null)}
-      className="w-full bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-2 py-1.5 text-sm text-white outline-none"
+      className="w-full bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-2 py-1.5 text-sm text-gray-100 outline-none"
     >
       <option value="">None</option>
       {field.options.map(o => <option key={o} value={o}>{formatResearchValue(field.key, o)}</option>)}
@@ -533,11 +533,11 @@ function RestWheel({ value, onChange }) {
 function RirTicker({ value, onChange }) {
   const options = [
     { value: 0, color: 'bg-red-600 text-white border-red-500' },
-    { value: 1, color: 'bg-orange-600 text-white border-orange-500' },
+    { value: 1, color: 'bg-orange-600 text-gray-100 border-orange-500' },
     { value: 2, color: 'bg-amber-500 text-gray-950 border-amber-400' },
-    { value: 3, color: 'bg-lime-600 text-white border-lime-500' },
+    { value: 3, color: 'bg-lime-600 text-gray-100 border-lime-500' },
     { value: 4, color: 'bg-emerald-600 text-white border-emerald-500' },
-    { value: '5+', color: 'bg-sky-600 text-white border-sky-500' },
+    { value: '5+', color: 'bg-sky-600 text-gray-100 border-sky-500' },
   ]
   return (
     <div className="grid grid-cols-6 gap-1">

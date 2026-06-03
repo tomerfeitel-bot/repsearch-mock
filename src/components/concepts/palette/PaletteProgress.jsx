@@ -11,6 +11,56 @@ export default function PaletteProgress({ P }) {
   const mono = P.density === 'compact' || P.tags.includes('mono')
   const font = mono ? 'font-mono' : ''
 
+  if (P.style === 'strava') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3" style={{ background: P.bg }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold" style={{ color: P.textMuted }}>This training block</div>
+              <h1 className="text-2xl font-black tracking-tight">Progress</h1>
+            </div>
+            <div className="text-right"><div className="text-2xl font-black font-mono" style={{ color: P.accent }}>+7.5</div><div className="text-[10px]" style={{ color: P.textMuted }}>bench kg</div></div>
+          </div>
+          <ProgressTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <ProgressBody tab={tab} P={P} r={r} font={font} />
+      </div>
+    )
+  }
+
+  if (P.style === 'reddit') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="sticky top-0 z-20 px-3 pt-3 pb-2" style={{ background: P.bg, borderBottom: `1px solid ${P.border}` }}>
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg flex items-center justify-center font-black" style={{ background: P.accent, color: P.accentInk }}>P</div>
+            <div><h1 className="text-lg font-black">r/progress</h1><p className="text-[11px]" style={{ color: P.textMuted }}>charts, records, body log</p></div>
+          </div>
+          <ProgressTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <ProgressBody tab={tab} P={P} r={r} font={font} compact />
+      </div>
+    )
+  }
+
+  if (P.style === 'signal') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3">
+          <div className="p-3" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="rounded-2xl p-4" style={{ background: `linear-gradient(135deg, ${P.surfaceAlt}, ${P.heroFade || 'rgba(82,199,184,0.16)'})` }}>
+              <div className="text-xs font-bold" style={{ color: P.accent }}>ADAPTATION SCORE</div>
+              <div className="mt-2 flex items-end justify-between"><h1 className="text-2xl font-black">Progress</h1><span className="text-4xl font-black font-mono">84</span></div>
+            </div>
+          </div>
+          <ProgressTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <ProgressBody tab={tab} P={P} r={r} font={font} />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
       <header className="sticky top-0 z-20 px-4 pt-4 pb-2" style={{ background: P.bg, borderBottom: `1px solid ${P.border}` }}>
@@ -37,6 +87,36 @@ export default function PaletteProgress({ P }) {
         {tab === 'Records' && <Records P={P} r={r} />}
         {tab === 'Body' && <Body P={P} r={r} font={font} />}
       </div>
+    </div>
+  )
+}
+
+function ProgressTabs({ P, r, tab, setTab }) {
+  return (
+    <div className="mt-3 flex gap-1 p-1" style={{ background: P.surfaceAlt, border: `1px solid ${P.border}`, borderRadius: r + 4 }}>
+      {TABS.map(t => {
+        const on = tab === t
+        return (
+          <button key={t} onClick={() => setTab(t)} aria-pressed={on}
+            className="flex-1 h-9 text-sm font-semibold transition-colors"
+            style={on
+              ? { background: P.surface, color: P.text, borderRadius: r, boxShadow: P.mode === 'light' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none', border: P.mode === 'light' ? `1px solid ${P.border}` : 'none' }
+              : { color: P.textMuted, borderRadius: r }}>
+            {t}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function ProgressBody({ tab, P, r, font, compact }) {
+  return (
+    <div className={`${compact ? 'px-2 pt-2 space-y-2' : 'px-4 pt-4 space-y-3'}`}>
+      {tab === 'Lifts' && <Lifts P={P} r={r} font={font} />}
+      {tab === 'History' && <History P={P} r={r} />}
+      {tab === 'Records' && <Records P={P} r={r} />}
+      {tab === 'Body' && <Body P={P} r={r} font={font} />}
     </div>
   )
 }

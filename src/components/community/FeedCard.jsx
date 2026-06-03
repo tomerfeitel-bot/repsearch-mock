@@ -205,7 +205,7 @@ function WorkoutCard({ item }) {
       {/* Hero metric: duration */}
       <button onClick={() => setExpanded(!expanded)} className="w-full text-left">
         <div className="flex items-baseline gap-2">
-          <span className="font-mono tabular-nums font-bold text-white" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{w.duration_min}</span>
+          <span className="font-mono tabular-nums font-bold text-gray-100" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{w.duration_min}</span>
           <span className="text-sm text-gray-500">min</span>
         </div>
         <div className="mt-1 text-sm text-gray-300">
@@ -358,7 +358,7 @@ function PRCard({ item }) {
     <CardShell>
       <CardHeader username={item.username} ts={item.ts} badge={<Trophy />} />
       <div className="flex items-baseline gap-2">
-        <span className="font-mono tabular-nums font-bold text-white" style={{ fontSize: '2.5rem', lineHeight: 1 }}>{p.weight_kg}</span>
+        <span className="font-mono tabular-nums font-bold text-gray-100" style={{ fontSize: '2.5rem', lineHeight: 1 }}>{p.weight_kg}</span>
         <span className="text-base text-gray-500">kg × {p.reps}</span>
       </div>
       <div className="mt-1 text-sm text-gray-300">New PR · <span className="text-gray-400">{p.exercise_name || p.exercise_id}</span></div>
@@ -376,7 +376,7 @@ function ProgressionCard({ item }) {
       <div className="flex items-baseline gap-2">
         <span className="text-gray-500 font-mono tabular-nums text-xl line-through">{Math.round(p.prev_1rm)}</span>
         <span className="text-gray-600">→</span>
-        <span className="font-mono tabular-nums font-bold text-white" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{Math.round(p.curr_1rm)}</span>
+        <span className="font-mono tabular-nums font-bold text-gray-100" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{Math.round(p.curr_1rm)}</span>
         <span className="text-sm text-gray-500">kg est. 1RM</span>
       </div>
       <div className="mt-1 text-sm text-gray-300">+{p.gain_pct}% on <span className="text-gray-400">{p.exercise_name || p.exercise_id}</span></div>
@@ -394,7 +394,7 @@ function ProgramEventCard({ item, event }) {
     <CardShell>
       <CardHeader username={item.username} ts={item.ts} badge={<span className="text-[10px] font-medium uppercase tracking-wider text-indigo-300 px-2 py-0.5 rounded-full bg-indigo-600/15">Program</span>} />
       <div className="flex items-baseline gap-2">
-        <span className="font-mono tabular-nums font-bold text-white" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{hero}</span>
+        <span className="font-mono tabular-nums font-bold text-gray-100" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{hero}</span>
         <span className="text-sm text-gray-500">{title}</span>
       </div>
       <div className="mt-1 text-sm text-gray-300">{p.name}</div>

@@ -331,7 +331,7 @@ function Row({ label, value, onChange }) {
         inputMode="decimal"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-28 bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-3 py-2 text-white font-mono tabular-nums text-right outline-none"
+        className="w-28 bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-3 py-2 text-gray-100 font-mono tabular-nums text-right outline-none"
       />
     </div>
   )

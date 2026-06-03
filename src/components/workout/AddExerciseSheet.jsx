@@ -171,7 +171,7 @@ export default function AddExerciseSheet({ open, onClose, onPick, excludeIds = [
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search name, alias, muscle, equipment"
-            className="min-w-0 flex-1 rounded-xl border border-gray-800 bg-gray-950 px-4 py-3 text-white outline-none focus:border-indigo-600"
+            className="min-w-0 flex-1 rounded-xl border border-gray-800 bg-gray-950 px-4 py-3 text-gray-100 outline-none focus:border-indigo-600"
           />
           <button
             type="button"
@@ -208,24 +208,24 @@ export default function AddExerciseSheet({ open, onClose, onPick, excludeIds = [
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="Custom exercise name"
-              className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white outline-none focus:border-indigo-600"
+              className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-100 outline-none focus:border-indigo-600"
             />
             <div className="grid grid-cols-2 gap-2">
-              <select required value={form.primary_muscle} onChange={e => setForm(f => ({ ...f, primary_muscle: e.target.value }))} className="rounded-lg border border-gray-800 bg-gray-900 px-2 py-2 text-sm text-white outline-none">
+              <select required value={form.primary_muscle} onChange={e => setForm(f => ({ ...f, primary_muscle: e.target.value }))} className="rounded-lg border border-gray-800 bg-gray-900 px-2 py-2 text-sm text-gray-100 outline-none">
                 <option value="">Primary muscle *</option>
                 {MUSCLE_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
-              <select value={form.equipment_type} onChange={e => setForm(f => ({ ...f, equipment_type: e.target.value }))} className="rounded-lg border border-gray-800 bg-gray-900 px-2 py-2 text-sm text-white outline-none">
+              <select value={form.equipment_type} onChange={e => setForm(f => ({ ...f, equipment_type: e.target.value }))} className="rounded-lg border border-gray-800 bg-gray-900 px-2 py-2 text-sm text-gray-100 outline-none">
                 {EQUIPMENT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
-              <select value={form.movement_pattern} onChange={e => setForm(f => ({ ...f, movement_pattern: e.target.value }))} className="rounded-lg border border-gray-800 bg-gray-900 px-2 py-2 text-sm text-white outline-none">
+              <select value={form.movement_pattern} onChange={e => setForm(f => ({ ...f, movement_pattern: e.target.value }))} className="rounded-lg border border-gray-800 bg-gray-900 px-2 py-2 text-sm text-gray-100 outline-none">
                 {MOVEMENT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
               <input
                 value={form.secondary_muscle}
                 onChange={e => setForm(f => ({ ...f, secondary_muscle: e.target.value }))}
                 placeholder="Secondary"
-                className="rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white outline-none focus:border-indigo-600"
+                className="rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-100 outline-none focus:border-indigo-600"
               />
             </div>
             {createError && <div className="text-xs font-semibold text-red-300">{createError}</div>}
@@ -256,7 +256,7 @@ export default function AddExerciseSheet({ open, onClose, onPick, excludeIds = [
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <div className="truncate font-medium text-white">{ex.name}</div>
+                  <div className="truncate font-medium text-gray-100">{ex.name}</div>
                   {ex.source === 'custom' && <span className="rounded-full bg-indigo-600/20 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-200">Custom</span>}
                 </div>
                 <div className="text-xs text-gray-500">

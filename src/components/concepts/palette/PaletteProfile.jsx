@@ -47,6 +47,62 @@ export default function PaletteProfile({ P }) {
       : isEmber ? `0 4px 24px rgba(217,124,30,0.08)` : 'none',
   }
 
+  if (P.style === 'strava') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3">
+          <div className="overflow-hidden" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="h-28" style={{ background: `linear-gradient(135deg, ${P.chartFill}, ${P.surfaceAlt})` }} />
+            <div className="px-4 pb-4 -mt-8">
+              <div className="flex items-end gap-3">
+                <Avatar P={P} r={r} size={68} />
+                <div className="pb-1"><h1 className="text-xl font-black">{MOCK_USER.displayName}</h1><p className="text-xs font-mono" style={{ color: P.textMuted }}>u/{MOCK_USER.username}</p></div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {[['followers', MOCK_USER.followers], ['sessions', MOCK_USER.totalSessions], ['streak', MOCK_USER.streak]].map(([l, v]) => <div key={l}><div className="font-black font-mono">{v}</div><div className="text-[10px]" style={{ color: P.textMuted }}>{l}</div></div>)}
+              </div>
+            </div>
+          </div>
+          <ProfileTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <ProfileBody tab={tab} P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} isMarine={isMarine} />
+      </div>
+    )
+  }
+
+  if (P.style === 'reddit') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="sticky top-0 z-20 px-3 pt-3 pb-2" style={{ background: P.bg, borderBottom: `1px solid ${P.border}` }}>
+          <div className="flex items-center gap-2">
+            <Avatar P={P} r={r} size={40} />
+            <div className="min-w-0 flex-1"><h1 className="text-lg font-black">u/{MOCK_USER.username}</h1><p className="text-[11px]" style={{ color: P.textMuted }}>{MOCK_USER.followers} followers · {MOCK_USER.totalSessions} sessions</p></div>
+            <button style={{ color: P.textMuted }}><IconMore size={20} /></button>
+          </div>
+          <ProfileTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <ProfileBody tab={tab} P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} isMarine={isMarine} compact />
+      </div>
+    )
+  }
+
+  if (P.style === 'signal') {
+    return (
+      <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
+        <header className="px-4 pt-5 pb-3">
+          <div className="p-3" style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: r }}>
+            <div className="rounded-2xl p-4 flex items-end gap-3" style={{ background: `linear-gradient(135deg, ${P.surfaceAlt}, ${P.heroFade || 'rgba(143,216,78,0.18)'})` }}>
+              <Avatar P={P} r={r} size={70} />
+              <div className="min-w-0 flex-1"><div className="text-xs font-bold" style={{ color: P.accent }}>ATHLETE CARD</div><h1 className="text-2xl font-black truncate">{MOCK_USER.displayName}</h1><p className="text-xs" style={{ color: P.textMuted }}>{MOCK_USER.bio}</p></div>
+            </div>
+          </div>
+          <ProfileTabs P={P} r={r} tab={tab} setTab={setTab} />
+        </header>
+        <ProfileBody tab={tab} P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} isMarine={isMarine} />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen pb-28" style={{ background: P.bg, color: P.text }}>
       <header className="sticky top-0 z-20 px-4 pt-4 pb-3" style={{
@@ -72,10 +128,37 @@ export default function PaletteProfile({ P }) {
       </header>
 
       <div className="px-4 pt-4 space-y-3">
-        {tab === 'Profile' && <ProfileTab P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} isMarine={isMarine} isQuartz={isQuartz} />}
+        {tab === 'Profile' && <ProfileTab P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} isMarine={isMarine} />}
         {tab === 'Plans' && <PlansTab P={P} r={r} cardStyle={cardStyle} />}
         {tab === 'Check-in' && <CheckInTab P={P} r={r} cardStyle={cardStyle} />}
       </div>
+    </div>
+  )
+}
+
+function ProfileTabs({ P, r, tab, setTab }) {
+  return (
+    <div className="mt-3 flex gap-1 p-1" style={{ background: P.surfaceAlt, border: `1px solid ${P.border}`, borderRadius: r + 2 }}>
+      {TABS.map(t => {
+        const on = tab === t
+        return (
+          <button key={t} onClick={() => setTab(t)} aria-pressed={on}
+            className="flex-1 h-8 text-xs font-semibold transition-colors"
+            style={{ borderRadius: r, background: on ? P.accent : 'transparent', color: on ? P.accentInk : P.textMuted }}>
+            {t}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function ProfileBody({ tab, P, r, cardStyle, isGrove, isMarine, compact }) {
+  return (
+    <div className={`${compact ? 'px-2 pt-2 space-y-2' : 'px-4 pt-4 space-y-3'}`}>
+      {tab === 'Profile' && <ProfileTab P={P} r={r} cardStyle={cardStyle} isGrove={isGrove} isMarine={isMarine} />}
+      {tab === 'Plans' && <PlansTab P={P} r={r} cardStyle={cardStyle} />}
+      {tab === 'Check-in' && <CheckInTab P={P} r={r} cardStyle={cardStyle} />}
     </div>
   )
 }
@@ -87,7 +170,7 @@ function SectionLabel({ P, isGrove, children }) {
   )
 }
 
-function Avatar({ P, r, size = 64 }) {
+function Avatar({ P, size = 64 }) {
   const isQuartz = P.tags.includes('lavender')
   return (
     <div className="flex items-center justify-center font-bold text-xl shrink-0"
@@ -102,7 +185,7 @@ function Avatar({ P, r, size = 64 }) {
   )
 }
 
-function ProfileTab({ P, r, cardStyle, isGrove, isMarine, isQuartz }) {
+function ProfileTab({ P, r, cardStyle, isGrove, isMarine }) {
   return (
     <div className="space-y-3">
       {/* Identity card */}

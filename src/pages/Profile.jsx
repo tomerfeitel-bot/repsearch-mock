@@ -5,10 +5,13 @@ import ProfileSummary from '../components/profile/ProfileSummary.jsx'
 import DailyLogHub from '../components/profile/DailyLogHub.jsx'
 import PlansTab from '../components/community/PlansTab.jsx'
 import { Sheet } from '../components/ui/Sheet.jsx'
+import BubbleHeader from '../components/ui/BubbleHeader.jsx'
+import PillTabs from '../components/ui/PillTabs.jsx'
 import { SPLIT_TYPES } from '../lib/splits.js'
 import { api } from '../lib/api.js'
 
 const TABS = ['my profile', 'my plans', 'check-in']
+const TAB_LABELS = { 'my profile': 'Profile', 'my plans': 'Plans', 'check-in': 'Check-in' }
 
 // Profile detail fields live behind the "Edit profile" sheet on the Athlete Card.
 // The Gear menu holds only account/administrative controls. Daily habits, split,
@@ -82,33 +85,31 @@ export default function Profile() {
   const enriched = useMemo(() => profileData ? { ...profileData, user: { ...profileData.user, ...user } } : null, [profileData, user])
 
   return (
-    <div className="min-h-screen pb-24 bg-gray-950">
-      <header className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-gray-800">
-        <div className="px-4 safe-pt-4 pb-2 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Profile</h1>
+    <div className="min-h-screen pb-24" style={{ background: 'var(--bg)' }}>
+      <BubbleHeader
+        label="Athlete card"
+        title="Profile"
+        action={
           <button
             onClick={() => setGearOpen(true)}
             aria-label="Settings"
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700 active:scale-95 transition"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 text-gray-500 hover:text-gray-100 hover:border-gray-700 active:scale-95 transition"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.27 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.27-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </button>
-        </div>
-        <div className="px-4 pb-3 flex gap-1.5">
-          {TABS.map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={'px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors ' + (tab === t ? 'bg-indigo-600 text-white' : 'text-gray-500 border border-gray-800 hover:text-gray-300')}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </header>
+        }
+      />
+      <div className="px-4 pb-3">
+        <PillTabs
+          tabs={TABS.map(t => ({ value: t, label: TAB_LABELS[t] }))}
+          value={tab}
+          onChange={setTab}
+          ariaLabel="Profile sections"
+        />
+      </div>
 
       {tab === 'my profile' && (
         <ProfileSummary data={enriched} loading={loadingProfile} onEditProfile={() => setEditProfileOpen(true)} />
@@ -252,13 +253,13 @@ function GearMenu({ user, updateUser, refresh, logout, toast }) {
       {deleteOpen && (
         <div className="fixed inset-0 z-[60] bg-black/70 px-4 flex items-center justify-center" onClick={() => setDeleteOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl bg-gray-950 border border-gray-800 p-4" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-white">Delete account?</h2>
+            <h2 className="text-lg font-bold text-gray-100">Delete account?</h2>
             <p className="mt-2 text-sm text-gray-400">Enter your password to confirm. This cannot be undone.</p>
             <input
               type="password"
               value={deletePassword}
               onChange={e => setDeletePassword(e.target.value)}
-              className="mt-4 w-full min-h-11 rounded-xl bg-gray-900 border border-gray-800 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-700"
+              className="mt-4 w-full min-h-11 rounded-xl bg-gray-900 border border-gray-800 px-3 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-700"
               placeholder="Password"
             />
             <div className="mt-4 grid grid-cols-2 gap-2">
@@ -315,7 +316,7 @@ function VisibilityBadge({ visibility }) {
 }
 
 function Field({ label, type = 'text', value, onChange, options, step, visibility, note }) {
-  const base = 'w-full min-h-11 rounded-xl bg-gray-950 border border-gray-800 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500'
+  const base = 'w-full min-h-11 rounded-xl bg-gray-950 border border-gray-800 px-3 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500'
   return (
     <label className="block">
       <span className="flex items-center justify-between gap-2">

@@ -40,7 +40,7 @@ export default function DailyCheckinModal({ open, loading, onClose, onSubmit }) 
       <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-gray-950 border border-gray-800 p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold text-white">Daily check-in</h2>
+            <h2 className="text-xl font-bold text-gray-100">Daily check-in</h2>
             <p className="mt-1 text-sm text-gray-400">A quick datapoint for better progress and better research.</p>
           </div>
           <button type="button" onClick={onClose} disabled={loading} className="w-10 h-10 rounded-full bg-gray-900 hover:bg-gray-800 active:scale-95 disabled:opacity-50 text-gray-400 transition">×</button>
@@ -63,7 +63,7 @@ export default function DailyCheckinModal({ open, loading, onClose, onSubmit }) 
               value={form.notes}
               onChange={e => setField('notes', e.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-xl bg-gray-900 border border-gray-800 px-3 py-3 text-sm text-white resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full rounded-xl bg-gray-900 border border-gray-800 px-3 py-3 text-sm text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Anything that might affect training today?"
             />
           </label>
@@ -88,7 +88,7 @@ function Field({ label, value, onChange, ...props }) {
         {...props}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="mt-1 w-full min-h-11 rounded-xl bg-gray-900 border border-gray-800 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="mt-1 w-full min-h-11 rounded-xl bg-gray-900 border border-gray-800 px-3 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </label>
   )
