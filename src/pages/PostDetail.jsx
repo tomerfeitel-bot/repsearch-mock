@@ -268,14 +268,15 @@ function sharePost(id) {
 }
 
 function AttachmentDetail({ post }) {
-  if (post.kind === 'workout') return <WorkoutAttachment id={post.attachment?.id} summary={post.attachment} />
-  if (post.kind === 'program') return <ProgramAttachment a={post.attachment} />
-  if (post.kind === 'template') return <TemplateAttachment a={post.attachment} />
+  const meta = KIND_META[post.kind] || KIND_META.discussion
+  if (post.kind === 'workout') return <WorkoutAttachment id={post.attachment?.id} summary={post.attachment} accent={meta.accent} wash={meta.wash} />
+  if (post.kind === 'program') return <ProgramAttachment a={post.attachment} accent={meta.accent} wash={meta.wash} />
+  if (post.kind === 'template') return <TemplateAttachment a={post.attachment} accent={meta.accent} wash={meta.wash} />
   if (post.kind === 'study') return <StudyAttachment a={post.attachment} />
   return null
 }
 
-function WorkoutAttachment({ id, summary }) {
+function WorkoutAttachment({ id, summary, accent, wash }) {
   const [data, setData] = useState(null)
   useEffect(() => {
     if (!id) return
@@ -293,12 +294,12 @@ function WorkoutAttachment({ id, summary }) {
   }, [data])
 
   return (
-    <HeroFrame>
+    <HeroFrame accent={accent} wash={wash}>
       <div className="space-y-3">
         <div className="flex items-baseline gap-2">
           <span className="font-mono tabular-nums font-extrabold text-[var(--text)] text-3xl">{summary?.duration_min ?? '-'}</span>
           <span className="text-sm font-semibold text-[var(--text-muted)]">min</span>
-          <span className="ml-auto text-caption" style={{ color: '#2f6e4a' }}>{summary?.workout_day || 'Workout'}</span>
+          <span className="ml-auto text-caption" style={{ color: accent || '#2f6e4a' }}>{summary?.workout_day || 'Workout'}</span>
         </div>
         {groups.map(([eid, sets]) => {
           const seed = exerciseById.get(eid)
@@ -319,17 +320,17 @@ function WorkoutAttachment({ id, summary }) {
   )
 }
 
-function ProgramAttachment({ a }) {
+function ProgramAttachment({ a, accent, wash }) {
   const [startOpen, setStartOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const toast = useToast()
   if (!a) return null
   const program = { id: a.id, name: a.name, description: a.description, strictness: a.strictness, proof: { starts: a.enrollment_count } }
   return (
-    <HeroFrame>
+    <HeroFrame accent={accent} wash={wash}>
       <div className="font-bold text-[var(--text)]">{a.name}</div>
       {a.description && <div className="mt-1 text-caption text-[var(--text-muted)] line-clamp-3">{a.description}</div>}
-      <div className="mt-1 text-caption" style={{ color: '#454c47' }}>{a.enrollment_count || 0} started · open-ended</div>
+      <div className="mt-1 text-caption" style={{ color: accent || '#454c47' }}>{a.enrollment_count || 0} started · open-ended</div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button onClick={() => setStartOpen(true)} className="py-2.5 rounded-xl bg-[var(--accent)] text-[var(--accent-ink)] text-sm font-semibold">Start program</button>
         <button onClick={() => setDetailOpen(true)} className="py-2.5 rounded-xl bg-white border border-[var(--border)] text-[var(--text)] text-sm font-semibold hover:border-[var(--border-strong)]">View details</button>
@@ -340,7 +341,7 @@ function ProgramAttachment({ a }) {
   )
 }
 
-function TemplateAttachment({ a }) {
+function TemplateAttachment({ a, accent, wash }) {
   const { user } = useAuth()
   const { workout, startWorkout } = useWorkout()
   const navigate = useNavigate()
@@ -381,9 +382,9 @@ function TemplateAttachment({ a }) {
   }
 
   return (
-    <HeroFrame>
+    <HeroFrame accent={accent} wash={wash}>
       <div className="font-bold text-[var(--text)]">{a.name}</div>
-      <div className="mt-1 text-caption" style={{ color: '#2b6a86' }}>{a.exercise_count || 0} exercises · used {a.usage_count || 0}x</div>
+      <div className="mt-1 text-caption" style={{ color: accent || '#2b6a86' }}>{a.exercise_count || 0} exercises · used {a.usage_count || 0}x</div>
       <button onClick={() => start()} className="mt-3 w-full py-2.5 rounded-xl bg-[var(--accent)] text-[var(--accent-ink)] text-sm font-semibold">Start as workout</button>
       <ConfirmSheet open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={() => { setConfirmOpen(false); start(true) }} title="Replace workout?" message="Starting this template will replace your current active workout." confirmLabel="Replace" danger />
     </HeroFrame>

@@ -1,4 +1,4 @@
-import { STUDY_CARD, STUDY_BORDER, STUDY_TEXT, STUDY_MUTED, STUDY_ACCENT } from '../../lib/researchTheme.js'
+import { STUDY_CARD, STUDY_BORDER, STUDY_TEXT, STUDY_MUTED, STUDY_ACTION, STUDY_ACTION_SOFT, STUDY_ACTION_INK } from '../../lib/researchTheme.js'
 
 export default function FindingsRow({ findings, loading, onSelect }) {
   if (loading) {
@@ -38,8 +38,8 @@ export default function FindingsRow({ findings, loading, onSelect }) {
         >
           {f.surprising ? (
             <span
-              className="inline-block text-[10px] uppercase tracking-widest mb-2 px-2 py-0.5 rounded"
-              style={{ background: 'rgba(124, 169, 130, 0.15)', color: STUDY_ACCENT, border: `1px solid ${STUDY_ACCENT}` }}
+              className="inline-block text-[10px] uppercase tracking-widest mb-2 px-2 py-0.5 rounded font-semibold"
+              style={{ background: STUDY_ACTION_SOFT, color: STUDY_ACTION_INK, border: `1px solid ${STUDY_ACTION}` }}
             >
               Surprising
             </span>
