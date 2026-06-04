@@ -75,6 +75,22 @@ export default {
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
         serif: ['Georgia', 'Cambria', 'serif'],
       },
+      // Rubber Brass type scale. Fixed rem, ~1.12–1.2 ratio (product UI, not
+      // fluid). Lower steps are dense metadata; reading prose sits at 16px;
+      // headings carry baked line-height and progressively tighter tracking so
+      // the same role looks identical across the feed and the thread. Weight is
+      // applied separately via font-* utilities, so these steps stay reusable.
+      fontSize: {
+        micro:   ['0.6875rem', { lineHeight: '0.95rem' }],                            // 11 — badges, counts, status
+        caption: ['0.75rem',   { lineHeight: '1.05rem' }],                            // 12 — timestamps, secondary meta
+        meta:    ['0.8125rem', { lineHeight: '1.25rem' }],                            // 13 — dense secondary, prompts
+        body:    ['0.9375rem', { lineHeight: '1.45rem' }],                            // 15 — compact body / previews
+        read:    ['1rem',      { lineHeight: '1.6rem' }],                             // 16 — reading prose (post + comment)
+        title:   ['1.0625rem', { lineHeight: '1.35rem', letterSpacing: '-0.012em' }], // 17 — card lead
+        head:    ['1.1875rem', { lineHeight: '1.4rem',  letterSpacing: '-0.017em' }], // 19 — section heading
+        lead:    ['1.3125rem', { lineHeight: '1.55rem', letterSpacing: '-0.02em' }],  // 21 — thread post title
+        display: ['1.5rem',    { lineHeight: '1.7rem',  letterSpacing: '-0.022em' }], // 24 — page title
+      },
     },
   },
   plugins: [],

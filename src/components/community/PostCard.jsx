@@ -3,16 +3,25 @@ import { Avatar } from '../ui/Avatar.jsx'
 import { timeAgo } from '../../lib/timeAgo.js'
 import { SingleResultChart, CompareResultChart } from '../study/ResultsChart.jsx'
 
-// Pulse-style kind metadata: a colored status dot for the avatar + a soft badge pill.
-// Pills/dots use the retuned `-300` accent shades (tuned to read on the light surface)
-// plus a soft same-hue tint behind them.
-const KIND_META = {
-  discussion: { label: 'Discussion', dot: '#8a948c', pill: 'text-gray-200 bg-gray-700/50' },
-  workout: { label: 'Workout', dot: '#2f6e4a', pill: 'text-emerald-300 bg-emerald-600/15' },
-  program: { label: 'Program', dot: '#454c47', pill: 'text-indigo-300 bg-indigo-600/12' },
-  template: { label: 'Template', dot: '#2b6a86', pill: 'text-sky-300 bg-sky-600/15' },
-  study: { label: 'Study', dot: '#7CA982', pill: 'text-[#46624b] bg-[rgba(124,169,130,0.18)]' },
-  pr: { label: 'PR', dot: '#8a6010', pill: 'text-amber-300 bg-amber-600/15' },
+// Kind metadata: a colored status dot for the avatar + a soft badge pill. Colors
+// are drawn from the Rubber Brass token family (graphite / brass / sage and the
+// retuned semantic hexes) so the badges read as one palette instead of reaching
+// for stock Tailwind jewel tones. `dot` and the pill text share a hue; the pill
+// background is a soft same-hue tint. Discussion — the conversation type — gets
+// the warm brass signature accent rather than the most ignorable gray.
+export const KIND_META = {
+  discussion: { label: 'Discussion', dot: '#a77b3f', text: '#7a5a2c', tint: 'var(--brass-soft)' },
+  workout: { label: 'Workout', dot: '#2f6e4a', text: '#2f6e4a', tint: 'rgba(47,110,74,0.12)' },
+  program: { label: 'Program', dot: '#454c47', text: '#454c47', tint: 'var(--accent-soft)' },
+  template: { label: 'Template', dot: '#2b6a86', text: '#2b6a86', tint: 'rgba(43,106,134,0.12)' },
+  study: { label: 'Study', dot: '#46624b', text: '#46624b', tint: 'rgba(124,169,130,0.18)' },
+  pr: { label: 'PR', dot: '#8a6010', text: '#8a6010', tint: 'rgba(138,96,16,0.12)' },
+}
+
+// A post is "hot" when it has clear traction — used for the heat cue that tells
+// a browsing user which threads are worth jumping into.
+function isHot(item) {
+  return (item.score || 0) >= 100 || (item.comment_count || 0) >= 5
 }
 
 const HERO_KINDS = new Set(['workout', 'program', 'template', 'study'])
@@ -24,8 +33,10 @@ export default function PostCard({ item, onVote, onToggleSave }) {
 
   function open() { navigate(`/post/${item.id}`) }
 
+  const hot = isHot(item)
+
   return (
-    <div className="mb-3.5 rounded-3xl overflow-hidden bg-gray-900 border border-gray-800 shadow-[0_1px_2px_rgba(0,0,0,0.3),0_14px_26px_-16px_rgba(0,0,0,0.55)]">
+    <div className="mb-3.5 rounded-3xl overflow-hidden bg-white/75 border border-[var(--border)] shadow-[0_1px_2px_rgba(21,24,23,0.08),0_18px_34px_-28px_rgba(21,24,23,0.42)] backdrop-blur-sm">
       <div className="p-4 pb-0">
         <PostHeader item={item} meta={meta} navigate={navigate} />
 
@@ -33,10 +44,15 @@ export default function PostCard({ item, onVote, onToggleSave }) {
           <PostLead item={item} />
         </button>
 
-        {item.labels?.length > 0 && (
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {item.labels.slice(0, 3).map(l => (
-              <span key={l} className="text-[10px] text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full">{l}</span>
+        {(hot || item.labels?.length > 0) && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            {hot && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brass-soft)] px-2 py-0.5 text-micro font-bold text-[var(--brass)]">
+                <IconFlame size={11} /> Hot
+              </span>
+            )}
+            {item.labels?.slice(0, 3).map(l => (
+              <span key={l} className="text-micro text-[var(--text-muted)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-full">{l}</span>
             ))}
           </div>
         )}
@@ -48,13 +64,53 @@ export default function PostCard({ item, onVote, onToggleSave }) {
         </button>
       )}
 
-      <div className="p-3 pt-3.5 flex items-center gap-1.5">
+      <div className="px-4 pt-3">
+        <ConversationBar item={item} onOpen={open} />
+      </div>
+
+      <div className="p-3 pt-3 flex items-center gap-1.5">
         <VotePill score={item.score} vote={item.viewer_vote} onVote={v => onVote(item.id, v)} />
-        <Action icon={<IconComment size={18} />} label={item.comment_count} ariaLabel="Open thread" onClick={open} />
         <Action icon={<IconShare size={18} />} label="Share" ariaLabel="Share post" onClick={() => sharePost(item.id)} />
         <SaveButton saved={item.saved} onClick={() => onToggleSave(item.id, !item.saved)} />
       </div>
     </div>
+  )
+}
+
+// The card's primary call to action: a tappable strip that makes the
+// conversation the loudest engagement signal on the card. Shows a labeled reply
+// count + last-activity time (or an invitation to start, when empty) and — for
+// posts with a standout reply — a one-line preview to pull the reader in.
+function ConversationBar({ item, onOpen }) {
+  const replies = item.comment_count || 0
+  const activity = item.last_activity_at || item.created_at
+  const empty = replies === 0
+  const emptyPrompt = item.kind === 'discussion' ? 'Start the discussion' : 'Be the first to comment'
+  return (
+    <button
+      onClick={onOpen}
+      aria-label="Open thread"
+      className="block w-full text-left rounded-2xl bg-[var(--accent-soft)] px-3.5 py-2.5 transition-colors hover:bg-[var(--brass-soft)]"
+    >
+      <div className="flex items-center gap-2 text-[var(--ink-soft)]">
+        <IconComment size={16} />
+        <span className="text-sm font-bold text-[var(--text)]">
+          {empty ? emptyPrompt : `${replies} ${replies === 1 ? 'reply' : 'replies'}`}
+        </span>
+        {!empty && (
+          <span className="text-caption text-[var(--text-muted)] truncate">· active {timeAgo(activity)}</span>
+        )}
+        <span className="ml-auto shrink-0 text-caption font-bold text-[var(--brass)]">{empty ? 'Reply →' : 'Join thread →'}</span>
+      </div>
+      {item.top_comment && (
+        <div className="mt-2 border-l-2 border-[var(--border-strong)] pl-2.5">
+          <p className="text-body text-[var(--text-muted)] line-clamp-2">
+            <span className="font-semibold text-[var(--ink-soft)]">{item.top_comment.username}</span>{' '}
+            {item.top_comment.body}
+          </p>
+        </div>
+      )}
+    </button>
   )
 }
 
@@ -65,10 +121,10 @@ function PostHeader({ item, meta, navigate }) {
         <AvatarWithDot username={item.username} dot={meta.dot} />
       </button>
       <button onClick={() => navigate(`/user/${item.username}`)} className="min-w-0 flex-1 text-left">
-        <div className="text-sm font-bold leading-tight truncate text-gray-100">{item.username}</div>
-        <div className="text-xs truncate text-gray-500 font-mono">{timeAgo(item.created_at)}</div>
+        <div className="text-sm font-bold leading-tight truncate text-[var(--text)]">{item.username}</div>
+        <div className="text-caption truncate text-[var(--text-muted)] font-mono">{timeAgo(item.created_at)}</div>
       </button>
-      <span className={'inline-flex items-center h-6 px-2.5 rounded-full text-[11px] font-bold shrink-0 ' + meta.pill}>{meta.label}</span>
+      <span className="inline-flex items-center h-6 px-2.5 rounded-full text-micro font-bold shrink-0" style={{ color: meta.text, background: meta.tint }}>{meta.label}</span>
     </div>
   )
 }
@@ -77,25 +133,31 @@ export function AvatarWithDot({ username, dot, size = 'md' }) {
   return (
     <span className="relative inline-block">
       <Avatar username={username} size={size} />
-      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-gray-900" style={{ background: dot }} />
+      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white" style={{ background: dot }} />
     </span>
   )
 }
 
-// Horizontal vote pill — upvote glows orange, downvote indigo, matching the app's accents.
-export function VotePill({ score, vote, onVote }) {
+// Horizontal vote pill: upvote glows orange, downvote graphite. `size="sm"` is
+// the compact variant used inline on comments so the post and its replies share
+// one vote language instead of two.
+export function VotePill({ score, vote, onVote, size = 'md', ariaSuffix = '' }) {
   const up = vote === 1
   const down = vote === -1
+  const sm = size === 'sm'
+  const box = sm ? 'h-8 w-8' : 'h-9 w-9'
+  const icon = sm ? 16 : 18
+  const num = sm ? 'text-xs min-w-[1.8rem]' : 'text-sm min-w-[2.2rem]'
   return (
-    <div className={'inline-flex items-center h-9 rounded-full overflow-hidden border ' + (up ? 'bg-orange-500/15 border-orange-500/40' : 'bg-gray-800 border-gray-700')}>
-      <button onClick={() => onVote(up ? 0 : 1)} aria-pressed={up} aria-label="Upvote"
-        className={'h-9 w-9 grid place-items-center transition-colors ' + (up ? 'text-orange-400' : 'text-gray-400 hover:text-gray-200')}>
-        <IconArrow dir="up" size={18} />
+    <div className={'inline-flex items-center rounded-full overflow-hidden border ' + (sm ? 'h-8 ' : 'h-9 ') + (up ? 'bg-orange-100 border-orange-300' : 'bg-white/70 border-[var(--border)]')}>
+      <button onClick={() => onVote(up ? 0 : 1)} aria-pressed={up} aria-label={'Upvote' + ariaSuffix}
+        className={box + ' grid place-items-center transition-colors ' + (up ? 'text-orange-700' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
+        <IconArrow dir="up" size={icon} />
       </button>
-      <span className={'text-sm font-bold font-mono tabular-nums px-0.5 min-w-[2.2rem] text-center ' + (up ? 'text-orange-400' : down ? 'text-indigo-400' : 'text-gray-100')}>{score}</span>
-      <button onClick={() => onVote(down ? 0 : -1)} aria-pressed={down} aria-label="Downvote"
-        className={'h-9 w-9 grid place-items-center transition-colors ' + (down ? 'text-indigo-400' : 'text-gray-400 hover:text-gray-200')}>
-        <IconArrow dir="down" size={18} />
+      <span className={'font-bold font-mono tabular-nums px-0.5 text-center ' + num + ' ' + (up ? 'text-orange-700' : down ? 'text-indigo-700' : 'text-[var(--text)]')}>{score}</span>
+      <button onClick={() => onVote(down ? 0 : -1)} aria-pressed={down} aria-label={'Downvote' + ariaSuffix}
+        className={box + ' grid place-items-center transition-colors ' + (down ? 'text-indigo-700' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
+        <IconArrow dir="down" size={icon} />
       </button>
     </div>
   )
@@ -104,16 +166,16 @@ export function VotePill({ score, vote, onVote }) {
 function Action({ icon, label, ariaLabel, onClick }) {
   return (
     <button onClick={onClick} aria-label={ariaLabel}
-      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 transition-colors">
-      {icon}<span className="font-mono tabular-nums">{label}</span>
+      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/60 transition-colors">
+      {icon}<span>{label}</span>
     </button>
   )
 }
 
-function SaveButton({ saved, onClick }) {
+export function SaveButton({ saved, onClick }) {
   return (
     <button onClick={onClick} aria-pressed={saved} aria-label={saved ? 'Unsave' : 'Save'}
-      className={'ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold transition-colors ' + (saved ? 'text-amber-300 bg-amber-600/20' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60')}>
+      className={'ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold transition-colors ' + (saved ? 'text-amber-800 bg-amber-100' : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/60')}>
       <IconBookmark size={17} filled={saved} /><span>{saved ? 'Saved' : 'Save'}</span>
     </button>
   )
@@ -125,28 +187,19 @@ function sharePost(id) {
   navigator.clipboard?.writeText(url).catch(() => {})
 }
 
+// The hook line. The kind is already stated once by the header pill, so the lead
+// no longer repeats it ("Achievement" / "Workout shared") — it leads straight
+// with the title/body that actually entices a reader.
 function PostLead({ item }) {
   const title = item.title || (item.kind === 'pr' ? item.body : '')
   if (item.kind === 'workout') {
-    return (
-      <div>
-        <div className="text-xs font-medium text-emerald-300">{item.attachment?.workout_day || 'Workout shared'}</div>
-        {item.body && <div className="mt-1 text-[17px] font-bold leading-snug text-gray-100 line-clamp-2" style={{ textWrap: 'balance' }}>{item.body}</div>}
-      </div>
-    )
-  }
-  if (item.kind === 'pr') {
-    return (
-      <div>
-        <div className="text-xs font-semibold text-amber-300">Achievement</div>
-        {title && <div className="mt-1 text-[17px] font-bold text-gray-100 leading-snug line-clamp-2" style={{ textWrap: 'balance' }}>{title}</div>}
-      </div>
-    )
+    if (!item.body) return null
+    return <div className="text-title font-bold text-[var(--text)] line-clamp-2" style={{ textWrap: 'balance' }}>{item.body}</div>
   }
   return (
     <div>
-      {title && <div className="text-[17px] font-bold text-gray-100 leading-snug line-clamp-2" style={{ textWrap: 'balance' }}>{title}</div>}
-      {item.body && <div className={'text-sm text-gray-400 leading-relaxed line-clamp-3' + (title ? ' mt-1.5' : '')}>{item.body}</div>}
+      {title && <div className="text-title font-bold text-[var(--text)] line-clamp-2" style={{ textWrap: 'balance' }}>{title}</div>}
+      {item.kind !== 'pr' && item.body && <div className={'text-body text-[var(--text-muted)] line-clamp-3' + (title ? ' mt-1.5' : '')}>{item.body}</div>}
     </div>
   )
 }
@@ -159,9 +212,9 @@ function Attachment({ item }) {
     return (
       <HeroFrame>
         <div className="flex items-baseline gap-2">
-          <span className="font-mono tabular-nums font-extrabold text-gray-100 text-3xl">{a.duration_min ?? '-'}</span>
-          <span className="text-sm font-semibold text-gray-500">min</span>
-          <span className="ml-auto text-xs text-emerald-300">{a.exercise_count || 0} exercises · {a.set_count || 0} sets</span>
+          <span className="font-mono tabular-nums font-extrabold text-[var(--text)] text-3xl">{a.duration_min ?? '-'}</span>
+          <span className="text-sm font-semibold text-[var(--text-muted)]">min</span>
+          <span className="ml-auto text-caption" style={{ color: '#2f6e4a' }}>{a.exercise_count || 0} exercises · {a.set_count || 0} sets</span>
         </div>
       </HeroFrame>
     )
@@ -169,18 +222,16 @@ function Attachment({ item }) {
   if (item.kind === 'program') {
     return (
       <HeroFrame>
-        <div className="text-xs font-semibold text-gray-500">Program</div>
-        <div className="font-bold text-gray-100 truncate">{a.name}</div>
-        <div className="mt-1 text-xs text-indigo-300">{a.enrollment_count || 0} started · open-ended</div>
+        <div className="font-bold text-[var(--text)] truncate">{a.name}</div>
+        <div className="mt-1 text-caption" style={{ color: '#454c47' }}>{a.enrollment_count || 0} started · open-ended</div>
       </HeroFrame>
     )
   }
   if (item.kind === 'template') {
     return (
       <HeroFrame>
-        <div className="text-xs font-semibold text-gray-500">Template</div>
-        <div className="font-bold text-gray-100 truncate">{a.name}</div>
-        <div className="mt-1 text-xs text-sky-300">{a.exercise_count || 0} exercises · used {a.usage_count || 0}x</div>
+        <div className="font-bold text-[var(--text)] truncate">{a.name}</div>
+        <div className="mt-1 text-caption" style={{ color: '#2b6a86' }}>{a.exercise_count || 0} exercises · used {a.usage_count || 0}x</div>
       </HeroFrame>
     )
   }
@@ -188,9 +239,12 @@ function Attachment({ item }) {
   return null
 }
 
-function HeroFrame({ children }) {
+export function HeroFrame({ children }) {
+  // Inline color-mix rather than a Tailwind `/80` opacity modifier: Tailwind
+  // can't inject alpha into an arbitrary var() color, so `bg-[var(--x)]/80`
+  // silently renders transparent. color-mix keeps the soft 80% surface fill.
   return (
-    <div className="rounded-2xl bg-gray-950/60 border border-gray-800 p-3.5">
+    <div className="rounded-2xl border border-[var(--border)] p-3.5" style={{ background: 'color-mix(in srgb, var(--surface-alt) 80%, transparent)' }}>
       {children}
     </div>
   )
@@ -264,6 +318,14 @@ export function IconArrow({ dir = 'up', size = 18 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
       style={{ transform: dir === 'down' ? 'rotate(180deg)' : 'none' }}>
       <polyline points="6 14 12 8 18 14" />
+    </svg>
+  )
+}
+
+export function IconFlame({ size = 12 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2c1 3-1 4.5-2.5 6.2C8 10 7 11.6 7 13.5a5 5 0 0 0 10 0c0-2-1-3.7-2.3-5.2.5 1.4.1 2.6-.7 3.2.2-2.2-1-4.3-2-5.5C11.6 4.7 12.3 3.3 12 2z" />
     </svg>
   )
 }

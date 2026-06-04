@@ -96,7 +96,7 @@ export default function PostComposer({ open, onClose, onPosted, initialKind = nu
             {POST_KINDS.map(k => (
               <button key={k.kind} onClick={() => setKind(k.kind)} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 hover:border-indigo-500 p-4 transition-colors">
                 <div className="font-semibold text-gray-100">{k.label}</div>
-                <div className="mt-1 text-xs text-gray-500">{k.blurb}</div>
+                <div className="mt-1 text-caption text-gray-500">{k.blurb}</div>
               </button>
             ))}
           </div>
@@ -106,12 +106,12 @@ export default function PostComposer({ open, onClose, onPosted, initialKind = nu
           <div className="space-y-3">
             <button onClick={() => { setKind(null); setSelected(null) }} className="text-xs text-gray-500 hover:text-gray-300">← Change type</button>
             <div className="flex items-center justify-between">
-              <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Pick one of yours</div>
+              <div className="text-micro uppercase tracking-wider text-gray-500 font-semibold">Pick one of yours</div>
               <button onClick={() => navigate(buildNewTarget(kind))} className="text-xs font-semibold text-indigo-300 hover:text-indigo-200">+ Create new</button>
             </div>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {loading && <div className="text-sm text-gray-500 text-center py-6">Loading...</div>}
-              {!loading && itemList.length === 0 && <div className="text-sm text-gray-500 text-center py-6">Nothing yet — use “Create new”.</div>}
+              {!loading && itemList.length === 0 && <div className="text-sm text-gray-500 text-center py-6">Nothing yet. Use “Create new”.</div>}
               {!loading && itemList.map(item => (
                 <button
                   key={item.id}
@@ -124,10 +124,10 @@ export default function PostComposer({ open, onClose, onPosted, initialKind = nu
             </div>
             {kind === 'study' && selected && study && (
               <div className="rounded-xl bg-gray-950 border border-gray-800 p-3 space-y-2">
-                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Feature which variable</div>
+                <div className="text-micro uppercase tracking-wider text-gray-500 font-semibold">Feature which variable</div>
                 <LabeledSelect label="Variable" value={study.groupBy} onChange={v => setStudy(s => ({ ...s, groupBy: v }))} options={GROUP_BY_OPTIONS.map(o => [o.value, o.label])} />
                 <LabeledSelect label="Outcome" value={study.measure} onChange={v => setStudy(s => ({ ...s, measure: v }))} options={MEASURE_OPTIONS.map(o => [o.value, o.label])} />
-                <div className="text-[11px] text-gray-500">{prettyMeasure(study.measure)} by {prettyGroupBy(study.groupBy)} — shown as result bars.</div>
+                <div className="text-caption text-gray-500">{prettyMeasure(study.measure)} by {prettyGroupBy(study.groupBy)}, shown as result bars.</div>
               </div>
             )}
           </div>
@@ -150,7 +150,7 @@ export default function PostComposer({ open, onClose, onPosted, initialKind = nu
               className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 text-gray-100 py-3 px-4 rounded-2xl outline-none resize-none"
             />
             <div>
-              <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Labels</div>
+              <div className="text-micro uppercase tracking-wider text-gray-500 font-semibold mb-2">Labels</div>
               <div className="flex flex-wrap gap-1.5">
                 {POST_LABELS.map(l => (
                   <button key={l} onClick={() => toggleLabel(l)} className={'px-2.5 py-1 rounded-full text-xs border transition-colors ' + selectedClass(labels.includes(l))}>{l}</button>
@@ -174,23 +174,23 @@ export default function PostComposer({ open, onClose, onPosted, initialKind = nu
 
 function ItemSummary({ kind, item }) {
   if (kind === 'workout') return (
-    <div><div className="font-semibold text-gray-100">{item.workout_day || 'Workout'}</div><div className="mt-1 text-xs text-gray-500">{item.date} · {item.exercise_count || 0} ex · {item.set_count || 0} sets</div></div>
+    <div><div className="font-semibold text-gray-100">{item.workout_day || 'Workout'}</div><div className="mt-1 text-caption text-gray-500">{item.date} · {item.exercise_count || 0} ex · {item.set_count || 0} sets</div></div>
   )
   if (kind === 'program') return (
-    <div><div className="font-semibold text-gray-100 truncate">{item.name}</div><div className="mt-1 text-xs text-gray-500">{item.enrollment_count || 0} started</div></div>
+    <div><div className="font-semibold text-gray-100 truncate">{item.name}</div><div className="mt-1 text-caption text-gray-500">{item.enrollment_count || 0} started</div></div>
   )
   if (kind === 'template') return (
-    <div><div className="font-semibold text-gray-100 truncate">{item.name}</div><div className="mt-1 text-xs text-gray-500">{item.exercise_count || 0} exercises · used {item.usage_count || 0}x</div></div>
+    <div><div className="font-semibold text-gray-100 truncate">{item.name}</div><div className="mt-1 text-caption text-gray-500">{item.exercise_count || 0} exercises · used {item.usage_count || 0}x</div></div>
   )
   return (
-    <div><div className="font-semibold text-gray-100 truncate">{item.label}</div><div className="mt-1 text-xs text-gray-500">{item.mode} · {item.evidence_status || 'Not enough'}</div></div>
+    <div><div className="font-semibold text-gray-100 truncate">{item.label}</div><div className="mt-1 text-caption text-gray-500">{item.mode} · {item.evidence_status || 'Not enough'}</div></div>
   )
 }
 
 function LabeledSelect({ label, value, onChange, options }) {
   return (
     <label className="block">
-      <span className="text-[11px] text-gray-500">{label}</span>
+      <span className="text-caption text-gray-500">{label}</span>
       <select value={value} onChange={e => onChange(e.target.value)} className="mt-1 w-full bg-gray-900 border border-gray-800 rounded-lg px-2 py-2 text-sm text-gray-100 outline-none">
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>

@@ -581,7 +581,21 @@ function compareResponse(query) {
 // ---------------------------------------------------------------------------
 function shapePost(p) {
   const { _comments, ...rest } = p
-  return rest
+  const comments = _comments || []
+  // Surface engagement cues the feed card needs to read as a "conversation
+  // poster": the highest-scored top-level reply and the last activity time.
+  const top = comments
+    .filter(c => !c.parent_id)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))[0]
+  const lastActivity = comments.reduce(
+    (mx, c) => (c.created_at > mx ? c.created_at : mx),
+    p.created_at,
+  )
+  return {
+    ...rest,
+    last_activity_at: lastActivity,
+    top_comment: top ? { username: top.username, body: top.body, score: top.score || 0 } : null,
+  }
 }
 
 // ---------------------------------------------------------------------------

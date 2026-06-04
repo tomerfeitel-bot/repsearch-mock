@@ -380,8 +380,8 @@ export default function Study() {
   }
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: STUDY_BG, color: STUDY_TEXT }}>
-      <BubbleHeader label="Research engine" title="Study" />
+    <div className="faded-page min-h-screen pb-28" style={{ background: STUDY_BG, color: STUDY_TEXT }}>
+      <BubbleHeader label="Research engine" title="Study" floating />
       <div className="px-4 pb-3">
         <PillTabs
           tabs={[

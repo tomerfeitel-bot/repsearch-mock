@@ -61,8 +61,8 @@ export default function Progress() {
   }
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: PROGRESS_BG, color: PROGRESS_TEXT }}>
-      <BubbleHeader label="Training log" title="Progress" />
+    <div className="faded-page min-h-screen pb-24" style={{ background: PROGRESS_BG, color: PROGRESS_TEXT }}>
+      <BubbleHeader label="Training log" title="Progress" floating />
       <div className="px-4 pb-3">
         <PillTabs
           tabs={TABS.map(t => ({ value: t, label: TAB_LABELS[t] || (t[0].toUpperCase() + t.slice(1)) }))}

@@ -245,14 +245,14 @@ export default function TemplateBuilder() {
 
   if (loading || !template) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-gray-500">
+      <div className="faded-page min-h-screen flex items-center justify-center text-sm text-gray-500">
         Opening template builder...
       </div>
     )
   }
 
   return (
-    <div className="pb-28">
+    <div className="faded-page min-h-screen pb-28">
       <div className="sticky top-0 z-20 bg-gray-950/95 backdrop-blur border-b border-gray-800">
         <div className="px-4 safe-pt-3 pb-2 flex items-center justify-between gap-2">
           <button onClick={() => navigate(returnTo)} className="text-sm text-gray-500 hover:text-gray-300 px-2 py-1">

@@ -2,35 +2,75 @@ import { NavLink } from 'react-router-dom'
 
 const tabs = [
   { to: '/community', label: 'Community', icon: CommunityIcon },
-  { to: '/workout', label: 'Workout', icon: WorkoutIcon },
-  { to: '/progress', label: 'Progress', icon: ProgressIcon },
   { to: '/study', label: 'Study', icon: StudyIcon },
+  { to: '/progress', label: 'Progress', icon: ProgressIcon },
   { to: '/profile', label: 'Profile', icon: ProfileIcon },
 ]
 
 export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gray-950/95 backdrop-blur border-t border-gray-800 pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-md mx-auto grid grid-cols-5">
-        {tabs.map(({ to, label, icon: Icon }) => (
+      <div className="relative max-w-md mx-auto grid grid-cols-5">
+        {/* Community, Study */}
+        {tabs.slice(0, 2).map((tab) => (
+          <Tab key={tab.to} {...tab} />
+        ))}
+
+        {/* Center workout button — pops out of the bar */}
+        <div className="flex justify-center">
           <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              'flex flex-col items-center justify-center gap-1 py-3 text-[11px] font-medium transition-colors ' +
-              (isActive ? 'text-indigo-400' : 'text-gray-500 hover:text-gray-300')
-            }
+            to="/workout"
+            aria-label="Workout"
+            className="absolute -top-6 flex flex-col items-center"
           >
             {({ isActive }) => (
               <>
-                <Icon active={isActive} />
-                <span>{label}</span>
+                <span
+                  className={
+                    'flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 text-white shadow-lg shadow-black/40 ring-4 ring-gray-950 transition-transform active:scale-95 ' +
+                    (isActive ? 'outline outline-2 outline-amber-500' : '')
+                  }
+                >
+                  <WorkoutIcon active />
+                </span>
+                <span
+                  className={
+                    'mt-1 text-[11px] font-medium ' +
+                    (isActive ? 'text-indigo-400' : 'text-gray-500')
+                  }
+                >
+                  Workout
+                </span>
               </>
             )}
           </NavLink>
+        </div>
+
+        {/* Progress, Profile */}
+        {tabs.slice(2).map((tab) => (
+          <Tab key={tab.to} {...tab} />
         ))}
       </div>
     </nav>
+  )
+}
+
+function Tab({ to, label, icon: Icon }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        'flex flex-col items-center justify-center gap-1 py-3 text-[11px] font-medium transition-colors ' +
+        (isActive ? 'text-indigo-400' : 'text-gray-500 hover:text-gray-300')
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon active={isActive} />
+          <span>{label}</span>
+        </>
+      )}
+    </NavLink>
   )
 }
 

@@ -39,6 +39,7 @@ export default function Community() {
   const [composeKind, setComposeKind] = useState(null)
   const [composeWorkoutId, setComposeWorkoutId] = useState(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [saved, setSavedList] = useState([])
   const [savedLoading, setSavedLoading] = useState(false)
@@ -119,10 +120,17 @@ export default function Community() {
   const listLoading = tab === 'saved' ? savedLoading : feedLoading
 
   return (
-    <div className="min-h-screen pb-24">
+    <div
+      className="min-h-screen pb-24"
+      style={{
+        background:
+          'linear-gradient(145deg, var(--surface-alt) 0%, var(--hero-fade) 42%, var(--bg) 100%)',
+      }}
+    >
       <BubbleHeader
         label="Live board"
         title="Community"
+        floating
         action={
           <BubbleAction
             onClick={() => { setComposeKind(null); setComposeWorkoutId(null); setComposeOpen(true) }}
@@ -140,21 +148,31 @@ export default function Community() {
       </div>
 
       {tab === 'feed' && (
-        <div className="px-4 pt-4 space-y-2">
-          <form onSubmit={runSearch} className="flex gap-2">
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts" className="min-h-10 min-w-0 w-0 flex-1 rounded-2xl bg-gray-900 border border-gray-800 px-4 text-sm text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500" />
-            <button type="button" onClick={() => setFiltersOpen(true)} className="relative min-h-10 shrink-0 px-3 rounded-2xl bg-gray-900 border border-gray-800 text-sm font-semibold text-gray-200 hover:border-indigo-500">
-              Filter
-              {filterCount > 0 && <span className="ml-1 text-indigo-300">{filterCount}</span>}
+        <div className="px-4 pt-3 space-y-2">
+          {/* Slim toolbar so a post is visible sooner — search is tucked behind a
+              tap rather than occupying a permanent row at the top of the feed. */}
+          <div className="flex items-center justify-end gap-2">
+            <button type="button" onClick={() => setSearchOpen(o => !o)} aria-label="Search posts" aria-expanded={searchOpen}
+              className={'min-h-10 w-10 shrink-0 grid place-items-center rounded-2xl bg-white/80 border text-[var(--text-muted)] shadow-sm hover:border-[var(--accent)] ' + (searchOpen ? 'border-[var(--accent)] text-[var(--text)]' : 'border-[var(--border)]')}>
+              <IconSearch size={18} />
             </button>
-          </form>
+            <button type="button" onClick={() => setFiltersOpen(true)} className="inline-flex items-center min-h-10 shrink-0 px-4 rounded-2xl bg-white/80 border border-[var(--border)] text-sm font-semibold text-[var(--text)] shadow-sm hover:border-[var(--accent)]">
+              Filter
+              {filterCount > 0 && <span className="ml-1.5 inline-grid place-items-center min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--accent)] text-[var(--accent-ink)] text-micro font-bold">{filterCount}</span>}
+            </button>
+          </div>
+          {searchOpen && (
+            <form onSubmit={runSearch}>
+              <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts" className="min-h-10 w-full rounded-2xl bg-white/80 border border-[var(--border)] px-4 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] shadow-sm focus:outline-none focus:border-[var(--accent)]" />
+            </form>
+          )}
           {(activeFilters.length > 0 || q) && (
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
               {activeFilters.map(f => (
-                <span key={f} className="shrink-0 rounded-full border border-gray-800 bg-gray-900 px-2.5 py-1 text-xs text-gray-300">{f}</span>
+                <span key={f} className="shrink-0 rounded-full border border-[var(--border)] bg-white/70 px-2.5 py-1 text-xs text-[var(--text-muted)] shadow-sm">{f}</span>
               ))}
               {(activeFilters.length > 0 || q) && (
-                <button type="button" onClick={() => { clearFilters(); setSearch(''); setQ('') }} className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-gray-400 hover:text-gray-200">Clear</button>
+                <button type="button" onClick={() => { clearFilters(); setSearch(''); setQ('') }} className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text)]">Clear</button>
               )}
             </div>
           )}
@@ -167,15 +185,15 @@ export default function Community() {
         <div className="px-4 pt-4">
           {listLoading && list.length === 0 && <Skeleton />}
           {!listLoading && list.length === 0 && (
-            <div className="text-center py-16 text-sm text-gray-500 space-y-4">
-              <div>{tab === 'saved' ? 'No saved posts yet.' : 'Nothing here yet — start a discussion or share your training.'}</div>
-              {tab === 'feed' && <button onClick={() => setComposeOpen(true)} className="px-4 py-2 rounded-full bg-gray-900 border border-gray-800 text-gray-200 text-xs font-semibold hover:border-indigo-500">Create a post</button>}
+            <div className="text-center py-16 text-sm text-[var(--text-muted)] space-y-4">
+              <div>{tab === 'saved' ? 'No saved posts yet.' : 'Nothing here yet. Start a discussion or share your training.'}</div>
+              {tab === 'feed' && <button onClick={() => setComposeOpen(true)} className="px-4 py-2 rounded-full bg-[var(--accent)] border border-[var(--accent)] text-[var(--accent-ink)] text-xs font-semibold shadow-sm hover:opacity-90">Create a post</button>}
             </div>
           )}
           {list.map(item => <PostCard key={item.id} item={item} onVote={onVote} onToggleSave={onToggleSave} />)}
 
           {tab === 'feed' && feedMeta.hasMore && (
-            <button onClick={handleLoadMore} disabled={loadingMore || feedLoading} className="w-full mt-2 py-3 rounded-2xl bg-gray-900 border border-gray-800 text-sm font-semibold text-gray-300 disabled:opacity-60">
+            <button onClick={handleLoadMore} disabled={loadingMore || feedLoading} className="w-full mt-2 py-3 rounded-2xl bg-white/80 border border-[var(--border)] text-sm font-semibold text-[var(--text)] shadow-sm disabled:opacity-60">
               {loadingMore ? 'Loading...' : 'Load more'}
             </button>
           )}
@@ -207,8 +225,16 @@ export default function Community() {
   )
 }
 
+function IconSearch({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  )
+}
+
 function Skeleton() {
-  return <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-36 bg-gray-900 border border-gray-800 rounded-2xl animate-pulse" />)}</div>
+  return <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-36 bg-white/60 border border-[var(--border)] rounded-2xl animate-pulse" />)}</div>
 }
 
 function FilterSheet({ open, onClose, scope, setScope, sort, setSort, kind, setKind, label, setLabel, clearFilters }) {
@@ -237,7 +263,7 @@ function FilterSheet({ open, onClose, scope, setScope, sort, setSort, kind, setK
           </div>
         </FilterGroup>
         <div className="grid grid-cols-2 gap-2 pt-2">
-          <button type="button" onClick={clearFilters} className="min-h-11 rounded-2xl border border-gray-800 bg-gray-950 text-sm font-semibold text-gray-300">Reset</button>
+          <button type="button" onClick={clearFilters} className="min-h-11 rounded-2xl border border-[var(--border)] bg-white text-sm font-semibold text-[var(--text)]">Reset</button>
           <button type="button" onClick={onClose} className="min-h-11 rounded-2xl bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500">Show posts</button>
         </div>
       </div>
@@ -248,7 +274,7 @@ function FilterSheet({ open, onClose, scope, setScope, sort, setSort, kind, setK
 function FilterGroup({ title, children }) {
   return (
     <section>
-      <h3 className="mb-2 text-xs font-semibold text-gray-400">{title}</h3>
+      <h3 className="mb-2 text-xs font-semibold text-[var(--text-muted)]">{title}</h3>
       {children}
     </section>
   )
@@ -266,7 +292,7 @@ function SegmentedOptions({ options, value, onChange }) {
 
 function FilterChoice({ active, onClick, children }) {
   const activeClass = 'border-indigo-500 bg-indigo-600 text-white'
-  const inactiveClass = 'border-gray-800 bg-gray-950 text-gray-300 hover:border-gray-700'
+  const inactiveClass = 'border-[var(--border)] bg-white text-[var(--text)] hover:border-[var(--border-strong)]'
   return (
     <button
       type="button"

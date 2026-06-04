@@ -242,7 +242,7 @@ export default function StartScreen({ onStart, restoreError = '' }) {
   }
 
   return (
-    <div className="px-4 safe-pt-4 pb-24 space-y-6">
+    <div className="faded-page min-h-screen px-4 safe-pt-4 pb-24 space-y-6">
       <div className="p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
         <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, var(--surface-alt), var(--hero-fade))' }}>
           <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>New session</span>

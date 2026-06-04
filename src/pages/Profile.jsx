@@ -85,10 +85,11 @@ export default function Profile() {
   const enriched = useMemo(() => profileData ? { ...profileData, user: { ...profileData.user, ...user } } : null, [profileData, user])
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'var(--bg)' }}>
+    <div className="faded-page min-h-screen pb-24" style={{ background: 'var(--bg)' }}>
       <BubbleHeader
         label="Athlete card"
         title="Profile"
+        floating
         action={
           <button
             onClick={() => setGearOpen(true)}

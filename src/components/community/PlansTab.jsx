@@ -163,7 +163,7 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
       <div className="p-4 space-y-4">
         {drafts.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Drafts</div>
+            <div className="text-micro uppercase tracking-wider text-gray-500 font-semibold">Drafts</div>
             {drafts.slice(0, 4).map(draft => (
               <div
                 key={draft.id}
@@ -171,7 +171,7 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
               >
                 <button onClick={() => { onClose(); onDraft(draft) }} className="min-w-0 flex-1 text-left">
                   <div className="font-medium text-gray-100 truncate">{draft.name}</div>
-                  <div className="mt-1 text-xs text-gray-500">Private draft</div>
+                  <div className="mt-1 text-caption text-gray-500">Private draft</div>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'draft', item: draft }) }}
@@ -185,7 +185,7 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
         )}
         {programDrafts.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Program drafts</div>
+            <div className="text-micro uppercase tracking-wider text-gray-500 font-semibold">Program drafts</div>
             {programDrafts.slice(0, 4).map(draft => (
               <div
                 key={draft.id}
@@ -193,7 +193,7 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
               >
                 <button onClick={() => { onClose(); onProgramDraft(draft) }} className="min-w-0 flex-1 text-left">
                   <div className="font-medium text-gray-100 truncate">{draft.name}</div>
-                  <div className="mt-1 text-xs text-gray-500">Private program draft</div>
+                  <div className="mt-1 text-caption text-gray-500">Private program draft</div>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'program', item: draft }) }}
@@ -211,14 +211,14 @@ function CreateMenu({ open, onClose, drafts = [], programDrafts = [], onTemplate
           className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4"
         >
           <div className="font-semibold text-gray-100">Template</div>
-          <div className="mt-1 text-xs text-gray-500">Build a reusable workout in the full template builder.</div>
+          <div className="mt-1 text-caption text-gray-500">Build a reusable workout in the full template builder.</div>
         </button>
         <button
           onClick={() => { onClose(); onProgram() }}
           className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4"
         >
           <div className="font-semibold text-gray-100">Program</div>
-          <div className="mt-1 text-xs text-gray-500">Create a multi-week plan from saved templates.</div>
+          <div className="mt-1 text-caption text-gray-500">Create a multi-week plan from saved templates.</div>
         </button>
         </div>
       </div>
@@ -324,7 +324,7 @@ function Templates({ templates, onChanged }) {
           <div key={t.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-3 flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <div className="font-medium text-gray-100 truncate">{t.name}</div>
-              <div className="text-xs text-gray-500 truncate">
+              <div className="text-caption text-gray-500 truncate">
                 {t.creator_username ? `by ${t.creator_username} · ` : ''}{strictnessLabel(t.strictness)} · used {t.usage_count || 0}x
               </div>
             </div>
@@ -377,19 +377,19 @@ function ProgramCard({ program, onOpen, onStarted }) {
         <div className="flex items-center gap-2">
           <Avatar username={program.creator_username || 'anon'} size="sm" />
           <span className="text-sm text-gray-300 truncate">{program.creator_username || 'unknown'}</span>
-          <span className="ml-auto text-[10px] text-gray-500 uppercase tracking-wider">Open-ended</span>
+          <span className="ml-auto text-micro text-gray-500 uppercase tracking-wider">Open-ended</span>
         </div>
         <div>
-          <div className="font-bold text-gray-100 text-lg leading-tight line-clamp-2">{program.name}</div>
-          {program.description && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{program.description}</div>}
+          <div className="font-bold text-gray-100 text-title leading-tight line-clamp-2">{program.name}</div>
+          {program.description && <div className="text-caption text-gray-500 mt-1 line-clamp-2">{program.description}</div>}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+        <div className="flex flex-wrap items-center gap-2 text-caption text-gray-400">
           <span className="font-mono tabular-nums text-gray-100 text-xl">{program.proof?.hero || `${program.enrollment_count || 0} started`}</span>
           <span>{proofStatus(program.proof?.status)}</span>
           <span className="px-2 py-1 rounded-full bg-gray-950 border border-gray-800">open-ended</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-500">{strictnessLabel(program.strictness)}</span>
+          <span className="text-caption text-gray-500">{strictnessLabel(program.strictness)}</span>
           <button onClick={(e) => { e.stopPropagation(); setStartOpen(true) }} className="ml-auto px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">
             Start program
           </button>
@@ -496,7 +496,7 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
     <Sheet open={!!program} onClose={onClose} title={program.name}>
       <div className="p-4 space-y-5">
         <div>
-          <div className="text-xs uppercase tracking-wider text-gray-500">Creator note</div>
+          <div className="text-micro uppercase tracking-wider text-gray-500">Creator note</div>
           <p className="mt-1 text-sm text-gray-300">{program.description || 'No creator note yet.'}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -508,11 +508,11 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
         <div className="rounded-2xl bg-gray-950 border border-gray-800 p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-xs uppercase tracking-wider text-gray-500">Next session</div>
+              <div className="text-micro uppercase tracking-wider text-gray-500">Next session</div>
               <div className="mt-1 text-sm font-semibold text-gray-100">
                 {detailError || nextSession?.session_label || nextSession?.template_name || (full ? 'Start the program to queue a session' : 'Loading program...')}
               </div>
-              {full?.phase?.next_suggested_at && <div className="mt-1 text-xs text-gray-500">Suggested {new Date(full.phase.next_suggested_at).toLocaleDateString()}</div>}
+              {full?.phase?.next_suggested_at && <div className="mt-1 text-caption text-gray-500">Suggested {new Date(full.phase.next_suggested_at).toLocaleDateString()}</div>}
             </div>
             {nextSession && full?.enrollment && (
               <button onClick={startNextSession} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">
@@ -533,12 +533,12 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
         </div>
         {full?.blocks?.length > 0 && (
           <div className="rounded-2xl bg-gray-950 border border-gray-800 p-4 space-y-3">
-            <div className="text-xs uppercase tracking-wider text-gray-500">Structure</div>
+            <div className="text-micro uppercase tracking-wider text-gray-500">Structure</div>
             {full.blocks.map(block => (
               <div key={block.id} className="space-y-2">
                 <div className="text-sm font-semibold text-gray-100">{block.name}</div>
                 {(full.workouts || []).filter(w => w.block_id === block.id).map((session, idx) => (
-                  <div key={session.id} className="flex gap-2 text-xs text-gray-400">
+                  <div key={session.id} className="flex gap-2 text-caption text-gray-400">
                     <span className="font-mono text-gray-500">{idx + 1}</span>
                     <span className="min-w-0 flex-1 truncate">{session.session_label || session.template_name}</span>
                     <span>{timingLabel(session.timing_preset)}</span>
@@ -549,7 +549,7 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
           </div>
         )}
         <div className="rounded-2xl bg-gray-950 border border-gray-800 p-4">
-          <div className="text-xs uppercase tracking-wider text-gray-500">Evidence</div>
+          <div className="text-micro uppercase tracking-wider text-gray-500">Evidence</div>
           <p className="mt-2 text-sm text-gray-300">{evidenceError || evidence?.language || 'Loading evidence...'}</p>
           {evidenceError && (
             <button onClick={() => setRetryKey(k => k + 1)} className="mt-3 px-3 py-1.5 rounded-lg bg-gray-900 text-xs font-semibold text-gray-300 hover:bg-gray-800">
@@ -557,7 +557,7 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
             </button>
           )}
           {evidence?.cohorts && (
-            <div className="mt-3 text-xs text-gray-500 space-y-1">
+            <div className="mt-3 text-caption text-gray-500 space-y-1">
               <div>People running this: <span className="font-mono text-gray-300">{evidence.cohorts.running_this}</span></div>
               <div>Adapting this: <span className="font-mono text-gray-300">{evidence.cohorts.adapting_this}</span></div>
               <div>Matched lifters: <span className="text-gray-400">Study view</span></div>
@@ -615,7 +615,7 @@ export function StartProgramSheet({ open, onClose, program, onStarted }) {
       <div className="p-4 space-y-4">
         <div className="text-sm text-gray-300">Pick a start date. RepSearch will suggest the next sessions from the program timing rules. Programs are open-ended, but useful evidence needs a real run.</div>
         <label className="block space-y-2">
-          <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Start date</span>
+          <span className="text-micro uppercase tracking-wider text-gray-500 font-semibold">Start date</span>
           <input
             type="date"
             value={startDate}
@@ -646,15 +646,15 @@ function DecisionSheet({ open, onClose, onPick }) {
       <div className="p-4 space-y-2">
         <button onClick={() => onPick('continue')} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4">
           <div className="font-semibold text-gray-100">Continue with next session</div>
-          <div className="mt-1 text-xs text-gray-500">Keep the program order and mark timing as handled.</div>
+          <div className="mt-1 text-caption text-gray-500">Keep the program order and mark timing as handled.</div>
         </button>
         <button onClick={() => onPick('shift')} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4">
           <div className="font-semibold text-gray-100">Shift future suggestions</div>
-          <div className="mt-1 text-xs text-gray-500">Keep the session but reset the timing track.</div>
+          <div className="mt-1 text-caption text-gray-500">Keep the session but reset the timing track.</div>
         </button>
         <button onClick={() => onPick('skip_adapt')} className="w-full text-left rounded-xl bg-gray-950 border border-gray-800 p-4">
           <div className="font-semibold text-gray-100">Skip / mark adapted</div>
-          <div className="mt-1 text-xs text-gray-500">Record that this run moved away from the written plan.</div>
+          <div className="mt-1 text-caption text-gray-500">Record that this run moved away from the written plan.</div>
         </button>
       </div>
     </Sheet>
@@ -665,7 +665,7 @@ function ProofStat({ label, value }) {
   return (
     <div className="rounded-2xl bg-gray-950 border border-gray-800 p-3">
       <div className="font-mono text-2xl text-gray-100">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-gray-500">{label}</div>
+      <div className="text-micro uppercase tracking-wider text-gray-500">{label}</div>
     </div>
   )
 }

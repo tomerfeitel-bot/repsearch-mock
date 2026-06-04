@@ -214,9 +214,9 @@ export default function ActiveWorkout() {
   }
 
   return (
-    <div className="pb-32">
+    <div className="faded-page min-h-screen pb-32">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: 'var(--bg)' }}>
+      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: 'transparent' }}>
         <div className="px-4 safe-pt-3 pb-2">
           <div className="p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
             <div

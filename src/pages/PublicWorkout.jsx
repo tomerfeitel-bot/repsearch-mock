@@ -41,7 +41,7 @@ export default function PublicWorkout() {
   if (loading) return <WorkoutSkeleton />
   if (!data) {
     return (
-      <div className="min-h-screen pb-24 bg-gray-950 p-4">
+      <div className="faded-page min-h-screen pb-24 p-4">
         <div className="rounded-2xl bg-gray-900 border border-gray-800 p-8 text-center text-sm text-gray-500">Workout not found.</div>
       </div>
     )
@@ -51,7 +51,7 @@ export default function PublicWorkout() {
   const totalSets = data.sets?.length || 0
 
   return (
-    <div className="min-h-screen pb-24 bg-gray-950">
+    <div className="faded-page min-h-screen pb-24">
       <header className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur border-b border-gray-800 px-4 safe-pt-4 pb-4">
         <Link to={`/user/${owner.username}`} className="flex items-center gap-2">
           <Avatar username={owner.username} size="sm" />
@@ -112,7 +112,7 @@ export default function PublicWorkout() {
 
 function WorkoutSkeleton() {
   return (
-    <div className="min-h-screen pb-24 bg-gray-950 p-4 space-y-4">
+    <div className="faded-page min-h-screen pb-24 p-4 space-y-4">
       <div className="h-20 rounded-2xl bg-gray-900 border border-gray-800 animate-pulse" />
       <div className="h-32 rounded-2xl bg-gray-900 border border-gray-800 animate-pulse" />
       <div className="h-56 rounded-2xl bg-gray-900 border border-gray-800 animate-pulse" />
