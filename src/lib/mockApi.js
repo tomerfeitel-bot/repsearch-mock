@@ -355,24 +355,72 @@ function buildPosts() {
 // ---------------------------------------------------------------------------
 // seed: research findings + saved questions
 // ---------------------------------------------------------------------------
+// Auto-discovered findings surfaced on the "For You" tab and the Evidence tab.
+// Field names mirror what the UI reads (FindingButton / FindingsRow):
+//   title, n, effect_size, surprising, query_json (for replay into the builder).
 const FINDINGS = [
   {
-    id: 'f1', headline: 'Lifters logging 3-5 min rest progress ~8% faster on bench',
+    id: 'f1', title: 'Lifters resting 3-5 min between sets progress ~8% faster on bench',
     detail: 'Across qualified bench logs, the longest-rest bucket showed the steepest progression slope.',
-    measure: 'progression_rate', groupBy: 'rest_period_bucket', strength: 84, discovered_at: dayIso(2),
+    surprising: false, n: 512, effect_size: 0.62,
+    measure: 'progression_rate', groupBy: 'rest_period_bucket', discovered_at: dayIso(2),
     query_json: { groupBy: 'rest_period_bucket', measure: 'progression_rate', exerciseId: 'bench_barbell', minCohort: 10 },
   },
   {
-    id: 'f2', headline: 'Q4 sleep quality tracks with faster strength gains',
-    detail: 'Top sleep-quality quartile out-progressed the bottom by a wide margin.',
-    measure: 'progression_rate', groupBy: 'sleep_quality_quartile', strength: 76, discovered_at: dayIso(5),
+    id: 'f2', title: 'Top-quartile sleep quality tracks with faster strength gains',
+    detail: 'Top sleep-quality quartile out-progressed the bottom quartile by a wide margin.',
+    surprising: false, n: 178, effect_size: 0.54,
+    measure: 'progression_rate', groupBy: 'sleep_quality_quartile', discovered_at: dayIso(5),
     query_json: { groupBy: 'sleep_quality_quartile', measure: 'progression_rate', minCohort: 30 },
   },
   {
-    id: 'f3', headline: 'Higher training frequency beats lower for hypertrophy goals',
-    detail: '3+ sessions/week bucket led progression for hypertrophy-focused lifters.',
-    measure: 'progression_rate', groupBy: 'frequency_bucket', strength: 71, discovered_at: dayIso(9),
+    id: 'f3', title: 'Higher training frequency wins for hypertrophy-focused lifters',
+    detail: '3+ sessions/week led progression for lifters whose stated goal is hypertrophy.',
+    surprising: false, n: 146, effect_size: 0.49,
+    measure: 'progression_rate', groupBy: 'frequency_bucket', discovered_at: dayIso(9),
     query_json: { filters: [{ field: 'users.goal', op: '=', value: 'hypertrophy' }], groupBy: 'frequency_bucket', measure: 'progression_rate', minCohort: 10 },
+  },
+  {
+    id: 'f4', title: 'Beginners progress far faster than advanced lifters',
+    detail: 'Newer lifters showed the steepest weight progression — the classic "newbie gains" curve, in the data.',
+    surprising: false, n: 624, effect_size: 0.71,
+    measure: 'progression_rate', groupBy: 'experience_level', discovered_at: dayIso(1),
+    query_json: { groupBy: 'experience_level', measure: 'progression_rate', minCohort: 10 },
+  },
+  {
+    id: 'f5', title: 'Machines progress nearly as fast as free weights',
+    detail: 'The gap in top-set increase between machine and barbell work was much smaller than the forums suggest.',
+    surprising: true, n: 584, effect_size: 1.4,
+    measure: 'top_set_pct_change', groupBy: 'equipment_type', discovered_at: dayIso(3),
+    query_json: { groupBy: 'equipment_type', measure: 'top_set_pct_change', minCohort: 10 },
+  },
+  {
+    id: 'f6', title: 'Lifters who log RIR out-progress those who don’t',
+    detail: 'RIR-logging discipline correlates with faster progression — likely a proxy for autoregulation.',
+    surprising: true, n: 219, effect_size: 0.38,
+    measure: 'progression_rate', groupBy: 'rir_use', discovered_at: dayIso(6),
+    query_json: { groupBy: 'rir_use', measure: 'progression_rate', minCohort: 10 },
+  },
+  {
+    id: 'f7', title: 'High cardio load tracks with slower squat progression',
+    detail: 'The top cardio-load quartile progressed squats more slowly than the lowest — an interference signal.',
+    surprising: false, n: 111, effect_size: -0.33,
+    measure: 'progression_rate', groupBy: 'cardio_load_quartile', discovered_at: dayIso(11),
+    query_json: { groupBy: 'cardio_load_quartile', measure: 'progression_rate', exerciseId: 'squat_barbell', minCohort: 10 },
+  },
+  {
+    id: 'f8', title: 'Protein 1.6-2.2 g/kg lines up with higher estimated 1RM',
+    detail: 'Higher protein buckets carried a meaningfully higher estimated 1RM, plateauing past ~2.2 g/kg.',
+    surprising: false, n: 252, effect_size: 12.5,
+    measure: 'estimated_1rm', groupBy: 'protein_bucket', discovered_at: dayIso(8),
+    query_json: { groupBy: 'protein_bucket', measure: 'estimated_1rm', minCohort: 10 },
+  },
+  {
+    id: 'f9', title: 'Leaving 1-2 reps in the tank beats going to failure',
+    detail: 'Sets logged at RIR 1-2 tracked with faster progression than sets routinely taken to failure (RIR 0).',
+    surprising: true, n: 246, effect_size: 0.29,
+    measure: 'progression_rate', groupBy: 'rir_bucket', discovered_at: dayIso(13),
+    query_json: { groupBy: 'rir_bucket', measure: 'progression_rate', minCohort: 10 },
   },
 ]
 
@@ -383,6 +431,14 @@ const FEATURED_QUESTIONS = [
   { id: 'hypertrophy_freq', title: 'Best frequency for hypertrophy', subtitle: 'Bench progression for hypertrophy-focused lifters', type: 'query', query: { filters: [{ field: 'users.goal', op: '=', value: 'hypertrophy' }], groupBy: 'frequency_bucket', measure: 'progression_rate', exerciseId: 'bench_barbell', minCohort: 10 } },
   { id: 'failure_matter', title: 'Does training to failure matter?', subtitle: 'Progression by RIR logging discipline', type: 'query', query: { groupBy: 'rir_use', measure: 'progression_rate', minCohort: 10 } },
   { id: 'machine_vs_free', title: 'Machine vs free weight progression', subtitle: 'Progression rate by equipment type', type: 'query', query: { groupBy: 'equipment_type', measure: 'progression_rate', minCohort: 10 } },
+  { id: 'rest_period_bench', title: 'How long should you rest on bench?', subtitle: 'Bench progression by rest-period bucket', type: 'query', query: { groupBy: 'rest_period_bucket', measure: 'progression_rate', exerciseId: 'bench_barbell', minCohort: 10 } },
+  { id: 'rep_range_growth', title: 'Which rep range drives the most growth?', subtitle: 'Top-set increase by rep-range bucket', type: 'query', query: { groupBy: 'rep_range_bucket', measure: 'top_set_pct_change', minCohort: 10 } },
+  { id: 'protein_strength', title: 'How much protein for strength?', subtitle: 'Estimated 1RM by protein intake', type: 'query', query: { groupBy: 'protein_bucket', measure: 'estimated_1rm', minCohort: 10 } },
+  { id: 'age_progression', title: 'Does age slow you down?', subtitle: 'Progression rate by age range', type: 'query', query: { groupBy: 'age_range', measure: 'progression_rate', minCohort: 10 } },
+  { id: 'natural_vs_enhanced', title: 'Natural vs enhanced progression', subtitle: 'Deadlift progression across lifter status', type: 'compare', query: { cohortA: { label: 'Natural', filters: [{ field: 'users.enhancement_status', op: '=', value: 'natural' }] }, cohortB: { label: 'Enhanced', filters: [{ field: 'users.enhancement_status', op: '=', value: 'enhanced' }] }, groupBy: 'frequency_bucket', measure: 'progression_rate', exerciseId: 'deadlift', minCohort: 10 } },
+  { id: 'creatine_effect', title: 'Does creatine show up in the data?', subtitle: 'Estimated 1RM: creatine users vs non-users', type: 'compare', query: { cohortA: { label: 'Creatine', filters: [{ field: 'users.creatine_use', op: '=', value: 'yes' }] }, cohortB: { label: 'No creatine', filters: [{ field: 'users.creatine_use', op: '=', value: 'no' }] }, groupBy: 'experience_level', measure: 'estimated_1rm', minCohort: 10 } },
+  { id: 'set_order_fade', title: 'Do later sets still build strength?', subtitle: 'Set volume by position in the session', type: 'query', query: { groupBy: 'session_set_order_bucket', measure: 'set_volume_load', minCohort: 10 } },
+  { id: 'cardio_interference', title: 'Does cardio hurt your squat?', subtitle: 'Squat progression by cardio load', type: 'query', query: { groupBy: 'cardio_load_quartile', measure: 'progression_rate', exerciseId: 'squat_barbell', minCohort: 10 } },
 ]
 
 // bucket label sets for synthesizing query results
@@ -416,11 +472,84 @@ const BUCKET_LABELS = {
   physical_labor_level: ['sedentary', 'light', 'moderate', 'heavy'],
 }
 
-function synthBuckets(groupBy, minCohort = 10) {
+// Deterministic string-seeded RNG (mulberry32 over a cheap hash) so synthesized
+// charts stay stable across reloads but still vary by group-by + measure.
+function hashSeed(str) {
+  let h = 1779033703 ^ str.length
+  for (let i = 0; i < str.length; i += 1) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353)
+    h = (h << 13) | (h >>> 19)
+  }
+  return h >>> 0
+}
+function seededRng(seed) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// Believable effect shapes (relative 0..1, ordered to match BUCKET_LABELS).
+// Buckets without an explicit shape get a deterministic gentle curve.
+const BUCKET_SHAPES = {
+  rest_period_bucket: [0.30, 0.55, 0.80, 1.0, 0.9],       // peaks at 3-5 min
+  sleep_quality_quartile: [0.34, 0.56, 0.78, 1.0],         // rising
+  sleep_duration_bucket: [0.30, 0.64, 1.0, 0.9],           // peak 7-8h
+  frequency_bucket: [0.42, 0.74, 1.0],                     // rising
+  experience_level: [1.0, 0.7, 0.46],                      // newbie gains
+  training_age_bucket: [1.0, 0.85, 0.68, 0.54, 0.43, 0.35],
+  protein_bucket: [0.42, 0.66, 0.92, 1.0],                 // plateau at top
+  cardio_load_quartile: [1.0, 0.86, 0.68, 0.52],           // interference
+  session_set_order_bucket: [1.0, 0.82, 0.62, 0.45],       // earlier sets win
+  rep_range_bucket: [0.70, 0.9, 1.0, 0.86, 0.62],          // peak 7-10
+  rir_bucket: [0.72, 1.0, 0.95, 0.78, 0.58],               // peak RIR 1
+  rir_use: [1.0, 0.66],                                    // loggers ahead
+  age_range: [1.0, 0.84, 0.66, 0.5],                       // declines with age
+  stress_bucket: [1.0, 0.78, 0.55],                        // less stress, more gain
+  set_number: [1.0, 0.86, 0.72, 0.6],
+}
+
+// Output band per measure so values render in believable units
+// (kg vs %/wk vs reps), instead of everything sitting at ~0.3-0.9.
+const MEASURE_RANGE = {
+  progression_rate: [0.25, 1.05],
+  estimated_1rm: [78, 142],
+  logged_1rm: [80, 150],
+  set_estimated_1rm: [62, 128],
+  set_weight_kg: [44, 104],
+  top_set_pct_change: [2.4, 13.5],
+  improvement_frequency: [0.28, 0.74],
+  recovery_volume_tolerance: [4200, 13800],
+  avg_weekly_frequency: [1.3, 3.4],
+  set_volume_load: [1600, 5800],
+  set_reps: [5, 12],
+  set_rir: [0.6, 3.4],
+  set_rest_seconds: [70, 235],
+  volume_load: [8200, 25600],
+}
+
+function synthBuckets(groupBy, minCohort = 10, measure = 'progression_rate', salt = '') {
   const labels = BUCKET_LABELS[groupBy] || ['Group A', 'Group B', 'Group C']
+  const rng = seededRng(hashSeed(`${groupBy}:${measure}:${salt}`))
+  const [lo, hi] = MEASURE_RANGE[measure] || [0.3, 1.0]
+  const span = hi - lo
+  const decimals = hi >= 50 ? 1 : hi >= 10 ? 2 : 4
+  // n-counts taper from the most common bucket; deterministic per group-by.
+  const peak = Math.round(60 + rng() * 90)
   return labels.map((label, i) => {
-    const n = Math.round(rand(minCohort + 5, 90))
-    return { label, n, avg_measure: round(0.3 + i * 0.13 + rand(-0.05, 0.08), 4), sd: round(rand(0.15, 0.3), 4) }
+    const shape = BUCKET_SHAPES[groupBy]
+    // fall back to a smooth deterministic curve when no explicit shape exists
+    const rel = shape
+      ? shape[i] ?? shape[shape.length - 1]
+      : 0.35 + 0.6 * (i / Math.max(1, labels.length - 1))
+    const jitter = (rng() - 0.5) * 0.08 * span
+    const avg = round(lo + rel * span + jitter, decimals)
+    const n = Math.max(minCohort, Math.round(peak * (0.5 + 0.5 * rng())))
+    const sd = round(span * (0.12 + rng() * 0.1), decimals)
+    return { label, n, avg_measure: avg, sd }
   })
 }
 function evidenceStatus(n) {
@@ -713,18 +842,30 @@ function handle(method, path, body) {
     return { deleted: true }
   }
   if (p === '/research/query' && m === 'POST') {
-    const buckets = synthBuckets(body?.groupBy, body?.minCohort)
+    const buckets = synthBuckets(body?.groupBy, body?.minCohort, body?.measure)
     const total = buckets.reduce((a, b) => a + b.n, 0)
     return { buckets, totalCohortSize: total, minCohort: body?.minCohort || 10, query: body }
   }
   if (p === '/research/compare-cohorts' && m === 'POST') {
-    const mk = (label) => { const buckets = synthBuckets(body?.groupBy, body?.minCohort); return { label, buckets, totalCohortSize: buckets.reduce((a, b) => a + b.n, 0), minCohort: body?.minCohort || 10 } }
-    return { cohortA: mk(body?.cohortA?.label || 'A'), cohortB: mk(body?.cohortB?.label || 'B'), query: body }
+    // Cohort B is nudged off cohort A by a stable per-label offset so the two
+    // series differ without looking random.
+    const mkA = synthBuckets(body?.groupBy, body?.minCohort, body?.measure)
+    const [lo, hi] = MEASURE_RANGE[body?.measure] || [0.3, 1.0]
+    const span = hi - lo
+    const decimals = hi >= 50 ? 1 : hi >= 10 ? 2 : 4
+    const mkB = mkA.map((b, i) => ({
+      label: b.label,
+      n: Math.max(body?.minCohort || 10, Math.round(b.n * (0.7 + ((i % 3) * 0.12)))),
+      avg_measure: round(b.avg_measure + (i % 2 === 0 ? -1 : 1) * span * 0.12, decimals),
+      sd: b.sd,
+    }))
+    const mk = (label, buckets) => ({ label, buckets, totalCohortSize: buckets.reduce((a, b) => a + b.n, 0), minCohort: body?.minCohort || 10 })
+    return { cohortA: mk(body?.cohortA?.label || 'A', mkA), cohortB: mk(body?.cohortB?.label || 'B', mkB), query: body }
   }
   if (p === '/research/scan' && m === 'POST') {
     const axes = body?.groupBys || []
     const results = axes.map(groupBy => {
-      const buckets = synthBuckets(groupBy, body?.minCohort)
+      const buckets = synthBuckets(groupBy, body?.minCohort, body?.measure)
       const total = buckets.reduce((a, b) => a + b.n, 0)
       const spread = effectSpread(buckets)
       return { groupBy, available: buckets.length >= 2, totalCohortSize: total, buckets, ...spread, evidenceStatus: evidenceStatus(total) }
@@ -734,7 +875,7 @@ function handle(method, path, body) {
   if (p === '/research/compare-scan' && m === 'POST') {
     const axes = body?.groupBys || []
     const results = axes.map(groupBy => {
-      const a = synthBuckets(groupBy, body?.minCohort), b = synthBuckets(groupBy, body?.minCohort)
+      const a = synthBuckets(groupBy, body?.minCohort, body?.measure, 'A'), b = synthBuckets(groupBy, body?.minCohort, body?.measure, 'B')
       const sa = effectSpread(a), sb = effectSpread(b)
       const totA = a.reduce((x, y) => x + y.n, 0), totB = b.reduce((x, y) => x + y.n, 0)
       const matched = Math.min(totA, totB)
