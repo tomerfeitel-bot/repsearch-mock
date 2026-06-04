@@ -16,11 +16,6 @@ export const STUDY_ACCENT_DIM = '#6b726c'
 export const STUDY_ACCENT_FAINT = 'rgba(36, 40, 37, 0.10)'
 export const STUDY_COMPARE_A = '#242825'     // graphite
 export const STUDY_COMPARE_B = '#a77b3f'     // brass against graphite
-// Warm "action" accent (matches the app-wide --action / indigo-600 remap). Used
-// to embolden the discovery heroes — featured questions + surprising findings.
-export const STUDY_ACTION = '#c2410c'
-export const STUDY_ACTION_SOFT = 'rgba(194, 65, 12, 0.12)'
-export const STUDY_ACTION_INK = '#9a330a'    // darker, for warm text on the soft tint (AA)
 
 // Field categories shown in the filter picker, grouped for readability.
 // Keys must match server/research/queryEngine.js FIELD_TABLE.

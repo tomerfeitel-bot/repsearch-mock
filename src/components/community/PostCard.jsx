@@ -8,19 +8,18 @@ import { SingleResultChart, CompareResultChart } from '../study/ResultsChart.jsx
 // retuned semantic hexes) so the badges read as one palette instead of reaching
 // for stock Tailwind jewel tones. `dot` and the pill text share a hue; the pill
 // background is a soft same-hue tint. Discussion — the conversation type — gets
-// the warm brass signature accent rather than the most ignorable gray. PR — the
-// celebration type — takes the warm energetic action accent.
+// the warm brass signature accent rather than the most ignorable gray.
 //
-// `accent` + `wash` carry the color onto the post's content surfaces (the
-// HeroFrame edge + fill, the ConversationBar strip), so each post reads with its
-// own color — the chrome stays neutral, the content comes alive.
+// `accent` + `wash` are used ONLY by the post hero frame (the attachment card):
+// a soft same-hue fill + a colored left edge, so each hero carries its kind's
+// color. The rest of the card — badges, buttons, chrome — stays neutral.
 export const KIND_META = {
-  discussion: { label: 'Discussion', dot: '#a77b3f', text: '#7a5a2c', tint: 'var(--brass-soft)', accent: '#a77b3f', wash: 'rgba(167,123,63,0.12)' },
+  discussion: { label: 'Discussion', dot: '#a77b3f', text: '#7a5a2c', tint: 'var(--brass-soft)', accent: '#a77b3f', wash: 'rgba(167,123,63,0.10)' },
   workout: { label: 'Workout', dot: '#2f6e4a', text: '#2f6e4a', tint: 'rgba(47,110,74,0.12)', accent: '#2f6e4a', wash: 'rgba(47,110,74,0.10)' },
-  program: { label: 'Program', dot: '#6f655a', text: '#5f564c', tint: 'var(--accent-soft)', accent: '#6f655a', wash: 'rgba(111,101,90,0.10)' },
+  program: { label: 'Program', dot: '#454c47', text: '#454c47', tint: 'var(--accent-soft)', accent: '#454c47', wash: 'rgba(69,76,71,0.08)' },
   template: { label: 'Template', dot: '#2b6a86', text: '#2b6a86', tint: 'rgba(43,106,134,0.12)', accent: '#2b6a86', wash: 'rgba(43,106,134,0.10)' },
-  study: { label: 'Study', dot: '#46624b', text: '#46624b', tint: 'rgba(124,169,130,0.18)', accent: '#46624b', wash: 'rgba(124,169,130,0.14)' },
-  pr: { label: 'PR', dot: '#c2410c', text: '#a8380a', tint: 'rgba(194,65,12,0.12)', accent: '#c2410c', wash: 'rgba(194,65,12,0.10)' },
+  study: { label: 'Study', dot: '#46624b', text: '#46624b', tint: 'rgba(124,169,130,0.18)', accent: '#46624b', wash: 'rgba(124,169,130,0.12)' },
+  pr: { label: 'PR', dot: '#8a6010', text: '#8a6010', tint: 'rgba(138,96,16,0.12)', accent: '#8a6010', wash: 'rgba(138,96,16,0.10)' },
 }
 
 // A post is "hot" when it has clear traction — used for the heat cue that tells
@@ -70,7 +69,7 @@ export default function PostCard({ item, onVote, onToggleSave }) {
       )}
 
       <div className="px-4 pt-3">
-        <ConversationBar item={item} onOpen={open} meta={meta} />
+        <ConversationBar item={item} onOpen={open} />
       </div>
 
       <div className="p-3 pt-3 flex items-center gap-1.5">
@@ -86,20 +85,16 @@ export default function PostCard({ item, onVote, onToggleSave }) {
 // conversation the loudest engagement signal on the card. Shows a labeled reply
 // count + last-activity time (or an invitation to start, when empty) and — for
 // posts with a standout reply — a one-line preview to pull the reader in.
-function ConversationBar({ item, onOpen, meta }) {
+function ConversationBar({ item, onOpen }) {
   const replies = item.comment_count || 0
   const activity = item.last_activity_at || item.created_at
   const empty = replies === 0
   const emptyPrompt = item.kind === 'discussion' ? 'Start the discussion' : 'Be the first to comment'
-  // Use the AA-tuned `text` hue (not the vivid `accent`) for the on-tint label —
-  // the lightest kinds (discussion brass, pr orange) only clear 4.5:1 when darkened.
-  const accent = meta?.text || 'var(--brass)'
   return (
     <button
       onClick={onOpen}
       aria-label="Open thread"
-      className="block w-full text-left rounded-2xl px-3.5 py-2.5 transition-colors"
-      style={{ background: meta?.tint || 'var(--accent-soft)' }}
+      className="block w-full text-left rounded-2xl bg-[var(--accent-soft)] px-3.5 py-2.5 transition-colors hover:bg-[var(--brass-soft)]"
     >
       <div className="flex items-center gap-2 text-[var(--ink-soft)]">
         <IconComment size={16} />
@@ -109,7 +104,7 @@ function ConversationBar({ item, onOpen, meta }) {
         {!empty && (
           <span className="text-caption text-[var(--text-muted)] truncate">· active {timeAgo(activity)}</span>
         )}
-        <span className="ml-auto shrink-0 text-caption font-bold" style={{ color: accent }}>{empty ? 'Reply →' : 'Join thread →'}</span>
+        <span className="ml-auto shrink-0 text-caption font-bold text-[var(--brass)]">{empty ? 'Reply →' : 'Join thread →'}</span>
       </div>
       {item.top_comment && (
         <div className="mt-2 border-l-2 border-[var(--border-strong)] pl-2.5">
@@ -147,10 +142,9 @@ export function AvatarWithDot({ username, dot, size = 'md' }) {
   )
 }
 
-// Horizontal vote pill: upvote glows warm (the energetic action accent),
-// downvote stays neutral graphite so the two read as distinct, not two warms.
-// `size="sm"` is the compact variant used inline on comments so the post and its
-// replies share one vote language instead of two.
+// Horizontal vote pill: upvote glows orange, downvote graphite. `size="sm"` is
+// the compact variant used inline on comments so the post and its replies share
+// one vote language instead of two.
 export function VotePill({ score, vote, onVote, size = 'md', ariaSuffix = '' }) {
   const up = vote === 1
   const down = vote === -1
@@ -164,9 +158,9 @@ export function VotePill({ score, vote, onVote, size = 'md', ariaSuffix = '' }) 
         className={box + ' grid place-items-center transition-colors ' + (up ? 'text-orange-700' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
         <IconArrow dir="up" size={icon} />
       </button>
-      <span className={'font-bold font-mono tabular-nums px-0.5 text-center ' + num + ' ' + (up ? 'text-orange-700' : down ? 'text-[var(--text)]' : 'text-[var(--text)]')}>{score}</span>
+      <span className={'font-bold font-mono tabular-nums px-0.5 text-center ' + num + ' ' + (up ? 'text-orange-700' : down ? 'text-indigo-700' : 'text-[var(--text)]')}>{score}</span>
       <button onClick={() => onVote(down ? 0 : -1)} aria-pressed={down} aria-label={'Downvote' + ariaSuffix}
-        className={box + ' grid place-items-center transition-colors ' + (down ? 'text-[var(--text)]' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
+        className={box + ' grid place-items-center transition-colors ' + (down ? 'text-indigo-700' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
         <IconArrow dir="down" size={icon} />
       </button>
     </div>
@@ -252,7 +246,8 @@ function Attachment({ item }) {
 
 // The "hero frame" lifts a post's attachment off the card and gives it the post
 // kind's own color: a soft same-hue `wash` fill + a solid `accent` left edge.
-// Falls back to the neutral surface tint when no kind color is supplied.
+// Falls back to the neutral surface tint when no kind color is supplied — this
+// is the one place the post's color lives; the rest of the card stays neutral.
 export function HeroFrame({ children, accent, wash }) {
   // Inline color-mix rather than a Tailwind `/80` opacity modifier: Tailwind
   // can't inject alpha into an arbitrary var() color, so `bg-[var(--x)]/80`

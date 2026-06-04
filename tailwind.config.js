@@ -28,20 +28,15 @@ export default {
           900: '#ffffff', // --surface (cards)
           950: '#f7f8f4', // --bg (page canvas)
         },
-        // Accent scale. The lighter shades stay brass text; 400 stays graphite
-        // for the CHROME (nav active state, links, focus border) so navigation
-        // reads neutral. 500/600/700 carry a warm "action" accent (energetic
-        // terracotta) that drives every primary CTA + workout action moment
-        // (bg-indigo-600), their hover/pressed states, and the selected-pill
-        // tints (bg-indigo-600/15) — colorful actions on a monochrome shell.
+        // Accent scale → graphite, with brass for the lighter "accent text" shades.
         indigo: {
           100: '#ece9e3',
           200: '#7a5a2c', // brass text (darker for AA on white)
           300: '#8a6633', // brass text / link hover
-          400: '#242825', // CHROME: active nav, links, focus border — stays graphite
-          500: '#a8380a', // action hover / selected borders (darker, AA on white)
-          600: '#c2410c', // action base — primary buttons (5.1:1 with white text)
-          700: '#8a2c06', // action pressed / tint borders
+          400: '#242825', // active nav, links, focus border
+          500: '#242825', // --accent
+          600: '#242825', // --accent (primary buttons)
+          700: '#0d0f0e', // pressed
         },
         // Semantic scales retuned so /15-style tints + -300 text read on light.
         emerald: {

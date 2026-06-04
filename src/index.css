@@ -23,13 +23,7 @@
     --negative:      #9b463d;
     --brass:         #a77b3f;
     --brass-soft:    rgba(167, 123, 63, 0.16);
-    /* Warm "action" accent — mirrors the Tailwind indigo-600 remap so inline-
-       styled action surfaces match the CTA buttons. Chrome (--accent) stays graphite. */
-    --action:        #c2410c;
-    --action-soft:   rgba(194, 65, 12, 0.12);
-    /* Emboldened hero glow. Warmer + more present than the old faint brass so
-       every BubbleHeader panel and faded-page reads alive rather than washed out. */
-    --hero-fade:     rgba(216, 92, 43, 0.26);
+    --hero-fade:     rgba(167, 123, 63, 0.23);
     --radius:        18px;
   }
 

@@ -14,7 +14,6 @@ import {
   STUDY_ACCENT,
   STUDY_ACCENT_DIM,
   STUDY_ACCENT_FAINT,
-  STUDY_ACTION,
   STUDY_BG,
   STUDY_BORDER,
   STUDY_BORDER_STRONG,
@@ -479,11 +478,11 @@ function ForYou({ questions, findings, findingsLoading, onFeatured, onFinding })
               type="button"
               onClick={() => onFeatured(question)}
               className="w-64 shrink-0 rounded-2xl p-4 text-left"
-              style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER}`, borderLeft: `3px solid ${STUDY_ACTION}` }}
+              style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER}` }}
             >
               <p className="text-sm font-semibold leading-snug" style={{ color: STUDY_TEXT }}>{question.title}</p>
               <p className="mt-2 text-xs leading-relaxed" style={{ color: STUDY_MUTED }}>{question.subtitle}</p>
-              <div className="mt-4 flex items-center justify-between text-[11px] font-mono" style={{ color: STUDY_ACTION }}>
+              <div className="mt-4 flex items-center justify-between text-[11px] font-mono" style={{ color: STUDY_ACCENT }}>
                 <span>{question.type === 'compare' ? 'cohort compare' : prettyGroupBy(question.query?.groupBy)}</span>
                 <span>{prettyMeasure(question.query?.measure)}</span>
               </div>
