@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth.jsx'
 import BottomNav from './components/BottomNav.jsx'
@@ -25,6 +26,12 @@ import TemplateBuilder from './pages/TemplateBuilder.jsx'
 import ProgramBuilder from './pages/ProgramBuilder.jsx'
 import { Spinner } from './components/ui/Spinner.jsx'
 import { useWorkout } from './hooks/useWorkout.jsx'
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
 
 const HIDE_NAV_PATHS = ['/auth', '/onboarding', '/study-concepts', '/concepts', '/concepts/workout', '/concepts/community', '/concepts/cohesive', '/concepts/community-modern', '/concepts/profile-materials']
 const FLOATING_WORKOUT_HIDDEN_PATHS = ['/auth', '/onboarding', '/workout', '/study-concepts', '/concepts', '/concepts/workout', '/concepts/community', '/concepts/cohesive', '/concepts/community-modern', '/concepts/profile-materials']
@@ -66,6 +73,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      <ScrollToTop />
       <main className="max-w-md mx-auto">
         <Routes>
           <Route path="/" element={<Navigate to="/community" replace />} />
