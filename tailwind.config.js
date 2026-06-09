@@ -14,28 +14,28 @@ export default {
         // Inverted neutral ramp: low shades = dark ink (were light text),
         // high shades = light surfaces (were dark backgrounds).
         gray: {
-          50:  '#0d0f0e',
-          100: '#151817', // --text
-          200: '#1e2220',
-          300: '#2c322e',
-          400: '#454c47', // --ink-soft (dim text, hints)
-          500: '#58615b', // --text-muted
-          600: '#8a948c', // dividers / dimmest text
-          700: '#b0bab0', // --border-strong (off-track, strong borders)
-          750: '#c5cdc4', // hover surface
-          800: '#d5dcd2', // --border (borders + light button surface)
-          850: '#e2e7e0', // hover surface
-          900: '#ffffff', // --surface (cards)
-          950: '#f7f8f4', // --bg (page canvas)
+          50:  '#ffffff',
+          100: '#f3f5f1', // --text
+          200: '#e2e7e0',
+          300: '#c5cdc4',
+          400: '#8a948c', // --ink-soft (dim text, hints)
+          500: '#aab3ab', // --text-muted
+          600: '#6b746d', // dividers / dimmest text
+          700: '#4a514b', // --border-strong (off-track, strong borders)
+          750: '#3a403b', // hover surface
+          800: '#363c37', // --border (borders + dark button surface)
+          850: '#2a2f2b', // hover surface
+          900: '#141615', // --surface (cards)
+          950: '#08090a', // --bg (dark page base)
         },
         // Accent scale → graphite, with brass for the lighter "accent text" shades.
         indigo: {
           100: '#ece9e3',
-          200: '#7a5a2c', // brass text (darker for AA on white)
-          300: '#8a6633', // brass text / link hover
-          400: '#242825', // active nav, links, focus border
-          500: '#242825', // --accent
-          600: '#242825', // --accent (primary buttons)
+          200: '#e8c074', // brass ink (Dark Jewel) — link text on dark
+          300: '#e8c074', // brass ink — link / hover
+          400: '#f3f5f1', // active nav, links, focus border (light on dark)
+          500: '#242825', // --accent (primary button fill; keeps white labels)
+          600: '#242825', // --accent (primary buttons; keeps white labels)
           700: '#0d0f0e', // pressed
         },
         // Semantic scales retuned so /15-style tints + -300 text read on light.
@@ -43,7 +43,7 @@ export default {
           300: '#2f6e4a', 400: '#2f6e4a', 500: '#506343', 600: '#506343',
         },
         amber: {
-          300: '#8a6010', 400: '#8a6010', 500: '#a77b3f', 600: '#a77b3f',
+          300: '#b07a1e', 400: '#b07a1e', 500: '#d59a3a', 600: '#d59a3a',
         },
         sky: {
           300: '#2b6a86', 400: '#2b6a86', 500: '#3f7da0', 600: '#3f7da0',
@@ -65,9 +65,9 @@ export default {
           pull: '#5a7a90',
           legs: '#6a8a5a',
         },
-        // Study page accent (sage green)
+        // Study page accent (Dark Jewel pine/teal)
         study: {
-          accent: '#7CA982',
+          accent: '#6fcab8',
         },
       },
       fontFamily: {

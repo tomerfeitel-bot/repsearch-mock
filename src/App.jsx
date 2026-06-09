@@ -17,6 +17,7 @@ import ConceptCohesive from './pages/ConceptCohesive.jsx'
 import ConceptCommunityModern from './pages/ConceptCommunityModern.jsx'
 import ConceptShowcase from './pages/ConceptShowcase.jsx'
 import ConceptProfileMaterials from './pages/ConceptProfileMaterials.jsx'
+import Swatch from './pages/Swatch.jsx'
 import Profile from './pages/Profile.jsx'
 import UserProfile from './pages/UserProfile.jsx'
 import PublicWorkout from './pages/PublicWorkout.jsx'
@@ -26,8 +27,8 @@ import ProgramBuilder from './pages/ProgramBuilder.jsx'
 import { Spinner } from './components/ui/Spinner.jsx'
 import { useWorkout } from './hooks/useWorkout.jsx'
 
-const HIDE_NAV_PATHS = ['/auth', '/onboarding', '/study-concepts', '/concepts', '/concepts/workout', '/concepts/community', '/concepts/cohesive', '/concepts/community-modern', '/concepts/profile-materials']
-const FLOATING_WORKOUT_HIDDEN_PATHS = ['/auth', '/onboarding', '/workout', '/study-concepts', '/concepts', '/concepts/workout', '/concepts/community', '/concepts/cohesive', '/concepts/community-modern', '/concepts/profile-materials']
+const HIDE_NAV_PATHS = ['/auth', '/onboarding', '/study-concepts', '/concepts', '/concepts/workout', '/concepts/community', '/concepts/cohesive', '/concepts/community-modern', '/concepts/profile-materials', '/concepts/swatch']
+const FLOATING_WORKOUT_HIDDEN_PATHS = ['/auth', '/onboarding', '/workout', '/study-concepts', '/concepts', '/concepts/workout', '/concepts/community', '/concepts/cohesive', '/concepts/community-modern', '/concepts/profile-materials', '/concepts/swatch']
 
 export default function App() {
   const { user, token, loading } = useAuth()
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="/concepts/community-modern" element={<ConceptCommunityModern />} />
           <Route path="/concepts/profile-materials" element={<ConceptProfileMaterials />} />
           <Route path="/concepts/palette/:paletteId" element={<ConceptShowcase />} />
+          <Route path="/concepts/swatch" element={<Swatch />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/user/:username" element={<UserProfile />} />
           <Route path="/user/:username/workout/:id" element={<PublicWorkout />} />

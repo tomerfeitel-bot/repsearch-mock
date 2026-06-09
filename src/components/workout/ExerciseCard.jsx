@@ -202,24 +202,34 @@ export default function ExerciseCard({
     onUnpinField?.(index, key)
   }
 
+  const exerciseColor = muscleColor(muscle)
+
   return (
-    <div id={cardDomId} className="bg-gray-900 rounded-2xl mb-3 overflow-hidden scroll-mt-28">
-      <div className="flex" style={{ borderLeft: `4px solid ${muscleColor(muscle)}` }}>
-        <div className="flex-1 p-3 pl-3 min-w-0">
+    <section
+      id={cardDomId}
+      className="workout-exercise scroll-mt-32"
+      style={{ '--exercise-color': exerciseColor }}
+    >
+      <div className="flex">
+        <div className="min-w-0 flex-1 px-4 py-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-gray-100 truncate">{exercise.exerciseName}</div>
-              <div className="text-xs text-gray-500 mt-0.5">
+              <div className="flex items-center gap-2 truncate text-sm font-black" style={{ color: 'var(--text)' }}>
+                <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: exerciseColor }} />
+                {exercise.exerciseName}
+              </div>
+              <div className="mt-0.5 text-caption" style={{ color: 'var(--text-muted)' }}>
                 {muscle}{exercise.equipment_type ? ` - ${exercise.equipment_type}` : ''}
               </div>
             </div>
             {lastTop && (
               <button
                 onClick={() => onOpenPrevious?.(exercise)}
-                className="text-xs text-gray-400 hover:text-indigo-300 text-right shrink-0"
+                className="shrink-0 text-right text-xs transition-colors hover:text-white"
+                style={{ color: 'var(--text-muted)' }}
               >
                 <div className="font-mono tabular-nums">{lastTop.weight_kg}kg x {lastTop.reps}</div>
-                <div className="text-[10px] text-gray-600">Last top</div>
+                <div className="text-[10px]" style={{ color: 'var(--ink-soft)' }}>Last top</div>
               </button>
             )}
             <button
@@ -227,15 +237,16 @@ export default function ExerciseCard({
               onClick={() => onRequestRemove?.(exercise, index)}
               aria-label={`Delete ${exercise.exerciseName || 'exercise'} from active workout`}
               data-testid="delete-exercise-button"
-              className="shrink-0 rounded-lg border border-red-900/60 bg-red-950/30 px-2.5 py-1.5 text-xs font-semibold text-red-300 hover:border-red-600 hover:bg-red-950/60"
+              className="min-h-9 shrink-0 rounded-full border px-3 text-xs font-bold transition-colors hover:bg-red-950/50"
+              style={{ borderColor: 'rgba(211,98,58,0.58)', color: '#ea9670' }}
             >
               Delete
             </button>
           </div>
 
-          <div className="mt-3 space-y-0">
+          <div className="mt-3">
             {exercise.sets.length === 0 ? (
-              <div className="text-xs text-gray-600 italic py-2">No sets yet.</div>
+              <div className="py-3 text-xs italic" style={{ color: 'var(--text-muted)' }}>No sets yet.</div>
             ) : (
               exercise.sets.map((s, sIdx) => (
                 <div key={s.id}>
@@ -280,7 +291,8 @@ export default function ExerciseCard({
 
           <button
             onClick={handleAddSet}
-            className="mt-2 w-full py-2 rounded-lg bg-gray-800/60 hover:bg-gray-800 text-gray-300 text-sm font-medium transition-colors"
+            className="mt-2 min-h-11 w-full border-t text-sm font-bold transition-colors"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
           >
             + Add set
           </button>
@@ -302,7 +314,7 @@ export default function ExerciseCard({
           onClose={() => setSetActionIdx(null)}
         />
       )}
-    </div>
+    </section>
   )
 }
 
@@ -400,7 +412,7 @@ function QuickAction({ label, disabled = false, onClick }) {
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="rounded-xl border border-gray-700 bg-gray-900 px-2 py-2 text-xs font-semibold text-gray-300 transition-colors hover:border-indigo-600 hover:text-indigo-200 disabled:cursor-not-allowed disabled:opacity-40"
+      className="rounded-xl border border-gray-700 bg-gray-900 px-2 py-2 text-xs font-semibold text-gray-300 transition-colors hover:border-gray-500 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {label}
     </button>
@@ -427,7 +439,7 @@ function ExpandedFields({ set, pinnedValues, onChange, onUnpin, researchFields =
                 <button
                   type="button"
                   onClick={() => isPinned ? onUnpin(field.key) : hasResearchValue(set[field.key]) && onChange(field.key, set[field.key])}
-                  className={'text-[10px] font-semibold ' + (isPinned ? 'text-indigo-400' : 'text-gray-600 hover:text-gray-400')}
+                  className={'text-[10px] font-semibold ' + (isPinned ? 'text-gray-100' : 'text-gray-600 hover:text-gray-400')}
                   title={isPinned ? 'Unpin from this set forward' : 'Pin value to next sets'}
                 >
                   {isPinned ? 'Pinned' : 'Pin'}
@@ -447,7 +459,7 @@ function HelpTip({ text }) {
     <span className="relative inline-flex group">
       <button
         type="button"
-        className="w-4 h-4 rounded-full border border-gray-700 bg-gray-800 text-gray-500 hover:text-indigo-300 hover:border-indigo-500/70 focus:text-indigo-300 focus:border-indigo-500/70 focus:outline-none text-[10px] leading-none flex items-center justify-center"
+        className="w-4 h-4 rounded-full border border-gray-700 bg-gray-800 text-gray-500 hover:text-gray-200 hover:border-gray-500 focus:text-gray-200 focus:border-gray-500 focus:outline-none text-[10px] leading-none flex items-center justify-center"
         aria-label={text}
       >
         ?
@@ -470,7 +482,7 @@ function ResearchInput({ field, value, onChange }) {
       <button
         type="button"
         onClick={() => onChange(!value)}
-        className={'w-full rounded-lg px-2 py-2 text-sm font-medium border ' + (value ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200' : 'bg-gray-800 border-gray-700 text-gray-400')}
+        className={'w-full rounded-lg px-2 py-2 text-sm font-medium border ' + (value ? 'bg-gray-100 border-gray-100 text-gray-950' : 'bg-gray-800 border-gray-700 text-gray-400')}
       >
         {value ? 'Yes' : 'No'}
       </button>
@@ -482,7 +494,7 @@ function ResearchInput({ field, value, onChange }) {
         value={value || ''}
         placeholder={field.placeholder}
         onChange={e => onChange(e.target.value)}
-        className="w-full bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-2 py-1.5 text-sm text-gray-100 outline-none"
+        className="w-full bg-gray-800 border border-gray-700 focus:border-gray-500 rounded-lg px-2 py-1.5 text-sm text-gray-100 outline-none"
       />
     )
   }
@@ -490,7 +502,7 @@ function ResearchInput({ field, value, onChange }) {
     <select
       value={value ?? ''}
       onChange={e => onChange(e.target.value || null)}
-      className="w-full bg-gray-800 border border-gray-700 focus:border-indigo-600 rounded-lg px-2 py-1.5 text-sm text-gray-100 outline-none"
+      className="w-full bg-gray-800 border border-gray-700 focus:border-gray-500 rounded-lg px-2 py-1.5 text-sm text-gray-100 outline-none"
     >
       <option value="">None</option>
       {field.options.map(o => <option key={o} value={o}>{formatResearchValue(field.key, o)}</option>)}
@@ -504,7 +516,7 @@ function RestWheel({ value, onChange }) {
   return (
     <div className="rounded-xl bg-gray-800 border border-gray-700 p-2">
       <div className="relative h-40 overflow-hidden rounded-lg bg-gray-900/70">
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-9 border-y border-indigo-500/50 bg-indigo-500/10" />
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-9 border-y border-gray-500/60 bg-white/5" />
         <div className="h-full overflow-y-auto snap-y snap-mandatory py-[3.25rem] no-scrollbar">
           {values.map(seconds => {
             const active = seconds === selected
@@ -513,7 +525,7 @@ function RestWheel({ value, onChange }) {
                 key={seconds}
                 type="button"
                 onClick={() => onChange(seconds)}
-                className={'snap-center w-full h-9 flex items-center justify-center font-mono tabular-nums transition-colors ' + (active ? 'text-indigo-200 text-lg font-bold' : 'text-gray-500 text-sm hover:text-gray-300')}
+                className={'snap-center w-full h-9 flex items-center justify-center font-mono tabular-nums transition-colors ' + (active ? 'text-gray-100 text-lg font-bold' : 'text-gray-500 text-sm hover:text-gray-300')}
               >
                 {formatRest(seconds)}
               </button>
@@ -523,7 +535,7 @@ function RestWheel({ value, onChange }) {
       </div>
       <div className="mt-2 flex items-center justify-between">
         <button type="button" onClick={() => onChange(Math.max(0, selected - 15))} className="px-3 py-1 rounded-lg bg-gray-900 text-gray-300 text-xs">-15s</button>
-        <span className="font-mono text-indigo-300 text-sm">{formatRest(selected)}</span>
+        <span className="font-mono text-gray-100 text-sm">{formatRest(selected)}</span>
         <button type="button" onClick={() => onChange(Math.min(600, selected + 15))} className="px-3 py-1 rounded-lg bg-gray-900 text-gray-300 text-xs">+15s</button>
       </div>
     </div>

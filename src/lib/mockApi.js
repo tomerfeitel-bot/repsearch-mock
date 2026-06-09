@@ -115,6 +115,47 @@ const DAY_TEMPLATES = {
 }
 const DAY_CYCLE = ['Push', 'Pull', 'Legs']
 
+function buildTemplateExercise(day, item, pos) {
+  const muscle = exMuscle(item.id)
+  return {
+    id: uid('tex'),
+    exercise_id: item.id,
+    exercise_name: exName(item.id),
+    primary_muscle: muscle,
+    equipment_type: exEquip(item.id),
+    sort_order: pos,
+    sets: [0, 1, 2].map(i => ({
+      id: uid('tset'),
+      set_number: i + 1,
+      set_type: 'working',
+      weight_kg: round(item.base + i * 0, 1),
+      reps: i === 0 ? 8 : i === 1 ? 8 : 10,
+      rir: day === 'Legs' && i === 2 ? 1 : 2,
+      rest_seconds: ['Push', 'Pull', 'Legs'].includes(day) && pos === 1 ? 180 : 90,
+      rom_category: 'full',
+    })),
+  }
+}
+
+function buildWorkoutTemplates() {
+  return Object.entries(DAY_TEMPLATES).map(([day, exercises], dayIndex) => ({
+    id: `tpl_${day.toLowerCase()}`,
+    user_id: ME.id,
+    username: ME.username,
+    name: `${day} - PPL base`,
+    description: `${day} session from the logged Push/Pull/Legs split.`,
+    visibility: 'private',
+    status: 'final',
+    usage_count: 8 - dayIndex,
+    workout_split_type: day,
+    workout_day: day,
+    strictness: 'flexible',
+    created_at: dayIso(42 - dayIndex),
+    exercise_count: exercises.length,
+    exercises: exercises.map((item, index) => buildTemplateExercise(day, item, index + 1)),
+  }))
+}
+
 function buildWorkoutHistory() {
   const workouts = []
   let cycle = 0
@@ -574,6 +615,8 @@ const store = {
   user: { ...ME },
   activeWorkout: null,       // { state, updated_at }
   workouts: buildWorkoutHistory(),
+  templates: buildWorkoutTemplates(),
+  programs: [],
   prs: buildPRs(),
   bodyHistory: buildBodyHistory(),
   dailyLogs: buildDailyLogs(),
@@ -760,6 +803,18 @@ function handle(method, path, body) {
     if (m === 'GET') return store.activeWorkout ? { state: store.activeWorkout.state, updated_at: store.activeWorkout.updated_at } : { state: null, updated_at: null }
     if (m === 'PUT') { store.activeWorkout = { state: body?.state || null, updated_at: nowIso() }; return { ok: true, updated_at: store.activeWorkout.updated_at } }
     if (m === 'DELETE') { store.activeWorkout = null; return { ok: true } }
+  }
+
+  if (p === '/workouts' && m === 'GET') {
+    const limit = parseInt(query.limit) || 20
+    const offset = parseInt(query.offset) || 0
+    return {
+      workouts: store.workouts.slice(offset, offset + limit),
+      total: store.workouts.length,
+      limit,
+      offset,
+      has_more: store.workouts.length > offset + limit,
+    }
   }
 
   // --- save a finished workout ---
@@ -991,8 +1046,26 @@ function handle(method, path, body) {
   if (p === '/custom-exercises' && m === 'POST') return { exercise: { id: uid('custom'), ...(body || {}) } }
 
   // --- programs / templates (builders, not the focus) ---
-  if (p === '/programs') return m === 'POST' ? { program: { id: uid('prog'), ...(body || {}) } } : { programs: [] }
-  if (p === '/templates') return m === 'POST' ? { template: { id: uid('tpl'), ...(body || {}) } } : { templates: [] }
+  if (p === '/programs/active/next' && m === 'GET') {
+    return { program: null, phase: null, next_session: null }
+  }
+  if (p === '/programs') return m === 'POST' ? { program: { id: uid('prog'), ...(body || {}) } } : { programs: store.programs }
+  if (seg[0] === 'programs' && seg.length === 2 && m === 'GET') {
+    const program = store.programs.find(x => x.id === seg[1])
+    return program ? { program } : { error: 'Program not found' }
+  }
+  if (p === '/templates') {
+    if (m === 'POST') {
+      const template = { id: uid('tpl'), user_id: ME.id, username: ME.username, status: 'final', visibility: 'private', usage_count: 0, ...(body || {}) }
+      store.templates.unshift(template)
+      return { template }
+    }
+    return { templates: store.templates }
+  }
+  if (seg[0] === 'templates' && seg.length === 2 && m === 'GET') {
+    const template = store.templates.find(x => x.id === seg[1])
+    return template ? { template } : { error: 'Template not found' }
+  }
 
   // --- catch-all: benign empties so unmodelled calls don't throw ---
   return { items: [], workouts: [], exercises: [], following: [], programs: [], templates: [], logs: [], history: [], records: [], series: [], questions: [], findings: [], savedQuestions: [], ok: true }

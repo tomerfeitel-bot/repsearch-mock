@@ -325,15 +325,18 @@ function ExpandedSets({ workoutId, viewerBest, comments }) {
         const seed = SEED_EXERCISES.find(e => e.id === eid)
         const best = viewerBestByExercise[eid]
         return (
-          <div key={eid} className="pl-3" style={{ borderLeft: `3px solid ${muscleColor(seed?.primary_muscle)}` }}>
-            <div className="text-sm font-medium text-gray-200">{seed?.name || eid}</div>
+          <div key={eid}>
+            <div className="text-sm font-medium text-gray-200 flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: muscleColor(seed?.primary_muscle) }} />
+              {seed?.name || eid}
+            </div>
             <div className="text-xs text-gray-500 font-mono tabular-nums space-x-2">
               {sets.filter(s => s.set_type !== 'warmup').map((s, i) => (
                 <span key={i}>{s.weight_kg}×{s.reps}</span>
               ))}
             </div>
             {best && (
-              <div className="text-[10px] text-indigo-300 mt-1">Your best: {best.best_kg}kg × {best.best_reps}</div>
+              <div className="text-[10px] mt-1" style={{ color: '#cda063' }}>Your best: {best.best_kg}kg × {best.best_reps}</div>
             )}
           </div>
         )
@@ -362,7 +365,7 @@ function PRCard({ item }) {
         <span className="text-base text-gray-500">kg × {p.reps}</span>
       </div>
       <div className="mt-1 text-sm text-gray-300">New PR · <span className="text-gray-400">{p.exercise_name || p.exercise_id}</span></div>
-      <div className="mt-2 text-[10px] uppercase tracking-wider text-amber-300 bg-amber-600/10 border border-amber-600/20 rounded-full px-2 py-1 w-fit">App-detected</div>
+      <div className="mt-2 text-[10px] uppercase tracking-wider rounded-full px-2 py-1 w-fit" style={{ color: '#cda063', background: 'rgba(167,123,63,0.16)', border: '1px solid rgba(167,123,63,0.4)' }}>App-detected</div>
       <Caption text={p.feed_caption} />
     </CardShell>
   )
@@ -372,7 +375,7 @@ function ProgressionCard({ item }) {
   const p = item.payload
   return (
     <CardShell>
-      <CardHeader username={item.username} ts={item.ts} badge={<span className="text-[10px] font-medium uppercase tracking-wider text-indigo-300 px-2 py-0.5 rounded-full bg-indigo-600/15">Progression</span>} />
+      <CardHeader username={item.username} ts={item.ts} badge={<span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ color: '#6fb088', background: 'rgba(47,110,74,0.18)' }}>Progression</span>} />
       <div className="flex items-baseline gap-2">
         <span className="text-gray-500 font-mono tabular-nums text-xl line-through">{Math.round(p.prev_1rm)}</span>
         <span className="text-gray-600">→</span>
@@ -392,7 +395,7 @@ function ProgramEventCard({ item, event }) {
   const hero = event === 'published' ? `${p.weeks || 1}wk` : 'Started'
   return (
     <CardShell>
-      <CardHeader username={item.username} ts={item.ts} badge={<span className="text-[10px] font-medium uppercase tracking-wider text-indigo-300 px-2 py-0.5 rounded-full bg-indigo-600/15">Program</span>} />
+      <CardHeader username={item.username} ts={item.ts} badge={<span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ color: '#74b4cf', background: 'rgba(43,106,134,0.18)' }}>Program</span>} />
       <div className="flex items-baseline gap-2">
         <span className="font-mono tabular-nums font-bold text-gray-100" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{hero}</span>
         <span className="text-sm text-gray-500">{title}</span>

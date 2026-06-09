@@ -64,6 +64,9 @@ export default function BubbleHeader({
   sticky = true,
   floating = false,
   className = '',
+  // Top color of the inner "faded" panel. Each page passes the same tint as its
+  // background's top stop so the header reads as part of the page atmosphere.
+  tint = 'var(--surface-alt)',
 }) {
   const ref = useCollapseProgress()
   const hasExtra = Boolean(children || subtitle || (pills && pills.length > 0))
@@ -91,7 +94,7 @@ export default function BubbleHeader({
           className="rounded-2xl flex flex-col justify-center px-4"
           style={{
             background:
-              'linear-gradient(135deg, var(--surface-alt), var(--hero-fade))',
+              `linear-gradient(135deg, ${tint}, var(--surface))`,
             // Vertical padding tightens 16px -> 10px; min-height melts to 0 so
             // the panel ends up hugging the single title line when collapsed.
             paddingTop: 'calc(1rem - var(--collapse) * 0.375rem)',

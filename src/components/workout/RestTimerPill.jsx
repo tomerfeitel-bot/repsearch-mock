@@ -45,9 +45,11 @@ export default function RestTimerPill({ active, durationSec = 90, startedAt = 0,
       <div
         className={
           'pointer-events-auto w-full max-w-md rounded-2xl border p-2 shadow-lg transition-all ' +
+          // Rest complete reads as "go" (green); while counting it stays a quiet
+          // brass on the dark surface. Color carries the state, not decoration.
           (done
-            ? 'bg-indigo-500 text-white border-indigo-300 ' + (flashed ? 'animate-pulse' : '')
-            : 'bg-gray-900/95 backdrop-blur text-indigo-300 border-indigo-700/60')
+            ? 'bg-[#2f6e4a] text-white border-[#6fb088] ' + (flashed ? 'animate-pulse' : '')
+            : 'bg-gray-900/95 backdrop-blur text-[#cda063] border-[#a77b3f]/60')
         }
       >
         <div className="flex items-center gap-2">

@@ -8,7 +8,7 @@ const FIELD_TABLE = {
   'users.experience_level': 'u.experience_level',
   'users.goal': 'u.goal',
   'users.split_type': 'u.split_type',
-  'users.training_age_years': "COALESCE((julianday('now') - julianday(u.training_started_at)) / 365.25, u.training_age_years)",
+  'users.training_age_years': "COALESCE(EXTRACT(EPOCH FROM (now() - u.training_started_at::date::timestamp)) / 31557600, u.training_age_years)",
   'users.training_started_at': 'u.training_started_at',
   'users.gym_type': 'u.gym_type',
   'users.gender': 'u.gender',
@@ -381,7 +381,7 @@ function buildBaseFrom({ needsExercise, needsSet, needsUep, needsUsp }) {
   return joins.join('\n')
 }
 
-function runQuery(db, opts) {
+async function runQuery(db, opts) {
   const filters = Array.isArray(opts.filters) ? opts.filters : []
   const groupBy = opts.groupBy
   const measureKey = opts.measure
@@ -460,8 +460,8 @@ function runQuery(db, opts) {
 
   let rows, totalCohort
   try {
-    rows = db.prepare(groupSql).all(groupParams)
-    totalCohort = db.prepare(cohortSql).get(params).n
+    rows = (await db.appQuery(groupSql, groupParams)).rows
+    totalCohort = (await db.appQuery(cohortSql, params)).rows[0].n
   } catch (err) {
     return { error: 'Query failed', detail: err.message }
   }
@@ -483,7 +483,7 @@ function runQuery(db, opts) {
   }
 }
 
-function previewQuery(db, opts) {
+async function previewQuery(db, opts) {
   const filters = Array.isArray(opts.filters) ? opts.filters : []
   const groupBys = Array.isArray(opts.groupBys) ? opts.groupBys.filter(Boolean) : []
   const measureKey = opts.measure
@@ -539,15 +539,15 @@ function previewQuery(db, opts) {
   const countSql = `SELECT COUNT(DISTINCT u.id) AS n ${from} WHERE ${whereParts.join(' AND ')}`
   let baseMatchedUsers = 0
   try {
-    baseMatchedUsers = db.prepare(countSql).get(params).n || 0
+    baseMatchedUsers = (await db.appQuery(countSql, params)).rows[0].n || 0
   } catch (err) {
     return { error: 'Preview failed', detail: err.message }
   }
 
-  const variables = groupBys.map(groupBy => {
+  const variables = await Promise.all(groupBys.map(async groupBy => {
     const axis = GROUP_AXES[groupBy]
     if (!axis) return { groupBy, available: false, error: `groupBy not allowed: ${groupBy}` }
-    const result = runQuery(db, { ...opts, groupBy, filters })
+    const result = await runQuery(db, { ...opts, groupBy, filters })
     if (result.error) return { groupBy, available: false, error: result.error, detail: result.detail }
     const after = result.totalCohortSize || 0
     const beforeTier = evidenceStatus(baseMatchedUsers)
@@ -563,7 +563,7 @@ function previewQuery(db, opts) {
       minCohort: result.minCohort,
       crossesThreshold: beforeTier !== afterTier || after < result.minCohort,
     }
-  })
+  }))
   const biggestReducer = variables
     .filter(v => v.available !== false)
     .sort((a, b) => (b.removed || 0) - (a.removed || 0))[0] || null

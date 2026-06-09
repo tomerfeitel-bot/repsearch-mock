@@ -1,40 +1,69 @@
-const jwt = require('jsonwebtoken')
+const { createClient } = require('@supabase/supabase-js')
 const { getOne } = require('./db')
 
-const JWT_SECRET = process.env.JWT_SECRET || 'repsearch-v2-dev-secret-change-me'
-const JWT_TTL = process.env.JWT_TTL || '14d'
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-function signToken(userId) {
-  return jwt.sign({ uid: userId }, JWT_SECRET, { expiresIn: JWT_TTL })
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for Supabase Auth.')
 }
 
-function authRequired(req, res, next) {
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+})
+
+async function userFromToken(token) {
+  const { data, error } = await supabaseAdmin.auth.getUser(token)
+  if (error || !data?.user) return null
+  const profile = await getOne(
+    'SELECT id, email, username, onboarded FROM users WHERE id = ?',
+    [data.user.id],
+  )
+  return profile || null
+}
+
+async function authSessionRequired(req, res, next) {
   const header = req.headers.authorization || ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!token) return res.status(401).json({ error: 'Auth required' })
   try {
-    const payload = jwt.verify(token, JWT_SECRET)
-    const user = getOne('SELECT id, email, username, onboarded FROM users WHERE id = ?', [payload.uid])
+    const { data, error } = await supabaseAdmin.auth.getUser(token)
+    if (error || !data?.user) return res.status(401).json({ error: 'Invalid or expired token' })
+    req.authUser = data.user
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function authRequired(req, res, next) {
+  const header = req.headers.authorization || ''
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null
+  if (!token) return res.status(401).json({ error: 'Auth required' })
+  try {
+    const user = await userFromToken(token)
     if (!user) return res.status(401).json({ error: 'User not found' })
     req.user = user
     next()
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' })
+  } catch (err) {
+    next(err)
   }
 }
 
-function authOptional(req, _res, next) {
+async function authOptional(req, _res, next) {
   const header = req.headers.authorization || ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
-  if (!token) { req.user = null; return next() }
+  if (!token) {
+    req.user = null
+    return next()
+  }
   try {
-    const payload = jwt.verify(token, JWT_SECRET)
-    const user = getOne('SELECT id, email, username, onboarded FROM users WHERE id = ?', [payload.uid])
-    req.user = user || null
+    req.user = await userFromToken(token)
+    next()
   } catch {
     req.user = null
+    next()
   }
-  next()
 }
 
-module.exports = { signToken, authRequired, authOptional, JWT_SECRET }
+module.exports = { supabaseAdmin, authSessionRequired, authRequired, authOptional }

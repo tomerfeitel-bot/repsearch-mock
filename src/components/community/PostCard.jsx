@@ -2,20 +2,19 @@ import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../ui/Avatar.jsx'
 import { timeAgo } from '../../lib/timeAgo.js'
 import { SingleResultChart, CompareResultChart } from '../study/ResultsChart.jsx'
+import { labelStyle } from '../../lib/bubbleColors.js'
 
-// Kind metadata: a colored status dot for the avatar + a soft badge pill. Colors
-// are drawn from the Rubber Brass token family (graphite / brass / sage and the
-// retuned semantic hexes) so the badges read as one palette instead of reaching
-// for stock Tailwind jewel tones. `dot` and the pill text share a hue; the pill
-// background is a soft same-hue tint. Discussion — the conversation type — gets
-// the warm brass signature accent rather than the most ignorable gray.
+// Kind metadata (DESIGN.md round 6): a post's type is a SOLID colored badge —
+// `fill` background + contrasting `on` text — one hue per type, drawn from the
+// brand-green-anchored family so the feed is colorful but cohesive. `ink` is the
+// vibrant on-dark text value kept for the hero-frame captions. All contrast-safe.
 export const KIND_META = {
-  discussion: { label: 'Discussion', dot: '#a77b3f', text: '#7a5a2c', tint: 'var(--brass-soft)' },
-  workout: { label: 'Workout', dot: '#2f6e4a', text: '#2f6e4a', tint: 'rgba(47,110,74,0.12)' },
-  program: { label: 'Program', dot: '#454c47', text: '#454c47', tint: 'var(--accent-soft)' },
-  template: { label: 'Template', dot: '#2b6a86', text: '#2b6a86', tint: 'rgba(43,106,134,0.12)' },
-  study: { label: 'Study', dot: '#46624b', text: '#46624b', tint: 'rgba(124,169,130,0.18)' },
-  pr: { label: 'PR', dot: '#8a6010', text: '#8a6010', tint: 'rgba(138,96,16,0.12)' },
+  discussion: { label: 'Discussion', fill: '#0B7A43', on: '#ffffff', ink: '#34BE73' },
+  workout: { label: 'Workout', fill: '#007661', on: '#ffffff', ink: '#44BFA5' },
+  program: { label: 'Program', fill: '#2D6DA5', on: '#ffffff', ink: '#5CABF2' },
+  template: { label: 'Template', fill: '#7B5AAE', on: '#ffffff', ink: '#B38EF1' },
+  study: { label: 'Study', fill: '#AB4477', on: '#ffffff', ink: '#EA7AAE' },
+  pr: { label: 'PR', fill: '#B48226', on: '#0c0c0c', ink: '#F2B036' },
 }
 
 // A post is "hot" when it has clear traction — used for the heat cue that tells
@@ -30,102 +29,109 @@ export default function PostCard({ item, onVote, onToggleSave }) {
   const navigate = useNavigate()
   const meta = KIND_META[item.kind] || KIND_META.discussion
   const hasHero = HERO_KINDS.has(item.kind) && item.attachment
-
+  const hot = isHot(item)
+  const replies = item.comment_count || 0
   function open() { navigate(`/post/${item.id}`) }
 
-  const hot = isHot(item)
-
+  // Full-bleed feed item (DESIGN.md): content-first, separated by a hairline, no
+  // floating card. Order: meta marker → headline → graph → explanation → byline.
   return (
-    <div className="mb-3.5 rounded-3xl overflow-hidden bg-white/75 border border-[var(--border)] shadow-[0_1px_2px_rgba(21,24,23,0.08),0_18px_34px_-28px_rgba(21,24,23,0.42)] backdrop-blur-sm">
-      <div className="p-4 pb-0">
-        <PostHeader item={item} meta={meta} navigate={navigate} />
-
-        <button onClick={open} className="mt-3 block w-full text-left">
-          <PostLead item={item} />
-        </button>
-
-        {(hot || item.labels?.length > 0) && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            {hot && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brass-soft)] px-2 py-0.5 text-micro font-bold text-[var(--brass)]">
-                <IconFlame size={11} /> Hot
-              </span>
-            )}
-            {item.labels?.slice(0, 3).map(l => (
-              <span key={l} className="text-micro text-[var(--text-muted)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-full">{l}</span>
-            ))}
-          </div>
+    <article className="px-4 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+      {/* meta line — type-marker dot + kind + time (the "notifier") */}
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-micro font-bold uppercase tracking-wide" style={{ background: meta.fill, color: meta.on }}>{meta.label}</span>
+        <span className="text-caption font-mono text-[var(--text-muted)]">{timeAgo(item.created_at)}</span>
+        {hot && (
+          <span className="ml-1 inline-flex items-center gap-1 text-micro font-bold text-[var(--brass)]"><IconFlame size={11} /> Hot</span>
         )}
       </div>
 
+      {/* headline — the loudest element */}
+      <button onClick={open} className="mt-1.5 block w-full text-left">
+        <Headline item={item} />
+      </button>
+
+      {/* graph / attachment hero, full-width with rounded media corners */}
       {hasHero && (
-        <button onClick={open} className="block w-full px-4 pt-3 text-left">
+        <button onClick={open} className="mt-3 block w-full text-left">
           <Attachment item={item} />
         </button>
       )}
 
-      <div className="px-4 pt-3">
-        <ConversationBar item={item} onOpen={open} />
+      {/* explanation — the data payoff under the graph */}
+      <Explanation item={item} />
+
+      {/* labels */}
+      {item.labels?.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          {item.labels.slice(0, 3).map(l => (
+            <span key={l} className="inline-flex items-center text-micro font-semibold px-2 py-0.5 rounded-full" style={labelStyle(l)}>{l}</span>
+          ))}
+        </div>
+      )}
+
+      {/* byline + flat actions on one row — no pills, no footer bar */}
+      <div className="mt-3.5 flex items-center gap-2.5">
+        <button onClick={() => navigate(`/user/${item.username}`)} className="flex min-w-0 items-center gap-2" aria-label={`View ${item.username}`}>
+          <Avatar username={item.username} size="sm" />
+          <span className="truncate text-caption font-bold text-[var(--text)]">{item.username}</span>
+        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <VotePill score={item.score} vote={item.viewer_vote} onVote={v => onVote(item.id, v)} size="sm" />
+          <CountAction icon={<IconComment size={18} />} count={replies} ariaLabel="View comments" onClick={open} />
+          <IconAction icon={<IconShare size={18} />} ariaLabel="Share post" onClick={() => sharePost(item.id)} />
+          <SaveButton saved={item.saved} onClick={() => onToggleSave(item.id, !item.saved)} flat />
+        </div>
       </div>
 
-      <div className="p-3 pt-3 flex items-center gap-1.5">
-        <VotePill score={item.score} vote={item.viewer_vote} onVote={v => onVote(item.id, v)} />
-        <Action icon={<IconShare size={18} />} label="Share" ariaLabel="Share post" onClick={() => sharePost(item.id)} />
-        <SaveButton saved={item.saved} onClick={() => onToggleSave(item.id, !item.saved)} />
-      </div>
-    </div>
+      {/* standout-reply pull — keeps the "poster for a conversation" hook, flat */}
+      {item.top_comment && (
+        <button onClick={open} className="mt-2.5 block w-full border-l-2 pl-2.5 text-left" style={{ borderColor: 'var(--border-strong)' }}>
+          <p className="text-body text-[var(--text-muted)] line-clamp-2">
+            <span className="font-semibold text-[var(--ink-soft)]">{item.top_comment.username}</span> {item.top_comment.body}
+          </p>
+        </button>
+      )}
+    </article>
   )
 }
 
-// The card's primary call to action: a tappable strip that makes the
-// conversation the loudest engagement signal on the card. Shows a labeled reply
-// count + last-activity time (or an invitation to start, when empty) and — for
-// posts with a standout reply — a one-line preview to pull the reader in.
-function ConversationBar({ item, onOpen }) {
-  const replies = item.comment_count || 0
-  const activity = item.last_activity_at || item.created_at
-  const empty = replies === 0
-  const emptyPrompt = item.kind === 'discussion' ? 'Start the discussion' : 'Be the first to comment'
+// Headline text: the kind marker already states the type, so the headline leads
+// with the title/body that entices. Workout/PR carry their text in `body`.
+function headlineText(item) {
+  if (item.kind === 'workout' || item.kind === 'pr') return item.body || item.title || ''
+  return item.title || item.body || ''
+}
+
+function Headline({ item }) {
+  const text = headlineText(item)
+  if (!text) return null
+  return <h2 className="text-lead font-extrabold text-[var(--text)] line-clamp-3" style={{ textWrap: 'balance' }}>{text}</h2>
+}
+
+// Explanation: the secondary body line below the graph. Suppressed when the body
+// was already promoted to the headline (no title) or already shown (workout/pr).
+function Explanation({ item }) {
+  if (item.kind === 'workout' || item.kind === 'pr') return null
+  if (!item.title || !item.body) return null
+  return <p className="mt-2 text-read text-[var(--text-muted)] line-clamp-3">{item.body}</p>
+}
+
+function CountAction({ icon, count, ariaLabel, onClick }) {
   return (
-    <button
-      onClick={onOpen}
-      aria-label="Open thread"
-      className="block w-full text-left rounded-2xl bg-[var(--accent-soft)] px-3.5 py-2.5 transition-colors hover:bg-[var(--brass-soft)]"
-    >
-      <div className="flex items-center gap-2 text-[var(--ink-soft)]">
-        <IconComment size={16} />
-        <span className="text-sm font-bold text-[var(--text)]">
-          {empty ? emptyPrompt : `${replies} ${replies === 1 ? 'reply' : 'replies'}`}
-        </span>
-        {!empty && (
-          <span className="text-caption text-[var(--text-muted)] truncate">· active {timeAgo(activity)}</span>
-        )}
-        <span className="ml-auto shrink-0 text-caption font-bold text-[var(--brass)]">{empty ? 'Reply →' : 'Join thread →'}</span>
-      </div>
-      {item.top_comment && (
-        <div className="mt-2 border-l-2 border-[var(--border-strong)] pl-2.5">
-          <p className="text-body text-[var(--text-muted)] line-clamp-2">
-            <span className="font-semibold text-[var(--ink-soft)]">{item.top_comment.username}</span>{' '}
-            {item.top_comment.body}
-          </p>
-        </div>
-      )}
+    <button onClick={onClick} aria-label={ariaLabel}
+      className="inline-flex h-9 items-center gap-1 rounded-full px-2 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:text-[var(--text)]">
+      {icon}{count > 0 && <span className="font-mono tabular-nums">{count}</span>}
     </button>
   )
 }
 
-function PostHeader({ item, meta, navigate }) {
+function IconAction({ icon, ariaLabel, onClick }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <button onClick={() => navigate(`/user/${item.username}`)} className="shrink-0" aria-label={`View ${item.username}`}>
-        <AvatarWithDot username={item.username} dot={meta.dot} />
-      </button>
-      <button onClick={() => navigate(`/user/${item.username}`)} className="min-w-0 flex-1 text-left">
-        <div className="text-sm font-bold leading-tight truncate text-[var(--text)]">{item.username}</div>
-        <div className="text-caption truncate text-[var(--text-muted)] font-mono">{timeAgo(item.created_at)}</div>
-      </button>
-      <span className="inline-flex items-center h-6 px-2.5 rounded-full text-micro font-bold shrink-0" style={{ color: meta.text, background: meta.tint }}>{meta.label}</span>
-    </div>
+    <button onClick={onClick} aria-label={ariaLabel}
+      className="grid h-9 w-9 place-items-center rounded-full text-[var(--text-muted)] transition-colors hover:text-[var(--text)]">
+      {icon}
+    </button>
   )
 }
 
@@ -138,44 +144,68 @@ export function AvatarWithDot({ username, dot, size = 'md' }) {
   )
 }
 
-// Horizontal vote pill: upvote glows orange, downvote graphite. `size="sm"` is
-// the compact variant used inline on comments so the post and its replies share
-// one vote language instead of two.
-export function VotePill({ score, vote, onVote, size = 'md', ariaSuffix = '' }) {
+// Horizontal vote pill on a dark surface-alt shell with a hairline. Upvote active
+// = moss green, downvote active = steel/azure (Dark Jewel semantic pair — no red).
+// `size="sm"` is the compact variant used in the feed byline and inline on
+// comments so a post and its replies share one vote language. `flat` keeps a
+// chrome-less arrows-only variant for the tightest contexts.
+export function VotePill({ score, vote, onVote, size = 'md', ariaSuffix = '', flat = false }) {
   const up = vote === 1
   const down = vote === -1
+  // Flat variant: bare arrows + score, no pill chrome (moss up / azure down).
+  if (flat) {
+    return (
+      <div className="inline-flex items-center">
+        <button onClick={() => onVote(up ? 0 : 1)} aria-pressed={up} aria-label={'Upvote' + ariaSuffix}
+          className="grid h-9 w-7 place-items-center transition-colors"
+          style={{ color: up ? 'var(--moss-ink)' : 'var(--text-muted)' }}>
+          <IconArrow dir="up" size={18} />
+        </button>
+        <span className="min-w-[1.6rem] text-center text-sm font-bold font-mono tabular-nums"
+          style={{ color: up ? 'var(--moss-ink)' : down ? 'var(--azure-ink)' : 'var(--text)' }}>{score}</span>
+        <button onClick={() => onVote(down ? 0 : -1)} aria-pressed={down} aria-label={'Downvote' + ariaSuffix}
+          className="grid h-9 w-7 place-items-center transition-colors"
+          style={{ color: down ? 'var(--azure-ink)' : 'var(--text-muted)' }}>
+          <IconArrow dir="down" size={18} />
+        </button>
+      </div>
+    )
+  }
   const sm = size === 'sm'
-  const box = sm ? 'h-8 w-8' : 'h-9 w-9'
+  const box = sm ? 'h-8 w-7' : 'h-9 w-9'
   const icon = sm ? 16 : 18
-  const num = sm ? 'text-xs min-w-[1.8rem]' : 'text-sm min-w-[2.2rem]'
+  const num = sm ? 'text-xs min-w-[1.7rem]' : 'text-sm min-w-[2.2rem]'
   return (
-    <div className={'inline-flex items-center rounded-full overflow-hidden border ' + (sm ? 'h-8 ' : 'h-9 ') + (up ? 'bg-orange-100 border-orange-300' : 'bg-white/70 border-[var(--border)]')}>
+    <div className={'inline-flex items-center rounded-full overflow-hidden border ' + (sm ? 'h-8' : 'h-9')}
+      style={{ background: 'var(--surface-alt)', borderColor: 'var(--border)' }}>
       <button onClick={() => onVote(up ? 0 : 1)} aria-pressed={up} aria-label={'Upvote' + ariaSuffix}
-        className={box + ' grid place-items-center transition-colors ' + (up ? 'text-orange-700' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
+        className={box + ' grid place-items-center transition-colors'}
+        style={{ color: up ? 'var(--moss-ink)' : 'var(--text-muted)', background: up ? 'var(--moss-soft)' : 'transparent' }}>
         <IconArrow dir="up" size={icon} />
       </button>
-      <span className={'font-bold font-mono tabular-nums px-0.5 text-center ' + num + ' ' + (up ? 'text-orange-700' : down ? 'text-indigo-700' : 'text-[var(--text)]')}>{score}</span>
+      <span className={'font-bold font-mono tabular-nums px-0.5 text-center ' + num}
+        style={{ color: up ? 'var(--moss-ink)' : down ? 'var(--azure-ink)' : 'var(--text)' }}>{score}</span>
       <button onClick={() => onVote(down ? 0 : -1)} aria-pressed={down} aria-label={'Downvote' + ariaSuffix}
-        className={box + ' grid place-items-center transition-colors ' + (down ? 'text-indigo-700' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
+        className={box + ' grid place-items-center transition-colors'}
+        style={{ color: down ? 'var(--azure-ink)' : 'var(--text-muted)', background: down ? 'var(--azure-soft)' : 'transparent' }}>
         <IconArrow dir="down" size={icon} />
       </button>
     </div>
   )
 }
 
-function Action({ icon, label, ariaLabel, onClick }) {
-  return (
-    <button onClick={onClick} aria-label={ariaLabel}
-      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/60 transition-colors">
-      {icon}<span>{label}</span>
-    </button>
-  )
-}
-
-export function SaveButton({ saved, onClick }) {
+export function SaveButton({ saved, onClick, flat = false }) {
+  if (flat) {
+    return (
+      <button onClick={onClick} aria-pressed={saved} aria-label={saved ? 'Unsave' : 'Save'}
+        className={'grid h-9 w-9 place-items-center rounded-full transition-colors ' + (saved ? 'text-[var(--brass)]' : 'text-[var(--text-muted)] hover:text-[var(--text)]')}>
+        <IconBookmark size={18} filled={saved} />
+      </button>
+    )
+  }
   return (
     <button onClick={onClick} aria-pressed={saved} aria-label={saved ? 'Unsave' : 'Save'}
-      className={'ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold transition-colors ' + (saved ? 'text-amber-800 bg-amber-100' : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/60')}>
+      className={'ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold transition-colors ' + (saved ? 'text-amber-800 bg-amber-100' : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/10')}>
       <IconBookmark size={17} filled={saved} /><span>{saved ? 'Saved' : 'Save'}</span>
     </button>
   )
@@ -185,23 +215,6 @@ function sharePost(id) {
   const url = `${window.location.origin}${import.meta.env.BASE_URL}post/${id}`.replace(/([^:]\/)\/+/g, '$1')
   if (navigator.share) { navigator.share({ url }).catch(() => {}); return }
   navigator.clipboard?.writeText(url).catch(() => {})
-}
-
-// The hook line. The kind is already stated once by the header pill, so the lead
-// no longer repeats it ("Achievement" / "Workout shared") — it leads straight
-// with the title/body that actually entices a reader.
-function PostLead({ item }) {
-  const title = item.title || (item.kind === 'pr' ? item.body : '')
-  if (item.kind === 'workout') {
-    if (!item.body) return null
-    return <div className="text-title font-bold text-[var(--text)] line-clamp-2" style={{ textWrap: 'balance' }}>{item.body}</div>
-  }
-  return (
-    <div>
-      {title && <div className="text-title font-bold text-[var(--text)] line-clamp-2" style={{ textWrap: 'balance' }}>{title}</div>}
-      {item.kind !== 'pr' && item.body && <div className={'text-body text-[var(--text-muted)] line-clamp-3' + (title ? ' mt-1.5' : '')}>{item.body}</div>}
-    </div>
-  )
 }
 
 // Attachments rendered inside a Pulse "hero frame": rounded, lifted off the card surface.
@@ -214,7 +227,7 @@ function Attachment({ item }) {
         <div className="flex items-baseline gap-2">
           <span className="font-mono tabular-nums font-extrabold text-[var(--text)] text-3xl">{a.duration_min ?? '-'}</span>
           <span className="text-sm font-semibold text-[var(--text-muted)]">min</span>
-          <span className="ml-auto text-caption" style={{ color: '#2f6e4a' }}>{a.exercise_count || 0} exercises · {a.set_count || 0} sets</span>
+          <span className="ml-auto text-caption font-semibold" style={{ color: KIND_META.workout.ink }}>{a.exercise_count || 0} exercises · {a.set_count || 0} sets</span>
         </div>
       </HeroFrame>
     )
@@ -223,7 +236,7 @@ function Attachment({ item }) {
     return (
       <HeroFrame>
         <div className="font-bold text-[var(--text)] truncate">{a.name}</div>
-        <div className="mt-1 text-caption" style={{ color: '#454c47' }}>{a.enrollment_count || 0} started · open-ended</div>
+        <div className="mt-1 text-caption font-semibold" style={{ color: KIND_META.program.ink }}>{a.enrollment_count || 0} started · open-ended</div>
       </HeroFrame>
     )
   }
@@ -231,7 +244,7 @@ function Attachment({ item }) {
     return (
       <HeroFrame>
         <div className="font-bold text-[var(--text)] truncate">{a.name}</div>
-        <div className="mt-1 text-caption" style={{ color: '#2b6a86' }}>{a.exercise_count || 0} exercises · used {a.usage_count || 0}x</div>
+        <div className="mt-1 text-caption font-semibold" style={{ color: KIND_META.template.ink }}>{a.exercise_count || 0} exercises · used {a.usage_count || 0}x</div>
       </HeroFrame>
     )
   }
@@ -257,8 +270,8 @@ export function StudyAttachment({ a, compact = false }) {
   }
   if (compact) return <CompactStudyPreview a={a} />
   return (
-    <div className="rounded-2xl p-3 overflow-hidden" style={{ background: '#0d1117', border: '1px solid #263527' }}>
-      <div className="mb-2 flex items-center justify-between text-[11px] font-mono" style={{ color: '#9db49f' }}>
+    <div className="rounded-2xl p-3 overflow-hidden" style={{ background: 'var(--surface-alt)', border: '1px solid var(--border)' }}>
+      <div className="mb-2 flex items-center justify-between text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>
         <span>{a.mode === 'compare' ? 'cohort comparison' : `n=${a.totalCohortSize || 0}`}</span>
         <span className="min-w-0 truncate text-right">{a.measure}</span>
       </div>
@@ -282,19 +295,19 @@ function CompactStudyPreview({ a }) {
     : (a.buckets || []).slice(0, 4).map(b => ({ label: b.label, n: b.n, value: b.avg_measure }))
   const max = Math.max(...rows.map(r => Math.abs(r.value || 0)), 0.001)
   return (
-    <div className="rounded-2xl p-3" style={{ background: '#0d1117', border: '1px solid #263527' }}>
-      <div className="flex items-center justify-between text-[11px] font-mono" style={{ color: '#9db49f' }}>
+    <div className="rounded-2xl p-3" style={{ background: 'var(--surface-alt)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>
         <span>{a.mode === 'compare' ? 'comparison' : `n=${a.totalCohortSize || 0}`}</span>
         <span>{a.measure}</span>
       </div>
       <div className="mt-3 space-y-2">
         {rows.map(r => (
           <div key={r.label} className="grid grid-cols-[72px_1fr_42px] items-center gap-2 text-[11px] font-mono">
-            <span className="truncate" style={{ color: '#b8c9ba' }}>{prettyStudyLabel(r.label)}</span>
-            <span className="h-2 overflow-hidden rounded-full bg-gray-900">
-              <span className="block h-full rounded-full bg-[#7CA982]" style={{ width: `${Math.max(8, Math.round((Math.abs(r.value || 0) / max) * 100))}%` }} />
+            <span className="truncate" style={{ color: 'var(--text)' }}>{prettyStudyLabel(r.label)}</span>
+            <span className="h-2 overflow-hidden rounded-full" style={{ background: 'var(--surface)' }}>
+              <span className="block h-full rounded-full" style={{ width: `${Math.max(8, Math.round((Math.abs(r.value || 0) / max) * 100))}%`, background: '#6fcab8' }} />
             </span>
-            <span className="text-right" style={{ color: '#9db49f' }}>n={r.n}</span>
+            <span className="text-right" style={{ color: 'var(--text-muted)' }}>n={r.n}</span>
           </div>
         ))}
       </div>

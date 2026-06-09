@@ -3,30 +3,41 @@ import { useSearchParams } from 'react-router-dom'
 import { useProgress } from '../hooks/useProgress.js'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useToast } from '../components/ui/Toast.jsx'
-import HistoryTab from '../components/progress/HistoryTab.jsx'
+import OverviewTab from '../components/progress/OverviewTab.jsx'
 import LiftsTab from '../components/progress/LiftsTab.jsx'
 import BodyTab from '../components/progress/BodyTab.jsx'
 import RecordsTab from '../components/progress/RecordsTab.jsx'
 import CompareTab from '../components/progress/CompareTab.jsx'
-import BubbleHeader from '../components/ui/BubbleHeader.jsx'
-import PillTabs from '../components/ui/PillTabs.jsx'
-import { PROGRESS_BG, PROGRESS_TEXT } from '../lib/progressTheme.js'
+import { ModeSwitch } from '../components/progress/ui.jsx'
+import FlatHeader from '../components/ui/FlatHeader.jsx'
+import UnderlineTabs from '../components/ui/UnderlineTabs.jsx'
 
-const TABS = ['history', 'lifts', 'body', 'records', 'compare']
-const TAB_LABELS = { body: 'Lifestyle & Body' }
+const TABS = ['overview', 'lifts', 'body', 'records']
+const TAB_LABELS = { overview: 'Overview', lifts: 'Lifts', body: 'Body', records: 'Records' }
+// Legacy deep links map onto the regrouped surface (DESIGN.md: ≤4 tabs).
+const LEGACY = { history: 'overview', compare: 'lifts' }
 
 function uniqueOptions(values = []) {
   return [...new Set(values || [])].sort((a, b) => a.localeCompare(b)).map(value => ({ id: value, name: value }))
 }
 
+const LIFT_MODES = [{ value: 'single', label: 'Single lift' }, { value: 'compare', label: 'Compare' }]
+
 export default function Progress() {
   const toast = useToast()
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
-  const tab = TABS.includes(params.get('tab')) ? params.get('tab') : 'history'
+  const rawTab = params.get('tab')
+  const tab = TABS.includes(rawTab) ? rawTab : (LEGACY[rawTab] || 'overview')
   const highlight = useMemo(() => (params.get('highlight') || '').split(',').filter(Boolean), [params])
   const seed = params.get('seed') || ''
   const [liftQuery, setLiftQuery] = useState({ metric: 'top_set', group_by: 'session' })
+  // Lifts hosts a mode switch (Single lift / Compare); a seed or a legacy
+  // ?tab=compare deep link opens straight into Compare. `compareSeed` is the
+  // source of truth for the seeded lift — set synchronously so CompareTab mounts
+  // with it, rather than reading the URL param (which lags a render behind).
+  const [liftMode, setLiftMode] = useState(() => (rawTab === 'compare' || seed) ? 'compare' : 'single')
+  const [compareSeed, setCompareSeed] = useState(seed)
 
   const {
     summary, history, lifts, body, records, compare, lifestyle,
@@ -43,7 +54,7 @@ export default function Progress() {
   }, [loadSummary, loadHistory])
 
   useEffect(() => {
-    if (tab === 'lifts' || tab === 'compare') loadLifts(liftQuery)
+    if (tab === 'lifts') loadLifts(liftQuery)
     if (tab === 'body') { loadBody(); loadLifestyle() }
     if (tab === 'records') loadRecords()
   }, [tab, liftQuery, loadLifts, loadBody, loadRecords, loadLifestyle])
@@ -51,8 +62,7 @@ export default function Progress() {
   function setTab(t) {
     const next = new URLSearchParams(params)
     next.set('tab', t)
-    if (t !== 'lifts') next.delete('highlight')
-    if (t !== 'compare') next.delete('seed')
+    if (t !== 'lifts') { next.delete('highlight'); next.delete('seed'); setLiftMode('single'); setCompareSeed('') }
     setParams(next, { replace: true })
   }
 
@@ -60,35 +70,75 @@ export default function Progress() {
     setLiftQuery(prev => ({ ...prev, ...nextQuery }))
   }
 
-  return (
-    <div className="faded-page min-h-screen pb-24" style={{ background: PROGRESS_BG, color: PROGRESS_TEXT }}>
-      <BubbleHeader label="Training log" title="Progress" floating />
-      <div className="px-4 pb-3">
-        <PillTabs
-          tabs={TABS.map(t => ({ value: t, label: TAB_LABELS[t] || (t[0].toUpperCase() + t.slice(1)) }))}
-          value={tab}
-          onChange={setTab}
-          scroll
-          ariaLabel="Progress sections"
-        />
-      </div>
+  function openCompare(exerciseId) {
+    setCompareSeed(exerciseId)
+    setLiftMode('compare')
+    const next = new URLSearchParams(params)
+    next.set('tab', 'lifts')
+    next.set('seed', exerciseId)
+    next.delete('highlight')
+    setParams(next, { replace: true })
+  }
 
-      <main className="p-4">
-        {tab === 'history' && (
-          <HistoryTab
+  function changeLiftMode(mode) {
+    setLiftMode(mode)
+    if (mode === 'single') {
+      setCompareSeed('')
+      if (seed) { const next = new URLSearchParams(params); next.delete('seed'); setParams(next, { replace: true }) }
+    }
+  }
+
+  return (
+    <div className="min-h-screen pb-24" style={{ background: 'var(--bg)' }}>
+      <FlatHeader
+        title="Progress"
+        titleColor="var(--emerald-ink)"
+        tabs={
+          <UnderlineTabs
+            tabs={TABS.map(t => ({ value: t, label: TAB_LABELS[t] }))}
+            value={tab}
+            onChange={setTab}
+            accent="var(--emerald-ink)"
+            activeColor="var(--emerald-ink)"
+            inactiveColor="var(--text-muted)"
+            borderColor="var(--border)"
+            ariaLabel="Progress sections"
+          />
+        }
+      />
+
+      <main className="px-4 pt-4">
+        {tab === 'overview' && (
+          <OverviewTab
             summary={summary}
             history={history}
             onRetry={() => { loadSummary(); loadHistory() }}
           />
         )}
         {tab === 'lifts' && (
-          <LiftsTab
-            resource={lifts}
-            query={liftQuery}
-            highlight={highlight}
-            onQueryChange={updateLiftQuery}
-            onRetry={() => loadLifts(liftQuery)}
-          />
+          <div className="space-y-5">
+            <ModeSwitch options={LIFT_MODES} value={liftMode} onChange={changeLiftMode} ariaLabel="Lift view" />
+            {liftMode === 'single' ? (
+              <LiftsTab
+                resource={lifts}
+                query={liftQuery}
+                highlight={highlight}
+                onQueryChange={updateLiftQuery}
+                onRetry={() => loadLifts(liftQuery)}
+                onCompare={openCompare}
+              />
+            ) : (
+              <CompareTab
+                key={compareSeed || 'blank'}
+                resource={compare}
+                exercises={exercises}
+                muscles={muscleOptions}
+                equipment={equipmentOptions}
+                seed={compareSeed}
+                onRun={loadCompare}
+              />
+            )}
+          </div>
         )}
         {tab === 'body' && (
           <BodyTab
@@ -103,16 +153,6 @@ export default function Progress() {
           <RecordsTab
             resource={records}
             onRetry={() => loadRecords()}
-          />
-        )}
-        {tab === 'compare' && (
-          <CompareTab
-            resource={compare}
-            exercises={exercises}
-            muscles={muscleOptions}
-            equipment={equipmentOptions}
-            seed={seed}
-            onRun={loadCompare}
           />
         )}
       </main>
