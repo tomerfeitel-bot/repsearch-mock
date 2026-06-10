@@ -21,6 +21,18 @@ The app lives in `mobile/` (see `mobile/AGENTS.md` for architecture + commands).
 
 ---
 
+## Session 2 — COMPLETE (2026-06-10)
+
+Community & social screens are live in Expo Go (`mobile/app/(tabs)/community.tsx`, `mobile/app/post/[id].tsx`, `mobile/app/user/[username]/`). Outcomes future sessions must know:
+
+- **Web `FeedCard.jsx` is dead code** — nothing imports it (PostCard is the live feed card). The planned double-tap heart was implemented on mobile `PostCard`: double-tap the post content = upvote + Reanimated heart burst.
+- **Stubbed cross-session actions** (explanatory toasts until their session lands): template/program-session "Start workout" → Session 3 `startWorkout`; "+ New" / builder navigation → Session 4. Community accepts `?compose=<kind>` and `?shareWorkout=<id>` params for those return flows. `sharePost` shares text (no deployed URL until Session 6).
+- **Study post attachments** use the compact bar-row preview everywhere (no Recharts equivalent until Session 5's charts).
+- **Windows + typed routes:** editing files while `expo start` runs corrupts `.expo/types/router.d.ts` (expo-router watch-handler backslash bug) and fails `tsc`. Restart the dev server to regenerate cleanly; runtime routing is unaffected. Details in `mobile/AGENTS.md`.
+- Ported libs now in `mobile/lib/`: `exercises.js` (verbatim copy), `timeAgo`, `postLabels`, `bubbleColors`, `musclePalette`, `researchTheme` (trimmed to composer needs — Session 5 extends it). Hooks: `usePosts`, `useSocial`, `useDailyCheckin` (AsyncStorage for the seen-today marker). New UI primitives: `ConfirmSheet`, `UnderlineTabs`, `FlatHeader` (directional scroll collapse via Reanimated).
+
+---
+
 ## Context
 RepSearch is a React 19 + Vite web app (~15,000 lines, 80+ files). The backend has **already been migrated to Supabase** (Postgres + Supabase Auth), replacing the old SQLite + custom-JWT setup. This plan covers everything remaining: pre-work decisions, then building a native iOS + Android app via Expo React Native that matches the web app feature-for-feature. The backend is not rebuilt — the mobile app talks to the same Supabase project.
 

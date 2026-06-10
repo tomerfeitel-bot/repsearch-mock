@@ -37,3 +37,8 @@ export const brand = {
 } as const;
 
 export const radius = 18;
+
+// The web app's font-mono numerals (JetBrains Mono isn't loaded until Session
+// 6's font pass) — use each platform's system monospace for tabular figures.
+import { Platform } from 'react-native';
+export const monoFont = Platform.select({ ios: 'Menlo', default: 'monospace' });
