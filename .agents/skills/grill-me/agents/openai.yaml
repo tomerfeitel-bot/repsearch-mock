@@ -1,0 +1,7 @@
+interface:
+  display_name: "Grill Me"
+  short_description: "Direct critique by explicit request only"
+  default_prompt: "Use $grill-me only after I type /grill me."
+
+policy:
+  allow_implicit_invocation: false

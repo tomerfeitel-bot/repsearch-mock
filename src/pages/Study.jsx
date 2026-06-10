@@ -6,9 +6,10 @@ import { useAuth } from '../hooks/useAuth.jsx'
 import { useToast } from '../components/ui/Toast.jsx'
 import FilterRow from '../components/study/FilterRow.jsx'
 import ExploreSearchBar from '../components/study/ExploreSearchBar.jsx'
+import ExerciseLibrary from '../components/study/ExerciseLibrary.jsx'
 import { SingleResultChart, CompareResultChart } from '../components/study/ResultsChart.jsx'
-import BubbleHeader from '../components/ui/BubbleHeader.jsx'
-import PillTabs from '../components/ui/PillTabs.jsx'
+import FlatHeader, { FlatAction } from '../components/ui/FlatHeader.jsx'
+import { timeAgo } from '../lib/timeAgo.js'
 import { SEED_EXERCISES, EQUIPMENT_TYPES } from '../lib/exercises.js'
 import {
   STUDY_ACCENT,
@@ -17,11 +18,15 @@ import {
   STUDY_BG,
   STUDY_BORDER,
   STUDY_BORDER_STRONG,
+  STUDY_BRAND,
+  STUDY_BRAND_FAINT,
+  STUDY_BRAND_INK,
   STUDY_CARD,
   STUDY_COMPARE_A,
   STUDY_COMPARE_B,
   STUDY_DIM,
   STUDY_MUTED,
+  STUDY_ON_BRAND,
   STUDY_TEXT,
   FIELD_BY_VALUE,
   GROUP_BY_OPTIONS,
@@ -37,6 +42,7 @@ import {
   peopleToFilters,
   detectPattern,
   describeQuery,
+  studyTopicForQuery,
   prettyBucket,
   prettyGroupBy,
   prettyMeasure,
@@ -69,6 +75,9 @@ const SESSION_FOCUS = [
 const TOP_MUSCLES = ['Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Glutes', 'Triceps', 'Biceps', 'Core', 'Traps', 'Forearms', 'Calves']
 
 const SELECT_CLS = 'w-full rounded-xl bg-gray-900 px-3 py-3 text-sm text-gray-100 outline-none'
+
+const BRAND_BUTTON_STYLE = { background: STUDY_BRAND, color: STUDY_ON_BRAND }
+const BRAND_ACTIVE_STYLE = { background: STUDY_BRAND, color: STUDY_ON_BRAND, border: `1px solid ${STUDY_BRAND}` }
 
 function sanitizeFilters(filters) {
   return filters.filter(f => {
@@ -380,20 +389,29 @@ export default function Study() {
   }
 
   return (
-    <div className="faded-page min-h-screen pb-28" style={{ background: STUDY_BG, color: STUDY_TEXT }}>
-      <BubbleHeader label="Research engine" title="Study" floating />
-      <div className="px-4 pb-3">
-        <PillTabs
-          tabs={[
-            { value: 'foryou', label: 'For You' },
-            { value: 'explore', label: 'Explore' },
-            { value: 'evidence', label: 'Evidence' },
-          ]}
-          value={tab}
-          onChange={setTab}
-          ariaLabel="Study sections"
-        />
-      </div>
+    <div
+      className="faded-page min-h-screen pb-28"
+      style={{
+        '--accent': STUDY_BRAND,
+        '--accent-ink': STUDY_ON_BRAND,
+        '--surface': STUDY_CARD,
+        '--surface-alt': '#1b211a',
+        '--border': STUDY_BORDER,
+        '--border-strong': STUDY_BORDER_STRONG,
+        '--text': STUDY_TEXT,
+        '--text-muted': STUDY_MUTED,
+        backgroundImage: 'radial-gradient(125% 65% at 100% -5%, rgba(11, 122, 67, 0.23) 0%, transparent 58%), linear-gradient(180deg, #0d1310 0%, #08090a 60%)',
+        backgroundColor: STUDY_BG,
+        backgroundAttachment: 'fixed',
+        color: STUDY_TEXT,
+      }}
+    >
+      <FlatHeader
+        title="Study"
+        titleColor={STUDY_BRAND_INK}
+        action={<FlatAction onClick={() => setTab('explore')}>New study</FlatAction>}
+        tabs={<StudyModeSwitch value={tab} onChange={setTab} />}
+      />
 
       <main className="space-y-6 px-4 py-5">
         {programId && (
@@ -461,44 +479,316 @@ export default function Study() {
             onOpenFinding={openFinding}
           />
         )}
+
+        {tab === 'library' && (
+          <ExerciseLibrary />
+        )}
       </main>
     </div>
   )
 }
 
-function ForYou({ questions, findings, findingsLoading, onFeatured, onFinding }) {
+// Study sub-nav is a MODE SWITCH (DESIGN.md Tier 1), not pills: a framed,
+// segmented instrument selector that reads heavier than Community's underline
+// tabs — three workspaces (findings / builder / saved), not peer feed views.
+// A dark framed track on the page ground; the active segment carries the brand
+// emerald fill (the app's selection color); a mono sub-label gives the Lab voice.
+function StudyModeSwitch({ value, onChange }) {
+  const modes = [
+    { value: 'foryou', label: 'For You', hint: 'findings' },
+    { value: 'explore', label: 'Explore', hint: 'builder' },
+    { value: 'evidence', label: 'Evidence', hint: 'saved' },
+    { value: 'library', label: 'Library', hint: 'exercises' },
+  ]
   return (
-    <div className="space-y-6">
-      <SectionTitle title="For you" body="Start with vetted questions, then open the builder when you want a narrower population." />
-      <div className="-mx-4 overflow-x-auto px-4">
-        <div className="flex gap-3">
-          {questions.map(question => (
+    <div className="px-4 pb-3 pt-0.5">
+      <div
+        role="tablist"
+        aria-label="Study workspaces"
+        className="grid grid-cols-4 overflow-hidden rounded-xl"
+        style={{ border: `1px solid ${STUDY_BORDER_STRONG}`, background: STUDY_BG }}
+      >
+        {modes.map((m, i) => {
+          const active = m.value === value
+          return (
             <button
-              key={question.id}
+              key={m.value}
               type="button"
-              onClick={() => onFeatured(question)}
-              className="w-64 shrink-0 rounded-2xl p-4 text-left"
-              style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER}` }}
+              role="tab"
+              aria-selected={active}
+              onClick={() => onChange(m.value)}
+              className="flex min-w-0 flex-col items-center justify-center gap-0.5 px-1 py-2 transition-colors"
+              style={{
+                background: active ? STUDY_BRAND : 'transparent',
+                color: active ? STUDY_ON_BRAND : STUDY_MUTED,
+                borderLeft: i ? `1px solid ${STUDY_BORDER_STRONG}` : 'none',
+              }}
             >
-              <p className="text-sm font-semibold leading-snug" style={{ color: STUDY_TEXT }}>{question.title}</p>
-              <p className="mt-2 text-xs leading-relaxed" style={{ color: STUDY_MUTED }}>{question.subtitle}</p>
-              <div className="mt-4 flex items-center justify-between text-[11px] font-mono" style={{ color: STUDY_ACCENT }}>
-                <span>{question.type === 'compare' ? 'cohort compare' : prettyGroupBy(question.query?.groupBy)}</span>
-                <span>{prettyMeasure(question.query?.measure)}</span>
-              </div>
+              <span className="text-[13px] font-bold leading-none sm:text-sm">{m.label}</span>
+              <span className="font-mono text-[10px] uppercase tracking-wide leading-none" style={{ opacity: 0.75 }}>{m.hint}</span>
             </button>
-          ))}
-        </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// For You is the Lab's front page: an editorial poster wall, not a card grid.
+// One loud hero finding leads; the rest read as a full-bleed answer stream; then
+// vetted questions sit as a distinct prompt list. Findings carry a chart (the
+// color hero) so a confused user sees the *shape* of the relationship at a glance.
+function ForYou({ questions, findings, findingsLoading, onFeatured, onFinding }) {
+  const ranked = useMemo(() => [...findings].sort((a, b) => (b.strength || 0) - (a.strength || 0)), [findings])
+  const hero = ranked[0]
+  const rest = ranked.slice(1)
+
+  return (
+    <div className="space-y-9">
+      {findingsLoading && <SkeletonRows />}
+      {!findingsLoading && hero && <FindingHero finding={hero} onOpen={onFinding} />}
+
+      {!findingsLoading && rest.length > 0 && (
+        <section className="space-y-1">
+          <PosterSectionHead
+            title="More findings"
+            body="Relationships surfaced from qualified, opted-in training logs. Tap one to rebuild it in the builder."
+          />
+          <div className="-mx-4 mt-3" style={{ borderTop: `1px solid ${STUDY_BORDER}` }}>
+            {rest.map(finding => (
+              <FindingPoster key={finding.id} finding={finding} onClick={() => onFinding(finding)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!findingsLoading && !findings.length && (
+        <EmptyText>No findings discovered yet. Opt in and keep logging — relationships surface here as qualified data accumulates.</EmptyText>
+      )}
+
+      <section className="space-y-1">
+        <PosterSectionHead
+          title="Start a question"
+          body="Vetted starting points. Pick one to run it, then narrow the population in the builder."
+        />
+        <FeaturedDeck questions={questions} onOpen={onFeatured} />
+      </section>
+    </div>
+  )
+}
+
+function PosterSectionHead({ title, body }) {
+  return (
+    <div>
+      <h2 className="text-head font-extrabold leading-tight" style={{ color: STUDY_TEXT }}>{title}</h2>
+      {body && <p className="mt-1 max-w-[60ch] text-body leading-relaxed" style={{ color: STUDY_MUTED }}>{body}</p>}
+    </div>
+  )
+}
+
+// Solid topic chip — the de-bubble color law: solid fill + contrasting ink, never
+// the retired tint-behind-same-hue-text pill.
+function TopicBadge({ topic }) {
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2 py-0.5 text-micro font-bold uppercase tracking-wide"
+      style={{ background: topic.fill, color: topic.on }}
+    >
+      {topic.label}
+    </span>
+  )
+}
+
+// Deterministic ascending bar shape for a finding. The seeded findings here are
+// all positive monotonic relationships, so an upward ramp honestly conveys
+// "more of X tracks with more outcome"; the top bar carries the topic pigment as
+// the color hero, the rest sit in the data-viz tint. Stable per finding id.
+function trendBars(seed, groupBy, count = 5) {
+  let h = 2166136261
+  for (const ch of String(seed) + '|' + String(groupBy)) {
+    h ^= ch.charCodeAt(0)
+    h = Math.imul(h, 16777619) >>> 0
+  }
+  const bars = []
+  let level = 0.34 + (h % 16) / 100
+  for (let i = 0; i < count; i++) {
+    const jitter = ((h >> (i * 4)) % 9) / 100
+    level = Math.min(1, level + 0.11 + jitter)
+    bars.push(level)
+  }
+  return bars
+}
+
+const RELATIONSHIP_ENDS = {
+  rest_period_bucket: ['short rest', 'long rest'],
+  sleep_quality_quartile: ['poor sleep', 'great sleep'],
+  sleep_duration_bucket: ['less sleep', 'more sleep'],
+  frequency_bucket: ['fewer days', 'more days'],
+  protein_bucket: ['less protein', 'more protein'],
+  rir_use: ['no RIR', 'logs RIR'],
+  rir_bucket: ['near failure', 'far from failure'],
+  rep_range_bucket: ['low reps', 'high reps'],
+}
+
+function relationshipEnds(groupBy) {
+  return RELATIONSHIP_ENDS[groupBy] || ['lower', 'higher']
+}
+
+// The Chart Block (DESIGN.md): titled by its surrounding poster, captioned by the
+// finding detail, color carried by the topic hue. Rounded media corners only.
+function TrendMotif({ finding, topic, height = 96 }) {
+  const bars = trendBars(finding.id, finding.groupBy)
+  const max = Math.max(...bars)
+  const [lowEnd, highEnd] = relationshipEnds(finding.groupBy)
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{ background: 'color-mix(in srgb, var(--surface-alt) 72%, transparent)', border: `1px solid ${STUDY_BORDER}` }}
+    >
+      <div className="flex items-end gap-1.5" style={{ height }}>
+        {bars.map((value, i) => {
+          const top = i === bars.length - 1
+          return (
+            <div
+              key={i}
+              className="flex-1 rounded-t-md transition-[height]"
+              style={{
+                height: `${Math.max(12, Math.round((value / max) * 100))}%`,
+                background: top ? topic.fill : topic.tint,
+                boxShadow: top ? `inset 0 0 0 1.5px ${topic.color}` : 'none',
+              }}
+            />
+          )
+        })}
+      </div>
+      <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-wide" style={{ color: STUDY_DIM }}>
+        <span>{lowEnd}</span>
+        <span style={{ color: topic.color }}>{highEnd}</span>
+      </div>
+    </div>
+  )
+}
+
+function findingStatus(finding) {
+  const s = finding.strength || 0
+  return s >= 80 ? 'Strong' : s >= 50 ? 'Good' : 'Sparse'
+}
+
+// The loud lead poster — the strongest finding, colorized by its topic, the
+// headline and chart sharing top billing. This is the For You hero.
+function FindingHero({ finding, onOpen }) {
+  const topic = studyTopicForQuery(finding.query_json || finding.query || {})
+  return (
+    <section
+      className="-mx-4 px-4 pb-7 pt-1"
+      style={{
+        borderBottom: `1px solid ${STUDY_BORDER}`,
+        background: `radial-gradient(135% 90% at 0% 0%, ${topic.tint} 0%, transparent 62%)`,
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <TopicBadge topic={topic} />
+        <span className="text-micro font-bold uppercase tracking-widest" style={{ color: topic.color }}>Strongest signal</span>
+        <span className="ml-auto"><EvidenceBadge status={findingStatus(finding)} /></span>
       </div>
 
-      <section className="space-y-3">
-        <SectionTitle title="Findings" body="Auto-discovered relationships from qualified opted-in logs." />
-        {findingsLoading && <SkeletonRows />}
-        {!findingsLoading && !findings.length && <EmptyText>No findings have been discovered yet.</EmptyText>}
-        {findings.map(finding => (
-          <FindingButton key={finding.id} finding={finding} onClick={() => onFinding(finding)} />
-        ))}
-      </section>
+      <button type="button" onClick={() => onOpen(finding)} className="mt-3 block w-full text-left">
+        <h2 className="text-display font-extrabold leading-[1.12]" style={{ color: STUDY_TEXT, textWrap: 'balance' }}>{finding.headline}</h2>
+      </button>
+
+      <button type="button" onClick={() => onOpen(finding)} className="mt-4 block w-full text-left">
+        <TrendMotif finding={finding} topic={topic} height={140} />
+      </button>
+
+      <p className="mt-3 max-w-[60ch] text-read leading-relaxed" style={{ color: STUDY_MUTED }}>{finding.detail}</p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <button
+          type="button"
+          onClick={() => onOpen(finding)}
+          className="rounded-full px-5 py-2.5 text-sm font-bold transition-transform active:scale-95"
+          style={BRAND_BUTTON_STYLE}
+        >
+          Open in builder
+        </button>
+        <span className="font-mono text-caption tabular-nums" style={{ color: STUDY_DIM }}>
+          {prettyMeasure(finding.measure)} · signal {finding.strength || 0}/100
+        </span>
+      </div>
+    </section>
+  )
+}
+
+// One finding in the answer stream — a full-bleed Feed Item (DESIGN.md): meta
+// line → bold headline → chart → payoff → quiet meta. No floating card.
+function FindingPoster({ finding, onClick }) {
+  const topic = studyTopicForQuery(finding.query_json || finding.query || {})
+  return (
+    <article className="px-4 py-5" style={{ borderBottom: `1px solid ${STUDY_BORDER}` }}>
+      <div className="flex items-center gap-2">
+        <TopicBadge topic={topic} />
+        {finding.discovered_at && (
+          <span className="font-mono text-caption" style={{ color: STUDY_DIM }}>{timeAgo(finding.discovered_at)}</span>
+        )}
+        <span className="ml-auto"><EvidenceBadge status={findingStatus(finding)} /></span>
+      </div>
+
+      <button type="button" onClick={onClick} className="mt-2 block w-full text-left">
+        <h3 className="text-lead font-extrabold leading-tight" style={{ color: STUDY_TEXT, textWrap: 'balance' }}>
+          {finding.headline || finding.title || 'Discovered relationship'}
+        </h3>
+      </button>
+
+      <button type="button" onClick={onClick} className="mt-3 block w-full text-left">
+        <TrendMotif finding={finding} topic={topic} height={84} />
+      </button>
+
+      {finding.detail && <p className="mt-3 max-w-[60ch] text-read leading-relaxed" style={{ color: STUDY_MUTED }}>{finding.detail}</p>}
+
+      <div className="mt-3 flex items-center gap-2 font-mono text-caption" style={{ color: STUDY_DIM }}>
+        <span style={{ color: topic.color }}>{prettyMeasure(finding.measure)}</span>
+        <span aria-hidden="true">·</span>
+        <span className="truncate">by {prettyGroupBy(finding.groupBy).toLowerCase()}</span>
+        <button type="button" onClick={onClick} className="ml-auto shrink-0 font-sans font-bold" style={{ color: STUDY_ACCENT }}>
+          Open →
+        </button>
+      </div>
+    </article>
+  )
+}
+
+// Featured questions are prompts, not answers — so they get a distinct shape: a
+// de-bubbled List Row stream with a solid topic glyph, the question loud, the
+// subtitle as "what you'll learn", and a clear go-affordance. No chart.
+function FeaturedDeck({ questions, onOpen }) {
+  if (!questions.length) return <EmptyText>No featured questions available right now.</EmptyText>
+  return (
+    <div className="-mx-4 mt-3" style={{ borderTop: `1px solid ${STUDY_BORDER}` }}>
+      {questions.map(question => {
+        const topic = studyTopicForQuery(question.query, question.type)
+        return (
+          <button
+            key={question.id}
+            type="button"
+            onClick={() => onOpen(question)}
+            className="flex w-full items-center gap-3.5 px-4 py-4 text-left transition-colors active:bg-white/[0.03]"
+            style={{ borderBottom: `1px solid ${STUDY_BORDER}` }}
+          >
+            <span
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl font-mono text-sm font-bold tabular-nums"
+              style={{ background: topic.fill, color: topic.on }}
+              aria-hidden="true"
+            >
+              {topic.symbol}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-title font-bold leading-snug" style={{ color: STUDY_TEXT, textWrap: 'balance' }}>{question.title}</span>
+              <span className="mt-0.5 block text-body leading-snug" style={{ color: STUDY_MUTED }}>{question.subtitle}</span>
+            </span>
+            <span className="shrink-0 text-xl font-bold" style={{ color: topic.color }} aria-hidden="true">→</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -786,7 +1076,7 @@ function BuilderConcept() {
             type="button"
             onClick={() => setStep(s.key)}
             className="rounded-xl px-2 py-2 text-center text-[11px] font-semibold"
-            style={{ background: step === s.key ? STUDY_ACCENT : STUDY_BG, color: step === s.key ? STUDY_BG : STUDY_MUTED, border: `1px solid ${step === s.key ? STUDY_ACCENT : STUDY_BORDER}` }}
+            style={step === s.key ? BRAND_ACTIVE_STYLE : { background: STUDY_BG, color: STUDY_MUTED, border: `1px solid ${STUDY_BORDER}` }}
           >
             {index + 1}. {s.label}
           </button>
@@ -848,7 +1138,7 @@ function BuilderConcept() {
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <button type="button" onClick={() => setRan(true)} className="rounded-xl py-3 text-sm font-semibold" style={{ background: STUDY_ACCENT, color: STUDY_BG }}>
+        <button type="button" onClick={() => setRan(true)} className="rounded-xl py-3 text-sm font-semibold" style={BRAND_BUTTON_STYLE}>
           {ran ? 'Run again' : 'Run study'}
         </button>
         <button type="button" onClick={() => setStep('rules')} className="rounded-xl py-3 text-sm font-semibold" style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER_STRONG}`, color: STUDY_TEXT }}>
@@ -929,7 +1219,7 @@ function CanvasConcept() {
         })}
       </div>
 
-      <button type="button" className="w-full rounded-xl py-3 text-sm font-semibold" style={{ background: node.status === 'invalid' ? STUDY_CARD : STUDY_ACCENT, border: `1px solid ${node.status === 'invalid' ? STUDY_BORDER_STRONG : STUDY_ACCENT}`, color: node.status === 'invalid' ? STUDY_MUTED : STUDY_BG }}>
+      <button type="button" className="w-full rounded-xl py-3 text-sm font-semibold" style={node.status === 'invalid' ? { background: STUDY_CARD, border: `1px solid ${STUDY_BORDER_STRONG}`, color: STUDY_MUTED } : BRAND_ACTIVE_STYLE}>
         {node.status === 'invalid' ? 'Show compatible paths' : 'Build study from canvas'}
       </button>
     </div>
@@ -996,7 +1286,7 @@ function NotebookConcept() {
           <MiniMetric label="Result" value={branch.result} />
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <button type="button" onClick={addBranch} className="rounded-xl py-3 text-sm font-semibold" style={{ background: STUDY_ACCENT, color: STUDY_BG }}>
+          <button type="button" onClick={addBranch} className="rounded-xl py-3 text-sm font-semibold" style={BRAND_BUTTON_STYLE}>
             Branch
           </button>
           <button type="button" className="rounded-xl py-3 text-sm font-semibold" style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER_STRONG}`, color: STUDY_TEXT }}>
@@ -1431,7 +1721,7 @@ function BuilderProgressHeader({ step }) {
         </span>
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: STUDY_BG }}>
-        <div className="h-full rounded-full" style={{ width: `${((index + 1) / BUILDER_STEPS_FLOW.length) * 100}%`, background: STUDY_ACCENT }} />
+        <div className="h-full rounded-full" style={{ width: `${((index + 1) / BUILDER_STEPS_FLOW.length) * 100}%`, background: STUDY_BRAND }} />
       </div>
     </div>
   )
@@ -1495,7 +1785,7 @@ function BuilderPager({ step, setStep, canGoNext, nextLabel }) {
         disabled={!next || !canGoNext}
         onClick={() => next && setStep(next)}
         className="rounded-xl py-3 text-sm font-semibold disabled:opacity-40"
-        style={{ background: STUDY_ACCENT, color: STUDY_BG }}
+        style={BRAND_BUTTON_STYLE}
       >
         {next ? nextLabel : 'Ready'}
       </button>
@@ -1659,7 +1949,7 @@ function BuilderReviewStep({
         <input type="checkbox" checked={showPersonal && personalSupported} disabled={!personalSupported} onChange={e => setShowPersonal(e.target.checked)} style={{ accentColor: STUDY_ACCENT }} />
         Show my bucket when available
       </label>
-      <button type="button" disabled={loading || !scanKeys.length || reviewN < 10} onClick={runCurrentScan} className="w-full rounded-xl py-4 text-sm font-semibold disabled:opacity-50" style={{ background: STUDY_ACCENT, color: STUDY_BG }}>
+      <button type="button" disabled={loading || !scanKeys.length || reviewN < 10} onClick={runCurrentScan} className="w-full rounded-xl py-4 text-sm font-semibold disabled:opacity-50" style={BRAND_BUTTON_STYLE}>
         {loading ? 'Running...' : reviewN < 10 ? 'Not enough qualified lifters' : 'Run study'}
       </button>
       {activeSavedId && <p className="text-xs" style={{ color: STUDY_ACCENT }}>Opened from saved Evidence.</p>}
@@ -1931,7 +2221,7 @@ function LegacyExplore({
 
       <StepCard number="8" title="Run" body="Scan the selected factors, or run a single relationship.">
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" disabled={loading || !scanKeys.length} onClick={runCurrentScan} className="rounded-xl py-3 text-sm font-semibold disabled:opacity-50" style={{ background: STUDY_ACCENT, color: STUDY_BG }}>
+          <button type="button" disabled={loading || !scanKeys.length} onClick={runCurrentScan} className="rounded-xl py-3 text-sm font-semibold disabled:opacity-50" style={BRAND_BUTTON_STYLE}>
             {loading ? 'Running' : 'Run scan'}
           </button>
           <button type="button" disabled={loading} onClick={() => runCurrent()} className="rounded-xl py-3 text-sm font-semibold disabled:opacity-50" style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER_STRONG}`, color: STUDY_TEXT }}>
@@ -2116,9 +2406,9 @@ function TargetControls({ state, patch }) {
             onClick={() => selectTargetType(t.key)}
             className="rounded-xl px-3 py-1.5 text-xs font-medium transition-colors"
             style={{
-              background: state.targetType === t.key ? STUDY_ACCENT : STUDY_CARD,
-              color: state.targetType === t.key ? STUDY_BG : STUDY_TEXT,
-              border: `1px solid ${state.targetType === t.key ? STUDY_ACCENT : STUDY_BORDER}`,
+              background: state.targetType === t.key ? STUDY_BRAND : STUDY_CARD,
+              color: state.targetType === t.key ? STUDY_ON_BRAND : STUDY_TEXT,
+              border: `1px solid ${state.targetType === t.key ? STUDY_BRAND : STUDY_BORDER}`,
             }}
           >
             {t.label}
@@ -2136,9 +2426,9 @@ function TargetControls({ state, patch }) {
               onClick={() => setMuscleGroupFilter('')}
               className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium"
               style={{
-                background: !muscleGroupFilter ? STUDY_ACCENT : STUDY_CARD,
-                color: !muscleGroupFilter ? STUDY_BG : STUDY_TEXT,
-                border: `1px solid ${!muscleGroupFilter ? STUDY_ACCENT : STUDY_BORDER}`,
+                background: !muscleGroupFilter ? STUDY_BRAND : STUDY_CARD,
+                color: !muscleGroupFilter ? STUDY_ON_BRAND : STUDY_TEXT,
+                border: `1px solid ${!muscleGroupFilter ? STUDY_BRAND : STUDY_BORDER}`,
               }}
             >
               All
@@ -2150,9 +2440,9 @@ function TargetControls({ state, patch }) {
                 onClick={() => setMuscleGroupFilter(muscleGroupFilter === m ? '' : m)}
                 className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium"
                 style={{
-                  background: muscleGroupFilter === m ? STUDY_ACCENT : STUDY_CARD,
-                  color: muscleGroupFilter === m ? STUDY_BG : STUDY_TEXT,
-                  border: `1px solid ${muscleGroupFilter === m ? STUDY_ACCENT : STUDY_BORDER}`,
+                  background: muscleGroupFilter === m ? STUDY_BRAND : STUDY_CARD,
+                  color: muscleGroupFilter === m ? STUDY_ON_BRAND : STUDY_TEXT,
+                  border: `1px solid ${muscleGroupFilter === m ? STUDY_BRAND : STUDY_BORDER}`,
                 }}
               >
                 {m}
@@ -2207,11 +2497,11 @@ function TargetControls({ state, patch }) {
               key={m}
               type="button"
               onClick={() => patch({ muscle: state.muscle === m ? '' : m, exerciseId: '' })}
-              className="rounded-xl px-3 py-1.5 text-xs font-medium"
-              style={{
-                background: state.muscle === m ? STUDY_ACCENT : STUDY_CARD,
-                color: state.muscle === m ? STUDY_BG : STUDY_TEXT,
-                border: `1px solid ${state.muscle === m ? STUDY_ACCENT : STUDY_BORDER}`,
+                className="rounded-xl px-3 py-1.5 text-xs font-medium"
+                style={{
+                background: state.muscle === m ? STUDY_BRAND : STUDY_CARD,
+                color: state.muscle === m ? STUDY_ON_BRAND : STUDY_TEXT,
+                border: `1px solid ${state.muscle === m ? STUDY_BRAND : STUDY_BORDER}`,
               }}
             >
               {m}
@@ -2228,11 +2518,11 @@ function TargetControls({ state, patch }) {
               key={eq}
               type="button"
               onClick={() => patch({ muscle: state.muscle === eq ? '' : eq, exerciseId: '' })}
-              className="rounded-xl px-3 py-1.5 text-xs font-medium"
-              style={{
-                background: state.muscle === eq ? STUDY_ACCENT : STUDY_CARD,
-                color: state.muscle === eq ? STUDY_BG : STUDY_TEXT,
-                border: `1px solid ${state.muscle === eq ? STUDY_ACCENT : STUDY_BORDER}`,
+                className="rounded-xl px-3 py-1.5 text-xs font-medium"
+                style={{
+                background: state.muscle === eq ? STUDY_BRAND : STUDY_CARD,
+                color: state.muscle === eq ? STUDY_ON_BRAND : STUDY_TEXT,
+                border: `1px solid ${state.muscle === eq ? STUDY_BRAND : STUDY_BORDER}`,
               }}
             >
               {eq}
@@ -2253,9 +2543,9 @@ function TargetControls({ state, patch }) {
                 onClick={() => !sf.comingSoon && setSessionFocus(sf.key)}
                 className="rounded-xl px-3 py-1.5 text-xs font-medium"
                 style={{
-                  background: sessionFocus === sf.key && !sf.comingSoon ? STUDY_ACCENT : STUDY_CARD,
-                  color: sf.comingSoon ? STUDY_MUTED : sessionFocus === sf.key ? STUDY_BG : STUDY_TEXT,
-                  border: `1px solid ${sessionFocus === sf.key && !sf.comingSoon ? STUDY_ACCENT : STUDY_BORDER}`,
+                  background: sessionFocus === sf.key && !sf.comingSoon ? STUDY_BRAND : STUDY_CARD,
+                  color: sf.comingSoon ? STUDY_MUTED : sessionFocus === sf.key ? STUDY_ON_BRAND : STUDY_TEXT,
+                  border: `1px solid ${sessionFocus === sf.key && !sf.comingSoon ? STUDY_BRAND : STUDY_BORDER}`,
                   opacity: sf.comingSoon ? 0.45 : 1,
                   cursor: sf.comingSoon ? 'default' : 'pointer',
                 }}
@@ -2334,7 +2624,7 @@ function ResultsBlock({
           <StudyRecipeChips state={state} scanKeys={scanKeys} populationMode={populationMode} setStep={setStep} />
           <div className="flex items-center justify-between gap-3">
             <SectionTitle title="Ranked findings" body={`${activeScanResult.results?.length || 0} variables checked against ${prettyMeasure(state.measure)}.`} />
-            <button type="button" onClick={onSaveScan} className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold" style={{ background: STUDY_ACCENT, color: STUDY_BG }}>
+            <button type="button" onClick={onSaveScan} className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold" style={BRAND_BUTTON_STYLE}>
               Save study
             </button>
           </div>
@@ -2369,7 +2659,7 @@ function ResultsBlock({
           ) : (
             <SingleResultChart buckets={queryResult?.buckets || []} measure={state.measure} groupBy={state.groupBy} totalCohortSize={queryResult?.totalCohortSize || 0} user={user} showPersonal={showPersonal} />
           )}
-          <button type="button" onClick={onSaveQuery} className="w-full rounded-xl py-3 text-sm font-semibold" style={{ background: STUDY_ACCENT, color: STUDY_BG }}>
+          <button type="button" onClick={onSaveQuery} className="w-full rounded-xl py-3 text-sm font-semibold" style={BRAND_BUTTON_STYLE}>
             Save query
           </button>
         </div>
@@ -2610,7 +2900,11 @@ function Evidence({ savedQuestions, savedLoading, findings, onOpenSaved, onDelet
       <section className="space-y-3">
         <SectionTitle title="Discovered findings" />
         {!findings.length && <EmptyText>No findings yet.</EmptyText>}
-        {findings.map(finding => <FindingButton key={finding.id} finding={finding} onClick={() => onOpenFinding(finding)} />)}
+        {findings.length > 0 && (
+          <div className="-mx-4" style={{ borderTop: `1px solid ${STUDY_BORDER}` }}>
+            {findings.map(finding => <FindingPoster key={finding.id} finding={finding} onClick={() => onOpenFinding(finding)} />)}
+          </div>
+        )}
       </section>
       <section className="grid grid-cols-2 gap-3">
         <Contribution title="Safe queries" value="Whitelist" body="Fields, axes, measures, and operators are validated server-side." />
@@ -2654,25 +2948,6 @@ function SavedStudyComparison({ studies, onOpenSaved }) {
         This compares the saved study recipes and evidence snapshots. Rerunning both as a single statistical contrast can be added later without turning the Builder back into a cohort tool.
       </p>
     </div>
-  )
-}
-
-function FindingButton({ finding, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-2xl p-4 text-left"
-      style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER}` }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold leading-snug" style={{ color: STUDY_TEXT }}>{finding.title}</p>
-        <EvidenceBadge status={finding.n >= 100 ? 'Strong' : finding.n >= 30 ? 'Good' : 'Sparse'} />
-      </div>
-      <p className="mt-2 text-xs font-mono" style={{ color: STUDY_MUTED }}>
-        n={finding.n || 0} / effect {finding.effect_size ?? 'n/a'}
-      </p>
-    </button>
   )
 }
 
@@ -2815,7 +3090,7 @@ function StepCard({ number, title, body, children }) {
   return (
     <section className="space-y-3 rounded-2xl p-4" style={{ background: STUDY_CARD, border: `1px solid ${STUDY_BORDER}` }}>
       <div className="flex gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ background: STUDY_ACCENT, color: STUDY_BG }}>{number}</span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={BRAND_BUTTON_STYLE}>{number}</span>
         <div>
           <h2 className="text-sm font-semibold" style={{ color: STUDY_TEXT }}>{title}</h2>
           {body && <p className="text-xs leading-relaxed" style={{ color: STUDY_MUTED }}>{body}</p>}
@@ -2837,7 +3112,7 @@ function SectionTitle({ title, body }) {
 
 function Notice({ children }) {
   return (
-    <div className="rounded-2xl p-4 text-xs leading-relaxed" style={{ background: STUDY_ACCENT_FAINT, border: `1px solid ${STUDY_ACCENT}`, color: STUDY_TEXT }}>
+    <div className="rounded-2xl p-4 text-xs leading-relaxed" style={{ background: STUDY_BRAND_FAINT, border: `1px solid ${STUDY_BRAND}`, color: STUDY_TEXT }}>
       {children}
     </div>
   )

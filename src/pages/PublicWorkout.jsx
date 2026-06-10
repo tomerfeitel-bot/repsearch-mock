@@ -81,10 +81,13 @@ export default function PublicWorkout() {
             const exercise = exerciseById.get(exerciseId)
             const best = viewer_best[exerciseId]
             return (
-              <div key={exerciseId} className="rounded-2xl bg-gray-900 border border-gray-800 p-4" style={{ borderLeft: `4px solid ${muscleColor(exercise?.primary_muscle)}` }}>
+              <div key={exerciseId} className="rounded-2xl bg-gray-900 border border-gray-800 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="font-semibold text-gray-100">{exercise?.name || exerciseId}</h2>
+                    <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: muscleColor(exercise?.primary_muscle) }} />
+                      {exercise?.name || exerciseId}
+                    </h2>
                     <p className="text-xs text-gray-500">{exercise?.primary_muscle || 'Exercise'} · {exercise?.equipment_type || 'Equipment'}</p>
                   </div>
                   <span className="text-xs font-mono text-gray-500">{sets.length} sets</span>

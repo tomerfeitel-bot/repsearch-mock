@@ -1,11 +1,19 @@
 import { mockRequest } from './mockApi.js'
+import { supabase } from './supabase.js'
 
 const BASE = '/api'
 const USE_MOCK = !!import.meta.env.VITE_MOCK
 
+async function currentToken() {
+  if (USE_MOCK) return localStorage.getItem('token')
+  if (!supabase) return null
+  const { data } = await supabase.auth.getSession()
+  return data.session?.access_token || null
+}
+
 async function request(method, path, body) {
   if (USE_MOCK) return mockRequest(method, path, body)
-  const token = localStorage.getItem('token')
+  const token = await currentToken()
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {

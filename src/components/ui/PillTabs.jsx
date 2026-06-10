@@ -12,6 +12,11 @@ export default function PillTabs({
   scroll = false,
   className = '',
   ariaLabel,
+  // Active-segment fill. Defaults to the light graphite accent (the original
+  // sub-nav look); inactive segments stay muted. Pass a hex to scope a tab row to
+  // a surface's own hue. `accentInk` is the label color on the active segment.
+  accent = 'var(--accent)',
+  accentInk = 'var(--accent-ink)',
 }) {
   const items = tabs.map(t => (typeof t === 'string' ? { value: t, label: t } : t))
 
@@ -33,6 +38,7 @@ export default function PillTabs({
       {items.map(t => {
         const on = value === t.value
         return (
+
           <button
             key={t.value}
             type="button"
@@ -45,12 +51,13 @@ export default function PillTabs({
             }
             style={{
               borderRadius: 'calc(var(--radius) - 4px)',
-              background: on ? 'var(--accent)' : 'transparent',
-              color: on ? 'var(--accent-ink)' : 'var(--text-muted)',
+              background: on ? accent : 'transparent',
+              color: on ? accentInk : 'var(--text-muted)',
             }}
           >
             {t.label}
           </button>
+
         )
       })}
     </div>

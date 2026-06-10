@@ -27,8 +27,8 @@ export default function BottomNav() {
               <>
                 <span
                   className={
-                    'flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 text-white shadow-lg shadow-black/40 ring-4 ring-gray-950 transition-transform active:scale-95 ' +
-                    (isActive ? 'outline outline-2 outline-amber-500' : '')
+                    'flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 shadow-lg shadow-black/40 ring-4 ring-gray-950 transition-transform active:scale-95 ' +
+                    (isActive ? 'text-[var(--emerald-ink)] outline outline-2 outline-[var(--emerald)]' : 'text-white')
                   }
                 >
                   <WorkoutIcon active />
@@ -36,7 +36,7 @@ export default function BottomNav() {
                 <span
                   className={
                     'mt-1 text-[11px] font-medium ' +
-                    (isActive ? 'text-indigo-400' : 'text-gray-500')
+                    (isActive ? 'text-[var(--emerald-ink)]' : 'text-gray-500')
                   }
                 >
                   Workout
@@ -61,7 +61,7 @@ function Tab({ to, label, icon: Icon }) {
       to={to}
       className={({ isActive }) =>
         'flex flex-col items-center justify-center gap-1 py-3 text-[11px] font-medium transition-colors ' +
-        (isActive ? 'text-indigo-400' : 'text-gray-500 hover:text-gray-300')
+        (isActive ? 'text-[var(--emerald-ink)]' : 'text-gray-500 hover:text-gray-300')
       }
     >
       {({ isActive }) => (

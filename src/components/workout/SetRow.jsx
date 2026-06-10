@@ -68,7 +68,7 @@ export default function SetRow({
   }
 
   return (
-    <div className={'transition-opacity duration-200 ' + (!planning && set.done ? 'opacity-60' : 'opacity-100')}>
+    <div className={'workout-set-row transition-opacity duration-200 ' + (!planning && set.done ? 'is-done opacity-70' : 'opacity-100')}>
       <div className="flex items-center gap-2 py-1.5">
         <SetMarker badge={setBadge ?? setNumber} setType={set.set_type} />
 
@@ -82,11 +82,11 @@ export default function SetRow({
             value={set.weight_kg ?? ''}
             onChange={e => onChange({ weight_kg: e.target.value === '' ? null : e.target.value })}
             placeholder="-"
-            className={'w-full text-center bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg py-2 text-gray-100 font-mono tabular-nums outline-none ' + ((set.weight_kg == null || set.weight_kg === '') ? 'placeholder:text-gray-600' : '')}
+            className={'workout-set-input w-full rounded-md border py-2 text-center font-mono tabular-nums outline-none ' + ((set.weight_kg == null || set.weight_kg === '') ? 'placeholder:text-gray-600' : '')}
           />
         </div>
 
-        <span className="text-gray-600 text-sm font-mono">x</span>
+        <span className="text-sm font-mono" style={{ color: 'var(--ink-soft)' }}>x</span>
 
         <div className="flex-1 relative">
           <input
@@ -98,7 +98,7 @@ export default function SetRow({
             value={set.reps ?? ''}
             onChange={e => onChange({ reps: e.target.value === '' ? null : e.target.value })}
             placeholder="-"
-            className={'w-full text-center bg-gray-900 border border-gray-800 focus:border-indigo-600 rounded-lg py-2 text-gray-100 font-mono tabular-nums outline-none ' + ((set.reps == null || set.reps === '') ? 'placeholder:text-gray-600' : '')}
+            className={'workout-set-input w-full rounded-md border py-2 text-center font-mono tabular-nums outline-none ' + ((set.reps == null || set.reps === '') ? 'placeholder:text-gray-600' : '')}
           />
         </div>
 
@@ -109,9 +109,9 @@ export default function SetRow({
             onPointerDown={startLongPress}
             onPointerUp={cancelLongPress}
             onPointerLeave={cancelLongPress}
-            className={'w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ' +
+            className={'flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ' +
               (bounce ? 'scale-110' : 'scale-100') + ' ' +
-              (set.done ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'bg-gray-800 text-gray-600 hover:bg-gray-700 hover:text-gray-400')}
+              (set.done ? 'bg-white text-gray-950 shadow-md shadow-white/10' : 'bg-transparent text-gray-600 ring-1 ring-inset ring-gray-700 hover:text-gray-300')}
             aria-label={set.done ? 'Mark set incomplete' : 'Mark set complete'}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -123,7 +123,7 @@ export default function SetRow({
         {researchDetailsVisible && (
           <button
             onClick={onExpand}
-            className={'w-11 h-11 flex items-center justify-center rounded-md transition-colors ' + (expanded ? 'text-indigo-300 bg-indigo-600/10' : 'text-gray-500 hover:text-gray-300')}
+            className={'flex h-11 w-11 items-center justify-center rounded-full transition-colors ' + (expanded ? 'bg-gray-800 text-gray-100' : 'text-gray-500 hover:text-gray-300')}
             aria-label="Research detail settings"
           >
             <SlidersIcon />
@@ -136,7 +136,8 @@ export default function SetRow({
           <button
             type="button"
             onClick={applyGhost}
-            className="rounded-full border border-gray-700 bg-gray-900 px-2 py-1 text-[10px] font-semibold text-gray-400 hover:border-indigo-600 hover:text-indigo-300"
+            className="rounded-full border px-2 py-1 text-[10px] font-semibold transition-colors hover:text-gray-100"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
           >
             {ghost.label} {ghost.weight}kg x {ghost.reps}
           </button>
@@ -146,12 +147,12 @@ export default function SetRow({
       {(contextPills.length > 0 || plannedPills.length > 0 || (researchDetailsVisible && pinnedPills.length > 0)) && (
         <div className="flex flex-wrap gap-1 pl-10 pb-1.5">
           {contextPills.slice(0, 1).map(p => (
-            <span key={p.field} className="px-2 py-0.5 rounded-full bg-gray-900 border border-gray-700 text-gray-400 text-[10px] font-medium">
+            <span key={p.field} className="rounded-full border px-2 py-0.5 text-[10px] font-medium" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
               {p.label}: {p.value}
             </span>
           ))}
           {plannedPills.map(p => (
-            <span key={p.field} className="px-2 py-0.5 rounded-full bg-gray-800 border border-gray-700 text-gray-300 text-[10px] font-medium">
+            <span key={p.field} className="rounded-full border px-2 py-0.5 text-[10px] font-medium" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>
               {p.label}: {p.value}
             </span>
           ))}
@@ -231,7 +232,8 @@ function ResearchPill({ field, label, value, completed, editing, onEdit, onChang
       <button
         type="button"
         onClick={onEdit}
-        className="rounded-full bg-emerald-600/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 hover:bg-emerald-600/25"
+        className="rounded-full border px-2 py-0.5 text-[10px] font-semibold hover:text-gray-100"
+        style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
       >
         {label}: {formatResearchValue(field, value)}
       </button>
@@ -248,7 +250,8 @@ function ResearchPill({ field, label, value, completed, editing, onEdit, onChang
     <button
       type="button"
       onClick={() => onChange(null)}
-      className="rounded-full border border-indigo-500/20 bg-indigo-600/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-300"
+      className="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+      style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
     >
       {label}: {formatResearchValue(field, value)}
     </button>
@@ -265,8 +268,8 @@ function MiniRirTicker({ value, onChange }) {
     { value: '5+', color: 'bg-sky-600 text-gray-100' },
   ]
   return (
-    <div className="flex items-center gap-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 px-1 py-0.5">
-      <span className="px-1 text-[9px] uppercase tracking-wider text-indigo-300">RIR</span>
+    <div className="flex items-center gap-0.5 rounded-full border px-1 py-0.5" style={{ borderColor: 'var(--border)' }}>
+      <span className="px-1 text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>RIR</span>
       {options.map(opt => {
         const active = String(value) === String(opt.value)
         return (
@@ -287,10 +290,10 @@ function MiniRirTicker({ value, onChange }) {
 function MiniRestPill({ value, onChange }) {
   const seconds = Number(value) || 0
   return (
-    <div className="flex items-center gap-0.5 rounded-full bg-indigo-600/10 border border-indigo-500/20 px-1 py-0.5">
-      <span className="px-1 text-[9px] uppercase tracking-wider text-indigo-300">Rest</span>
+    <div className="flex items-center gap-0.5 rounded-full border px-1 py-0.5" style={{ borderColor: 'var(--border)' }}>
+      <span className="px-1 text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Rest</span>
       <button type="button" onClick={() => onChange(Math.max(15, seconds - 15))} className="min-w-5 h-5 rounded-full bg-gray-800 px-1 text-[10px] font-bold text-gray-300">-</button>
-      <button type="button" onClick={() => onChange(seconds || 90)} className="min-w-10 h-5 rounded-full bg-indigo-600 px-1 text-[10px] font-bold text-white">
+      <button type="button" onClick={() => onChange(seconds || 90)} className="min-w-10 h-5 rounded-full bg-gray-100 px-1 text-[10px] font-bold text-gray-950">
         {formatResearchValue('rest_seconds', seconds || 90)}
       </button>
       <button type="button" onClick={() => onChange(Math.min(600, (seconds || 90) + 15))} className="min-w-5 h-5 rounded-full bg-gray-800 px-1 text-[10px] font-bold text-gray-300">+</button>
@@ -300,12 +303,12 @@ function MiniRestPill({ value, onChange }) {
 
 function MiniSelectPill({ label, field, value, options, onChange }) {
   return (
-    <label className="flex items-center gap-1 rounded-full bg-indigo-600/10 border border-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-300">
+    <label className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
       <span>{label}</span>
       <select
         value={value ?? ''}
         onChange={e => onChange(e.target.value || null)}
-        className="max-w-24 bg-transparent text-[10px] font-semibold text-indigo-100 outline-none"
+        className="max-w-24 bg-transparent text-[10px] font-semibold text-gray-100 outline-none"
       >
         <option value="">None</option>
         {options.map(option => (
@@ -321,7 +324,7 @@ function MiniBooleanPill({ label, value, onChange }) {
     <button
       type="button"
       onClick={() => onChange(!value)}
-      className={'rounded-full border px-2 py-0.5 text-[10px] font-semibold ' + (value ? 'border-indigo-500/20 bg-indigo-600/15 text-indigo-200' : 'border-gray-700 bg-gray-800 text-gray-400')}
+      className={'rounded-full border px-2 py-0.5 text-[10px] font-semibold ' + (value ? 'border-gray-300 bg-gray-100 text-gray-950' : 'border-gray-700 bg-gray-800 text-gray-400')}
     >
       {label}: {value ? 'Yes' : 'No'}
     </button>

@@ -2,20 +2,26 @@
 // accent, monospace numbers. Mirrors the whitelists in server/research/queryEngine.js
 // so the UI can't construct queries the backend will reject.
 
-// Rubber Brass palette (light "gym hardware") for the Study page. Graphite is
-// the primary mark, brass the warm second series.
-export const STUDY_BG = '#f7f8f4'
-export const STUDY_CARD = '#ffffff'
-export const STUDY_BORDER = '#d5dcd2'
-export const STUDY_BORDER_STRONG = '#b0bab0'
-export const STUDY_TEXT = '#151817'
-export const STUDY_MUTED = '#58615b'
-export const STUDY_DIM = '#8a948c'
-export const STUDY_ACCENT = '#242825'        // graphite
-export const STUDY_ACCENT_DIM = '#6b726c'
-export const STUDY_ACCENT_FAINT = 'rgba(36, 40, 37, 0.10)'
-export const STUDY_COMPARE_A = '#242825'     // graphite
-export const STUDY_COMPARE_B = '#a77b3f'     // brass against graphite
+// Study shares the system ground/surface tokens (DESIGN.md); its signature is the
+// Dark Jewel pine/teal, kept mid-toned so the research surface gains color
+// without going neon.
+export const STUDY_BG = '#08090a'
+export const STUDY_CARD = '#141615'
+export const STUDY_BORDER = '#363c37'
+export const STUDY_BORDER_STRONG = '#4a514b'
+export const STUDY_TEXT = '#f3f5f1'
+export const STUDY_MUTED = '#aab3ab'
+export const STUDY_DIM = '#7f897f'
+export const STUDY_ACCENT = '#6fcab8'        // teal ink
+export const STUDY_ACCENT_DIM = '#3f8f80'
+export const STUDY_ACCENT_FAINT = 'rgba(43, 163, 149, 0.16)'
+export const STUDY_BRAND = '#0B7A43'         // app brand emerald, for commands/selection
+export const STUDY_BRAND_HOVER = '#0E8E4E'
+export const STUDY_BRAND_INK = '#34BE73'
+export const STUDY_BRAND_FAINT = 'rgba(11, 122, 67, 0.16)'
+export const STUDY_ON_BRAND = '#ffffff'
+export const STUDY_COMPARE_A = '#6fcab8'     // teal
+export const STUDY_COMPARE_B = '#e8c074'     // brass
 
 // Field categories shown in the filter picker, grouped for readability.
 // Keys must match server/research/queryEngine.js FIELD_TABLE.
@@ -242,6 +248,71 @@ export function prettyMeasure(value) {
 
 export function prettyGroupBy(value) {
   return GROUP_BY_OPTIONS.find(g => g.value === value)?.label || value
+}
+
+// Topic styles drawn from the Dark Jewel palette (DESIGN.md). Each topic carries
+// the full chip vocabulary the de-bubble color law requires:
+//   `fill` — solid Dark Jewel pigment for SOLID badges/markers (no soft-enamel
+//             tint-behind-same-hue-text; that pattern is banned app-wide).
+//   `on`   — contrasting ink on `fill` (near-black; the jewel mids clear AA with
+//             black, not white). Used for badge text.
+//   `color`— the hue's lifted *ink* for text/thin lines on the dark ground.
+//   `tint` — the fill at low alpha, GRAPHS/DATA-VIZ ONLY (bar bg, area fills).
+export const STUDY_TOPIC_STYLES = {
+  training: { label: 'Training', symbol: 'kg', fill: '#d59a3a', on: '#0c0c0c', color: '#e8c074', tint: 'rgba(213, 154, 58, 0.16)' },
+  recovery: { label: 'Recovery', symbol: 'Zz', fill: '#3f93cc', on: '#0c0c0c', color: '#87bce8', tint: 'rgba(63, 147, 204, 0.16)' },
+  nutrition: { label: 'Nutrition', symbol: 'g', fill: '#74ab47', on: '#0c0c0c', color: '#abd283', tint: 'rgba(116, 171, 71, 0.16)' },
+  profile: { label: 'Cohort', symbol: 'n=', fill: '#9a64b8', on: '#0c0c0c', color: '#c6a0e0', tint: 'rgba(154, 100, 184, 0.16)' },
+  exercise: { label: 'Exercise', symbol: 'ex', fill: '#d3623a', on: '#0c0c0c', color: '#ea9670', tint: 'rgba(211, 98, 58, 0.16)' },
+  compare: { label: 'Compare', symbol: 'A/B', fill: '#2ba395', on: '#0c0c0c', color: '#6fcab8', tint: 'rgba(43, 163, 149, 0.16)' },
+}
+
+const STUDY_TOPIC_BY_GROUP = {
+  frequency_bucket: 'training',
+  session_position_bucket: 'training',
+  session_set_order_bucket: 'training',
+  rir_use: 'training',
+  rir_bucket: 'training',
+  rest_period_bucket: 'training',
+  rep_range_bucket: 'training',
+  split_type: 'training',
+  sleep_quality_quartile: 'recovery',
+  sleep_duration_bucket: 'recovery',
+  stress_bucket: 'recovery',
+  cardio_load_quartile: 'recovery',
+  sport_primary: 'recovery',
+  sport_frequency_bucket: 'recovery',
+  physical_labor_level: 'recovery',
+  protein_bucket: 'nutrition',
+  nutrition_phase: 'nutrition',
+  creatine_use: 'nutrition',
+  experience_level: 'profile',
+  goal: 'profile',
+  gender: 'profile',
+  age_range: 'profile',
+  enhancement_status: 'profile',
+  training_age_bucket: 'profile',
+  equipment_type: 'exercise',
+  movement_pattern: 'exercise',
+  force_vector: 'exercise',
+  bilateral: 'exercise',
+}
+
+export function studyTopicForQuery(query = {}, type) {
+  if (type === 'compare' || query.cohortA || query.cohortB) return STUDY_TOPIC_STYLES.compare
+  const topic = STUDY_TOPIC_BY_GROUP[query.groupBy] || (query.exerciseId || query.muscle ? 'exercise' : 'training')
+  return STUDY_TOPIC_STYLES[topic]
+}
+
+export function studyChipsForQuery(query = {}, type) {
+  const topic = studyTopicForQuery(query, type)
+  const chips = [topic.label]
+  if (type === 'compare' || query.cohortA || query.cohortB) chips.push('Cohort compare')
+  else if (query.groupBy) chips.push(prettyGroupBy(query.groupBy))
+  if (query.measure) chips.push(prettyMeasure(query.measure))
+  if (query.exerciseId) chips.push('Exercise')
+  if (query.muscle) chips.push(query.muscle)
+  return chips.filter(Boolean).slice(0, 4)
 }
 
 // Build a plain-language headline restating a query.

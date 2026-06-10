@@ -9,11 +9,16 @@ import { useToast } from '../ui/Toast.jsx'
 import { useAuth } from '../../hooks/useAuth.jsx'
 import { SEED_EXERCISES } from '../../lib/exercises.js'
 
-const SECTIONS = [
-  { v: 'for_you', label: 'For you' },
-  { v: 'following', label: 'Following' },
+// Two clear filter axes (per DESIGN.md Community round 2): primary TYPE split and,
+// for programs, a SOURCE sub-filter. They used to be jammed into one ambiguous
+// pill row ("For you / Following / Programs / Templates") that mixed the two.
+const TYPES = [
   { v: 'programs', label: 'Programs' },
   { v: 'templates', label: 'Templates' },
+]
+const SOURCES = [
+  { v: 'for_you', label: 'For you' },
+  { v: 'following', label: 'Following' },
 ]
 
 const STRICTNESS = [
@@ -24,15 +29,16 @@ const STRICTNESS = [
 
 const exerciseById = new Map(SEED_EXERCISES.map(e => [e.id, e]))
 
-function sortForSection(section) {
-  if (section === 'following') return 'following'
-  if (section === 'for_you') return 'for_you'
-  return 'enrolled'
-}
-
-export default function PlansTab() {
+// `type`/`source` may be controlled by a parent (Community plan-mode drives them
+// via its Filter sheet). When `hideControls` is set, the built-in Type tabs +
+// Source row are suppressed (the parent owns that filtering) and only a slim
+// "+ New" row remains. Defaults preserve the standalone behavior used by Profile.
+export default function PlansTab({ type: typeProp, source: sourceProp, hideControls = false }) {
   const navigate = useNavigate()
-  const [section, setSection] = useState('for_you')
+  const [typeState, setType] = useState('programs')
+  const [sourceState, setSource] = useState('for_you')
+  const type = typeProp ?? typeState
+  const source = sourceProp ?? sourceState
   const [templates, setTemplates] = useState([])
   const [drafts, setDrafts] = useState([])
   const [programDrafts, setProgramDrafts] = useState([])
@@ -43,13 +49,13 @@ export default function PlansTab() {
   const [detailRefreshKey, setDetailRefreshKey] = useState(0)
   const toast = useToast()
 
-  const loadPlans = useCallback((nextSection = section, showLoading = true) => {
+  const loadPlans = useCallback((nextSource = source, showLoading = true) => {
     if (showLoading) setLoading(true)
     return Promise.all([
       api.get('/templates'),
       api.get('/templates?status=draft'),
       api.get('/programs?status=draft'),
-      api.get(`/programs?sort=${sortForSection(nextSection)}`),
+      api.get(`/programs?sort=${nextSource === 'following' ? 'following' : 'for_you'}`),
     ])
       .then(([t, d, pd, p]) => {
         setTemplates(t.templates || [])
@@ -59,63 +65,105 @@ export default function PlansTab() {
       })
       .catch(err => toast?.(err.message || 'Failed to load plans', 'error'))
       .finally(() => setLoading(false))
-  }, [section, toast])
+  }, [source, toast])
 
   useEffect(() => {
-    loadPlans(section)
-  }, [section, loadPlans])
+    loadPlans(source)
+  }, [source, loadPlans])
 
-  const shownPrograms = section === 'templates' ? [] : programs
-  const shownTemplates = section === 'programs' || section === 'for_you' || section === 'following'
-    ? []
-    : templates
+  const shownPrograms = type === 'templates' ? [] : programs
+  const shownTemplates = type === 'templates' ? templates : []
 
   function refresh() {
-    return loadPlans(section)
+    return loadPlans(source)
   }
 
   function handleProgramStarted(programId) {
-    loadPlans(section, false)
+    loadPlans(source, false)
     if (detailProgram?.id === programId) setDetailRefreshKey(k => k + 1)
   }
 
   return (
-    <div className="px-4 pt-4 pb-24 space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar flex-1">
-          {SECTIONS.map(s => (
-            <button
-              key={s.v}
-              onClick={() => setSection(s.v)}
-              className={
-                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors ' +
-                (section === s.v ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-gray-900 border-gray-800 text-gray-400')
-              }
-            >
-              {s.label}
-            </button>
-          ))}
+    <div className="pb-24">
+      {/* Filter shelf — primary TYPE split + create, then a SOURCE row for
+          programs. Flat + on-palette, no bubbles, echoing the feed's controls.
+          Suppressed when a parent owns the filtering (plan mode); only the slim
+          "+ New" row stays so creating a plan is still reachable. */}
+      {hideControls ? (
+        <div className="flex justify-end px-4 pt-2.5 pb-0.5">
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-xs font-bold transition-colors"
+            style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
+            aria-label="Create program or template"
+          >
+            + New
+          </button>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="w-9 h-9 shrink-0 rounded-full border border-gray-800 bg-gray-900 text-gray-300 hover:text-gray-100 hover:border-gray-700"
-          aria-label="Create"
-        >
-          +
-        </button>
-      </div>
+      ) : (
+        <>
+          <div className="flex items-stretch gap-4 px-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            {TYPES.map(t => {
+              const active = type === t.v
+              return (
+                <button
+                  key={t.v}
+                  onClick={() => setType(t.v)}
+                  className="relative -mb-px pb-2.5 pt-1 text-sm font-bold transition-colors"
+                  style={{ color: active ? 'var(--text)' : 'var(--text-muted)' }}
+                >
+                  {t.label}
+                  <span aria-hidden="true" className="absolute left-0 right-0 bottom-0 rounded-full"
+                    style={{ height: 2.5, background: 'var(--emerald-ink)', opacity: active ? 1 : 0 }} />
+                </button>
+              )
+            })}
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="ml-auto self-center inline-flex items-center gap-1 h-8 px-3 rounded-full text-xs font-bold transition-colors"
+              style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
+              aria-label="Create program or template"
+            >
+              + New
+            </button>
+          </div>
 
-      {loading && <Skeleton />}
+          {type === 'programs' && (
+            <div className="flex items-center gap-2 px-4 pt-3">
+              <span className="text-micro font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Source</span>
+              <div className="flex items-center gap-1.5">
+                {SOURCES.map(s => {
+                  const active = source === s.v
+                  return (
+                    <button
+                      key={s.v}
+                      onClick={() => setSource(s.v)}
+                      className="px-3 py-1 rounded-full text-xs font-semibold transition-colors border"
+                      style={active
+                        ? { background: 'var(--emerald)', color: 'var(--on-emerald)', borderColor: 'var(--emerald)' }
+                        : { background: 'transparent', color: 'var(--text-muted)', borderColor: 'var(--border)' }}
+                    >
+                      {s.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
-      {!loading && section !== 'templates' && (
-        <div className="space-y-3">
-          {shownPrograms.length === 0 ? <Empty>No programs here yet.</Empty> : shownPrograms.map(p => (
+      {loading && <div className="px-4 pt-3"><Skeleton /></div>}
+
+      {!loading && type === 'programs' && (
+        <div className="pt-1">
+          {shownPrograms.length === 0 ? <Empty>{source === 'following' ? 'No programs from people you follow yet.' : 'No programs here yet.'}</Empty> : shownPrograms.map(p => (
             <ProgramCard key={p.id} program={p} onOpen={() => setDetailProgram(p)} onStarted={handleProgramStarted} />
           ))}
         </div>
       )}
 
-      {!loading && section === 'templates' && (
+      {!loading && type === 'templates' && (
         <Templates templates={shownTemplates} onChanged={refresh} />
       )}
 
@@ -319,25 +367,27 @@ function Templates({ templates, onChanged }) {
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="pt-1">
         {templates.map(t => (
-          <div key={t.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-3 flex items-center gap-3">
+          <div key={t.id} className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-gray-100 truncate">{t.name}</div>
-              <div className="text-caption text-gray-500 truncate">
+              <div className="font-bold text-[var(--text)] truncate">{t.name}</div>
+              <div className="text-caption text-[var(--text-muted)] truncate">
                 {t.creator_username ? `by ${t.creator_username} · ` : ''}{strictnessLabel(t.strictness)} · used {t.usage_count || 0}x
               </div>
             </div>
             <button
               onClick={() => startFromTemplate(t)}
-              className="px-3 py-2 rounded-lg bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-700/40 text-indigo-300 text-xs font-medium min-w-[48px]"
+              className="px-3.5 h-9 rounded-full text-xs font-bold min-w-[48px]"
+              style={{ background: 'var(--emerald)', color: 'var(--on-emerald)' }}
             >
               Start
             </button>
             {t.user_id === user?.id && (
               <button
                 onClick={() => setConfirmDeleteTemplate(t)}
-                className="px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-300 text-xs font-medium min-w-[52px]"
+                className="px-2 h-9 rounded-full text-xs font-semibold min-w-[44px] transition-colors"
+                style={{ color: 'var(--negative)' }}
               >
                 Delete
               </button>
@@ -373,28 +423,35 @@ function ProgramCard({ program, onOpen, onStarted }) {
 
   return (
     <>
-      <div onClick={onOpen} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }} className="w-full text-left bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3 active:scale-[0.99] transition cursor-pointer">
+      <article className="px-4 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+        {/* meta line — creator byline + cadence notifier */}
         <div className="flex items-center gap-2">
           <Avatar username={program.creator_username || 'anon'} size="sm" />
-          <span className="text-sm text-gray-300 truncate">{program.creator_username || 'unknown'}</span>
-          <span className="ml-auto text-micro text-gray-500 uppercase tracking-wider">Open-ended</span>
+          <span className="text-caption font-bold text-[var(--text)] truncate">{program.creator_username || 'unknown'}</span>
+          <span className="ml-auto text-micro uppercase tracking-wide text-[var(--text-muted)]">Open-ended</span>
         </div>
-        <div>
-          <div className="font-bold text-gray-100 text-title leading-tight line-clamp-2">{program.name}</div>
-          {program.description && <div className="text-caption text-gray-500 mt-1 line-clamp-2">{program.description}</div>}
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-caption text-gray-400">
-          <span className="font-mono tabular-nums text-gray-100 text-xl">{program.proof?.hero || `${program.enrollment_count || 0} started`}</span>
+
+        {/* headline — the program name leads */}
+        <button onClick={onOpen} className="mt-2 block w-full text-left">
+          <h2 className="text-lead font-extrabold text-[var(--text)] leading-tight line-clamp-2" style={{ textWrap: 'balance' }}>{program.name}</h2>
+          {program.description && <p className="mt-1.5 text-read text-[var(--text-muted)] line-clamp-2">{program.description}</p>}
+        </button>
+
+        {/* proof hero — the data payoff */}
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-caption text-[var(--text-muted)]">
+          <span className="font-mono tabular-nums text-2xl font-extrabold text-[var(--text)]">{program.proof?.hero || `${program.enrollment_count || 0} started`}</span>
           <span>{proofStatus(program.proof?.status)}</span>
-          <span className="px-2 py-1 rounded-full bg-gray-950 border border-gray-800">open-ended</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-caption text-gray-500">{strictnessLabel(program.strictness)}</span>
-          <button onClick={(e) => { e.stopPropagation(); setStartOpen(true) }} className="ml-auto px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">
+
+        {/* byline footer — strictness + start */}
+        <div className="mt-3.5 flex items-center gap-2">
+          <span className="text-caption text-[var(--text-muted)]">{strictnessLabel(program.strictness)}</span>
+          <button onClick={() => setStartOpen(true)} className="ml-auto h-9 px-4 rounded-full text-xs font-bold"
+            style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
             Start program
           </button>
         </div>
-      </div>
+      </article>
       <StartProgramSheet
         open={startOpen}
         onClose={() => setStartOpen(false)}
@@ -515,7 +572,7 @@ export function ProgramDetailSheet({ program, refreshKey, onClose }) {
               {full?.phase?.next_suggested_at && <div className="mt-1 text-caption text-gray-500">Suggested {new Date(full.phase.next_suggested_at).toLocaleDateString()}</div>}
             </div>
             {nextSession && full?.enrollment && (
-              <button onClick={startNextSession} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">
+              <button onClick={startNextSession} className="px-3 py-2 rounded-lg text-xs font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
                 Start
               </button>
             )}
@@ -620,7 +677,7 @@ export function StartProgramSheet({ open, onClose, program, onStarted }) {
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full bg-gray-950 border border-gray-800 focus:border-indigo-600 rounded-xl px-3 py-3 text-gray-100 outline-none"
+            className="w-full bg-gray-950 border border-gray-800 focus:border-[var(--emerald)] rounded-xl px-3 py-3 text-gray-100 outline-none"
           />
         </label>
         <label className="flex gap-3 rounded-xl bg-gray-950 border border-gray-800 p-3">
@@ -632,7 +689,7 @@ export function StartProgramSheet({ open, onClose, program, onStarted }) {
           />
           <span className="text-sm text-gray-300">I understand this program is open-ended, and I am expected to run it for at least 6 weeks before judging the results.</span>
         </label>
-        <button onClick={start} disabled={saving || !startDate || !ack} className="w-full py-4 rounded-2xl bg-indigo-600 disabled:opacity-50 text-white font-semibold">
+        <button onClick={start} disabled={saving || !startDate || !ack} className="w-full py-4 rounded-2xl disabled:opacity-50 font-semibold" style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}>
           {saving ? 'Starting...' : 'Start program'}
         </button>
       </div>
@@ -691,14 +748,13 @@ function timingLabel(value) {
 }
 
 function Empty({ children }) {
-  return <div className="text-center py-12 text-sm text-gray-500">{children}</div>
+  return <div className="px-4 text-center py-16 text-sm text-[var(--text-muted)]">{children}</div>
 }
 
 function Skeleton() {
   return (
-    <div className="space-y-2">
-      <div className="h-32 bg-gray-900 rounded-2xl animate-pulse" />
-      <div className="h-32 bg-gray-900 rounded-2xl animate-pulse" />
+    <div className="space-y-3">
+      {[1, 2, 3].map(i => <div key={i} className="h-32 bg-white/5 border border-[var(--border)] rounded-2xl animate-pulse" />)}
     </div>
   )
 }

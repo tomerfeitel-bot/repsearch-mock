@@ -1,0 +1,18 @@
+{
+  "asset": "bodybuilder-muscles.glb",
+  "sourceTitle": "Z-Anatomy — libre 3D atlas of anatomy",
+  "creator": "Z-Anatomy (Gauthier Kervyn de Meerendré)",
+  "creatorUrl": "https://www.z-anatomy.com/",
+  "sourceUrl": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+  "basedOn": "BodyParts3D, © The Database Center for Life Science (DBCLS), Japan",
+  "license": "Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "shareAlikeNotice": "This derived model and any further derivatives must be distributed under CC BY-SA 4.0 with attribution to Z-Anatomy and BodyParts3D.",
+  "changes": [
+    "Extracted the 789 named muscle meshes from the 'Muscular system' collection",
+    "Keyword-mapped each muscle to one of 14 major groups (Chest, Shoulders, Biceps, Triceps, Forearms, Lats, Upper Back, Lower Back, Traps, Core, Quads, Hamstrings, Glutes, Calves); excluded head/face/hand/foot/internal muscles",
+    "Joined muscles per group, normalized scale and centered for web use",
+    "Decimated for web delivery (~140k triangles total)",
+    "Applied a soft per-group tint as the material color and tagged each group object with a `muscle_group` glTF extra for in-app tap/highlight"
+  ]
+}

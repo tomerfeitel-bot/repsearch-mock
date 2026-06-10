@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts'
 import { nanoid } from '../../lib/nanoid.js'
-import { PROGRESS_CARD, PROGRESS_BORDER, PROGRESS_TEXT, PROGRESS_MUTED } from '../../lib/progressTheme.js'
+import { PROGRESS_TEXT, PROGRESS_MUTED, PROGRESS_BORDER, NEGATIVE_INK, JEWEL_SERIES } from '../../lib/progressTheme.js'
+import {
+  Section, ChartBlock, Empty, InlineWarning, axisTick, tooltipStyle, gridStroke, PrimaryButton,
+} from './ui.jsx'
 
 const SPLITS = ['Push', 'Pull', 'Legs', 'Other']
 const COMPARE_METRICS = [
@@ -39,7 +42,7 @@ const GROUP_OPTIONS = [
   { id: 'week', name: 'Week' },
   { id: 'month', name: 'Month' },
 ]
-const LINE_COLORS = ['#b85c38', '#5a7a90', '#6a8a5a', '#7c6a92', '#c4914a']
+const LINE_COLORS = JEWEL_SERIES.map(j => j.ink)
 const FILTER_KEYS = ['set_type', 'rom_category', 'equipment_type', 'split']
 
 function makeRow(over = {}) {
@@ -125,7 +128,6 @@ export default function CompareTab({ resource, exercises = [], muscles = [], equ
     if (rows.length >= 3) return
     const row = makeRow()
     setRows(prev => [...prev, row])
-    // Active filters apply to all series by default — include the new one.
     setFilters(prev => {
       const next = { ...prev }
       for (const key of FILTER_KEYS) {
@@ -176,37 +178,28 @@ export default function CompareTab({ resource, exercises = [], muscles = [], equ
   ]), [equipment])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {resource.error && <InlineWarning message={resource.error} onRetry={run} />}
 
-      <Card>
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div>
-            <div className="text-xs uppercase tracking-wider" style={{ color: PROGRESS_MUTED }}>Compare</div>
-            <div className="font-semibold" style={{ color: PROGRESS_TEXT }}>Graph 1–3 series from your data</div>
-          </div>
-          <button onClick={run} className="px-3 py-2 rounded-xl text-xs font-semibold" style={{ background: PROGRESS_TEXT, color: PROGRESS_CARD }}>
-            Run
-          </button>
-        </div>
-
+      {/* Form Block — define 1–3 series, optional filters, shared time window. */}
+      <Section title="Build comparison" caption="Graph 1–3 series from your own training data." divider={false}>
         <div className="space-y-2">
           {rows.map((row, index) => (
             <div key={row.uid} className="flex items-start gap-2">
               <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
-                <select value={row.source_type} onChange={e => updateRow(row.uid, { source_type: e.target.value })} className="rounded-lg px-2 py-2 text-xs" style={controlStyle()}>
+                <select value={row.source_type} onChange={e => updateRow(row.uid, { source_type: e.target.value })} className="rounded-lg px-2 py-2 text-xs outline-none" style={controlStyle()}>
                   <option value="exercise">Exercise</option>
                   <option value="muscle">Muscle group</option>
                   <option value="split">Split</option>
                   <option value="body_metric">Body</option>
                 </select>
-                <select value={row.source_id} onChange={e => updateRow(row.uid, { source_id: e.target.value })} className="rounded-lg px-2 py-2 text-xs" style={controlStyle()}>
+                <select value={row.source_id} onChange={e => updateRow(row.uid, { source_id: e.target.value })} className="rounded-lg px-2 py-2 text-xs outline-none" style={controlStyle()}>
                   <option value="">Choose</option>
                   {sourceOptions(row.source_type, exercises, muscles).map(item => (
                     <option key={item.id} value={item.id}>{item.name}</option>
                   ))}
                 </select>
-                <select value={row.metric} onChange={e => updateRow(row.uid, { metric: e.target.value })} className="rounded-lg px-2 py-2 text-xs" style={controlStyle()}>
+                <select value={row.metric} onChange={e => updateRow(row.uid, { metric: e.target.value })} className="rounded-lg px-2 py-2 text-xs outline-none" style={controlStyle()}>
                   {(row.source_type === 'body_metric' ? [{ key: 'measurement', label: 'Measurement' }] : COMPARE_METRICS).map(metric => (
                     <option key={metric.key} value={metric.key}>{metric.label}</option>
                   ))}
@@ -225,6 +218,7 @@ export default function CompareTab({ resource, exercises = [], muscles = [], equ
                   <div className="hidden md:block" />
                 )}
               </div>
+              <span className="mt-2.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: LINE_COLORS[index % LINE_COLORS.length] }} aria-hidden="true" />
               <button
                 onClick={() => removeRow(row.uid)}
                 disabled={rows.length <= 1}
@@ -239,12 +233,10 @@ export default function CompareTab({ resource, exercises = [], muscles = [], equ
         </div>
 
         {rows.length < 3 && (
-          <button onClick={addRow} className="mt-2 text-xs font-semibold" style={{ color: PROGRESS_TEXT }}>+ Add series</button>
+          <button onClick={addRow} className="mt-2 text-xs font-bold" style={{ color: 'var(--emerald-ink)' }}>+ Add series</button>
         )}
 
-        {warning && (
-          <div className="mt-2 text-xs font-medium" style={{ color: '#a83232' }}>{warning}</div>
-        )}
+        {warning && <div className="mt-2 text-xs font-medium" style={{ color: NEGATIVE_INK }}>{warning}</div>}
 
         {/* Per-series filters: pick a value, then toggle which series it applies to. */}
         <div className="mt-4 space-y-3">
@@ -254,7 +246,7 @@ export default function CompareTab({ resource, exercises = [], muscles = [], equ
             return (
               <div key={def.key} className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] w-16 shrink-0" style={{ color: PROGRESS_MUTED }}>{def.label}</span>
-                <select value={f.value} onChange={e => setFilterValue(def.key, e.target.value)} className="rounded-lg px-2 py-1.5 text-xs" style={controlStyle()}>
+                <select value={f.value} onChange={e => setFilterValue(def.key, e.target.value)} className="rounded-lg px-2 py-1.5 text-xs outline-none" style={controlStyle()}>
                   {def.options.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
                 </select>
                 {f.value && (
@@ -266,12 +258,10 @@ export default function CompareTab({ resource, exercises = [], muscles = [], equ
                         <button
                           key={row.uid}
                           onClick={() => toggleFilterSeries(def.key, row.uid)}
-                          className="px-2 py-1 rounded-full text-[10px] font-semibold"
-                          style={{
-                            background: on ? PROGRESS_TEXT : 'transparent',
-                            color: on ? PROGRESS_CARD : PROGRESS_MUTED,
-                            border: `1px solid ${on ? PROGRESS_TEXT : PROGRESS_BORDER}`,
-                          }}
+                          className="px-2 py-1 rounded-full text-[10px] font-bold"
+                          style={on
+                            ? { background: 'var(--emerald)', color: 'var(--on-emerald)', border: '1px solid var(--emerald)' }
+                            : { background: 'transparent', color: PROGRESS_MUTED, border: `1px solid ${PROGRESS_BORDER}` }}
                         >
                           S{i + 1}
                         </button>
@@ -293,32 +283,35 @@ export default function CompareTab({ resource, exercises = [], muscles = [], equ
             <input type="date" value={options.to} onChange={e => updateOption('to', e.target.value)} className="w-full rounded-lg px-2 py-2 text-xs outline-none" style={controlStyle()} />
           </Field>
           <Field label="Group">
-            <select value={options.group_by} onChange={e => updateOption('group_by', e.target.value)} className="w-full rounded-lg px-2 py-2 text-xs" style={controlStyle()}>
+            <select value={options.group_by} onChange={e => updateOption('group_by', e.target.value)} className="w-full rounded-lg px-2 py-2 text-xs outline-none" style={controlStyle()}>
               {GROUP_OPTIONS.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
             </select>
           </Field>
         </div>
 
-        <div className="mt-4" style={{ width: '100%', height: 240 }}>
-          {resource.loading ? (
-            <Empty>Loading comparison...</Empty>
-          ) : chartData.rows.length ? (
-            <ResponsiveContainer>
-              <LineChart data={chartData.rows} margin={{ top: 12, right: 4, left: -16, bottom: 0 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: PROGRESS_MUTED }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: PROGRESS_MUTED }} axisLine={false} tickLine={false} width={40} />
-                <Tooltip contentStyle={{ background: PROGRESS_CARD, border: `1px solid ${PROGRESS_BORDER}`, borderRadius: 8, fontSize: 12 }} />
-                <Legend wrapperStyle={{ fontSize: 11, color: PROGRESS_MUTED }} />
-                {chartData.lines.map((line, i) => (
-                  <Line key={line.key} dataKey={line.key} name={line.label} type="monotone" stroke={LINE_COLORS[i % LINE_COLORS.length]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <Empty>Select a series and tap Run.</Empty>
-          )}
-        </div>
-      </Card>
+        <PrimaryButton onClick={run} className="mt-4 w-full py-3">Run comparison</PrimaryButton>
+      </Section>
+
+      <ChartBlock title="Result" caption={chartData.lines.length ? chartData.lines.map(l => l.label).join('  vs  ') : 'Set up your series above, then run the comparison.'} height={240}>
+        {resource.loading ? (
+          <Empty>Loading comparison…</Empty>
+        ) : chartData.rows.length ? (
+          <ResponsiveContainer>
+            <LineChart data={chartData.rows} margin={{ top: 12, right: 8, left: -12, bottom: 0 }}>
+              <CartesianGrid stroke={gridStroke} vertical={false} />
+              <XAxis dataKey="date" tick={axisTick} axisLine={false} tickLine={false} />
+              <YAxis tick={axisTick} axisLine={false} tickLine={false} width={40} />
+              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: PROGRESS_MUTED }} />
+              <Legend wrapperStyle={{ fontSize: 11, color: PROGRESS_MUTED }} />
+              {chartData.lines.map((line, i) => (
+                <Line key={line.key} dataKey={line.key} name={line.label} type="monotone" stroke={LINE_COLORS[i % LINE_COLORS.length]} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <Empty>Select a series and tap Run.</Empty>
+        )}
+      </ChartBlock>
     </div>
   )
 }
@@ -360,7 +353,7 @@ function cleanOptions(options) {
 }
 
 function controlStyle() {
-  return { background: 'rgba(0,0,0,0.04)', color: PROGRESS_TEXT, border: `1px solid ${PROGRESS_BORDER}` }
+  return { background: 'rgba(255,255,255,0.03)', color: PROGRESS_TEXT, border: `1px solid ${PROGRESS_BORDER}` }
 }
 
 function Field({ label, children }) {
@@ -369,26 +362,5 @@ function Field({ label, children }) {
       <span className="block mb-1 text-[10px] uppercase tracking-wider" style={{ color: PROGRESS_MUTED }}>{label}</span>
       {children}
     </label>
-  )
-}
-
-function Card({ children }) {
-  return (
-    <div className="rounded-2xl p-4" style={{ background: PROGRESS_CARD, border: `1px solid ${PROGRESS_BORDER}` }}>
-      {children}
-    </div>
-  )
-}
-
-function Empty({ children }) {
-  return <div className="text-center py-8 text-sm" style={{ color: PROGRESS_MUTED }}>{children}</div>
-}
-
-function InlineWarning({ message, onRetry }) {
-  return (
-    <div className="rounded-xl p-3 flex items-center justify-between gap-3 text-sm" style={{ background: PROGRESS_CARD, border: `1px solid ${PROGRESS_BORDER}`, color: PROGRESS_MUTED }}>
-      <span>{message}</span>
-      <button className="font-semibold" style={{ color: PROGRESS_TEXT }} onClick={onRetry}>Retry</button>
-    </div>
   )
 }

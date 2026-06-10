@@ -214,60 +214,63 @@ export default function ActiveWorkout() {
   }
 
   return (
-    <div className="faded-page min-h-screen pb-32">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-20 backdrop-blur" style={{ background: 'transparent' }}>
-        <div className="px-4 safe-pt-3 pb-2">
-          <div className="p-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-            <div
-              className="rounded-2xl p-3 flex items-center justify-between gap-2"
-              style={{ background: 'linear-gradient(135deg, var(--surface-alt), var(--hero-fade))' }}
+    <div className="workout-log min-h-screen pb-32">
+      <div className="workout-log-header sticky top-0 z-20">
+        <div className="safe-pt-3 px-4 pb-2">
+          <div className="flex items-start justify-between gap-3">
+            <button
+              onClick={() => setDiscardOpen(true)}
+              className="min-h-11 px-1 text-sm font-semibold"
+              style={{ color: 'var(--text-muted)' }}
+              aria-label="Discard workout"
             >
-              <button
-                onClick={() => setDiscardOpen(true)}
-                className="text-sm text-gray-500 hover:text-red-400 px-2 py-2 min-w-[44px]"
-                aria-label="Discard workout"
-              >
-                Discard
-              </button>
-              <div className="text-center">
-                <div className="text-2xl font-mono tabular-nums font-bold text-gray-100">{formatElapsed(wo.elapsedSec)}</div>
-                <div className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5">
-                  <span className="font-mono tabular-nums">{totals.totalSets}</span> sets - <span className="font-mono tabular-nums">{Math.round(totals.volume)}</span> kg
-                </div>
-                <SaveStatus status={wo.syncStatus} error={wo.syncError} />
+              Discard
+            </button>
+            <div className="min-w-0 flex-1 text-center">
+              <div className="font-mono text-display font-black tabular-nums" style={{ color: 'var(--text)' }}>{formatElapsed(wo.elapsedSec)}</div>
+              <div className="mt-0.5 text-caption font-semibold" style={{ color: 'var(--text-muted)' }}>
+                <span className="font-mono tabular-nums">{totals.totalSets}</span> sets
+                <span className="px-1.5" style={{ color: 'var(--ink-soft)' }}>·</span>
+                <span className="font-mono tabular-nums">{Math.round(totals.volume)}</span> kg
               </div>
-              <button
-                onClick={() => { if (!finalized) { setSaveError(''); setFinishOpen(true) } }}
-                disabled={finalized}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-500 text-white text-sm font-semibold rounded-xl transition-colors"
-              >
-                {finalized ? 'Saved' : 'Finish'}
-              </button>
+              <SaveStatus status={wo.syncStatus} error={wo.syncError} />
             </div>
+            <button
+              onClick={() => { if (!finalized) { setSaveError(''); setFinishOpen(true) } }}
+              disabled={finalized}
+              className="min-h-11 rounded-full px-4 text-sm font-black transition-colors disabled:opacity-45"
+              style={{ background: 'var(--emerald)', color: 'var(--on-emerald)' }}
+            >
+              {finalized ? 'Saved' : 'Finish'}
+            </button>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3 border-t pt-2" style={{ borderColor: 'var(--border)' }}>
+            <div className="min-w-0 truncate text-caption" style={{ color: 'var(--text-muted)' }}>
+              {wo.workout.dayLabel ? `${wo.workout.dayLabel} day` : 'Active workout'}
+            </div>
+            <button
+              type="button"
+              onClick={toggleResearchDetails}
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-3 text-caption font-black transition-colors"
+              style={{
+                borderColor: researchDetailsVisible ? 'var(--emerald)' : 'var(--border)',
+                background: researchDetailsVisible ? 'var(--emerald)' : 'transparent',
+                color: researchDetailsVisible ? 'var(--on-emerald)' : 'var(--text-muted)',
+              }}
+              aria-pressed={researchDetailsVisible}
+            >
+              <SlidersIcon />
+              Advanced {researchDetailsVisible ? 'on' : 'off'}
+            </button>
           </div>
         </div>
-        <div className="px-4 pb-2 flex justify-center">
-          <button
-            type="button"
-            onClick={toggleResearchDetails}
-            className={'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ' +
-              (researchDetailsVisible
-                ? 'border-indigo-500/40 bg-indigo-600/15 text-indigo-200'
-                : 'border-gray-700 bg-gray-900 text-gray-400')}
-            aria-pressed={researchDetailsVisible}
-          >
-            <SlidersIcon />
-            Research details {researchDetailsVisible ? 'on' : 'off'}
-          </button>
-        </div>
         {totals.groupChips.length > 0 && (
-          <div className="px-4 pb-2 flex flex-wrap gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="flex gap-1.5 overflow-x-auto border-t px-4 py-2 no-scrollbar" style={{ borderColor: 'var(--border)' }}>
             {totals.groupChips.map(({ group, n }) => (
               <span
                 key={group}
-                className="px-2 py-1 rounded-full text-[10px] font-medium border whitespace-nowrap"
-                style={{ borderColor: muscleColor(group), color: muscleColor(group) }}
+                className="whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-black"
+                style={{ background: muscleColor(group), color: '#fff' }}
               >
                 {group} <span className="font-mono tabular-nums opacity-80">{n}</span>
               </span>
@@ -276,15 +279,10 @@ export default function ActiveWorkout() {
         )}
       </div>
 
-      <div className="px-3 pt-3">
-        {wo.workout.dayLabel && (
-          <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2 px-1">
-            {wo.workout.dayLabel} day
-          </div>
-        )}
+      <div className="pt-2">
         {renderRows.length === 0 && (
-          <div className="text-center py-10 text-gray-500 text-sm">
-            No exercises yet. Tap <span className="text-indigo-400">+ Add exercise</span> below.
+          <div className="px-4 py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+            No exercises yet. Tap <span style={{ color: 'var(--text)' }}>+ Add exercise</span> below.
           </div>
         )}
         {renderRows.map(ex => (
@@ -310,7 +308,8 @@ export default function ActiveWorkout() {
 
         <button
           onClick={() => setAddOpen(true)}
-          className="w-full py-4 rounded-2xl bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-700/40 text-indigo-300 font-medium transition-colors"
+          className="mx-4 mt-3 block min-h-12 w-[calc(100%-2rem)] border-y text-sm font-black transition-colors"
+          style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
         >
           + Add exercise
         </button>

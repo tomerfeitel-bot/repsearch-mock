@@ -10,6 +10,7 @@ import { usePosts } from '../hooks/usePosts.js'
 import { timeAgo } from '../lib/timeAgo.js'
 import { SEED_EXERCISES } from '../lib/exercises.js'
 import { muscleColor } from '../lib/musclePalette.js'
+import { labelStyle } from '../lib/bubbleColors.js'
 import {
   VotePill, StudyAttachment, HeroFrame, SaveButton, AvatarWithDot, KIND_META,
   IconComment, IconShare,
@@ -32,7 +33,8 @@ const KIND_PROMPT = {
   pr: 'Ask how they built up to it: programming, technique, recovery, and what finally clicked.',
 }
 
-const PAGE_BG = 'linear-gradient(145deg, var(--surface-alt) 0%, var(--hero-fade) 42%, var(--bg) 100%)'
+// Threads are a reading surface — flat near-black for focus, no texture.
+const PAGE_BG = 'var(--bg)'
 
 export default function PostDetail() {
   const { id } = useParams()
@@ -101,7 +103,7 @@ export default function PostDetail() {
 
   return (
     <div className="min-h-screen" style={{ background: PAGE_BG, paddingBottom: `calc(${COMPOSER_BOTTOM} + 76px)` }}>
-      <header className="sticky top-0 z-20 flex items-center gap-2 h-12 px-2.5 bg-white/85 backdrop-blur border-b border-[var(--border)]">
+      <header className="sticky top-0 z-20 flex items-center gap-2 h-12 px-2.5 bg-[var(--bg)]/80 backdrop-blur border-b border-[var(--border)]">
         <button onClick={() => navigate(-1)} aria-label="Back to feed" className="h-10 w-10 grid place-items-center rounded-full text-[var(--text)] hover:bg-[var(--accent-soft)]">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
@@ -119,13 +121,13 @@ export default function PostDetail() {
         <article className="px-4 pt-4">
           <div className="flex items-center gap-2.5">
             <button onClick={() => navigate(`/user/${post.username}`)} className="shrink-0" aria-label={`View ${post.username}`}>
-              <AvatarWithDot username={post.username} dot={meta.dot} />
+              <AvatarWithDot username={post.username} dot={meta.fill} />
             </button>
             <button onClick={() => navigate(`/user/${post.username}`)} className="min-w-0 flex-1 text-left">
               <div className="text-sm font-bold leading-tight truncate text-[var(--text)]">{post.username}</div>
               <div className="text-caption truncate text-[var(--text-muted)] font-mono">{timeAgo(post.created_at)}</div>
             </button>
-            <span className="inline-flex items-center h-6 px-2.5 rounded-full text-micro font-bold shrink-0" style={{ color: meta.text, background: meta.tint }}>{meta.label}</span>
+            <span className="inline-flex items-center h-6 px-2.5 rounded-full text-micro font-bold shrink-0" style={{ background: meta.fill, color: meta.on }}>{meta.label}</span>
           </div>
 
           {(post.title || prTitle) && <h1 className="mt-3 text-lead font-extrabold text-[var(--text)]" style={{ textWrap: 'balance' }}>{post.title || prTitle}</h1>}
@@ -133,7 +135,9 @@ export default function PostDetail() {
 
           {post.labels?.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {post.labels.map(l => <span key={l} className="text-micro text-[var(--text-muted)] bg-[var(--accent-soft)] px-2 py-0.5 rounded-full">{l}</span>)}
+              {post.labels.map(l => (
+                <span key={l} className="inline-flex items-center text-micro font-semibold px-2 py-0.5 rounded-full" style={labelStyle(l)}>{l}</span>
+              ))}
             </div>
           )}
 
@@ -141,7 +145,7 @@ export default function PostDetail() {
 
           <div className="mt-3.5 flex items-center gap-1.5">
             <VotePill score={post.score} vote={post.viewer_vote} onVote={onVote} />
-            <button onClick={() => sharePost(post.id)} aria-label="Share post" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/60 transition-colors">
+            <button onClick={() => sharePost(post.id)} aria-label="Share post" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/10 transition-colors">
               <IconShare size={18} /><span>Share</span>
             </button>
             <SaveButton saved={post.saved} onClick={onToggleSave} />
@@ -158,7 +162,7 @@ export default function PostDetail() {
         {/* Connected comment flow */}
         <ul className="px-4 pt-2">
           {comments.length === 0 && (
-            <li className="mt-3 rounded-2xl border border-dashed border-[var(--border-strong)] bg-white/50 p-4 text-sm text-[var(--text-muted)]">
+            <li className="mt-3 rounded-2xl border border-dashed border-[var(--border-strong)] bg-white/5 p-4 text-sm text-[var(--text-muted)]">
               No replies yet. Start the thread with a question or a useful data point.
             </li>
           )}
@@ -170,11 +174,11 @@ export default function PostDetail() {
 
       {/* Sticky composer — standing invitation, parked above the bottom nav */}
       <div className="fixed inset-x-0 z-30" style={{ bottom: COMPOSER_BOTTOM }}>
-        <div className="max-w-md mx-auto px-3 py-2.5 bg-white/90 backdrop-blur border-t border-[var(--border)]">
+        <div className="max-w-md mx-auto px-3 py-2.5 bg-[var(--bg)]/90 backdrop-blur border-t border-[var(--border)]">
           <form onSubmit={e => { e.preventDefault(); submitComment(reply, null, () => setReply('')) }} className="flex items-center gap-2">
             <label className="sr-only" htmlFor="thread-comment">Join the conversation</label>
             <input id="thread-comment" value={reply} onChange={e => setReply(e.target.value)} placeholder="Join the conversation..."
-              className="min-w-0 flex-1 h-11 px-4 rounded-full bg-white/80 border border-[var(--border)] text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]" />
+              className="min-w-0 flex-1 h-11 px-4 rounded-full bg-white/10 border border-[var(--border)] text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]" />
             <button type="submit" disabled={posting || !reply.trim()}
               className="h-11 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-ink)] disabled:opacity-50 text-sm font-bold transition-transform active:scale-95">Comment</button>
           </form>
@@ -211,7 +215,7 @@ function CommentNode({ node, depth, opUser, topReplyId, onVote, onReply, posting
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <button onClick={() => navigate(`/user/${node.username}`)} className="text-meta font-bold text-[var(--text)]">{node.username}</button>
-            {isOp && <span className="text-micro font-bold px-1.5 py-0.5 rounded-full text-[var(--accent-ink)] bg-[var(--accent)]">OP</span>}
+            {isOp && <span className="text-micro font-bold px-1.5 py-0.5 rounded-full" style={{ color: 'var(--on-emerald)', background: 'var(--emerald)' }}>OP</span>}
             {isTop && <span className="inline-flex items-center gap-1 text-micro font-bold px-1.5 py-0.5 rounded-full text-[var(--brass)] bg-[var(--brass-soft)]">Top reply</span>}
             <span className="text-caption text-[var(--text-muted)]">· {timeAgo(node.created_at)}</span>
           </div>
@@ -220,7 +224,7 @@ function CommentNode({ node, depth, opUser, topReplyId, onVote, onReply, posting
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
             <VotePill score={score} vote={vote} onVote={doVote} size="sm" ariaSuffix=" comment" />
             <button onClick={() => setReplying(r => !r)} aria-expanded={replying}
-              className="h-8 px-3 rounded-full text-caption font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/60 inline-flex items-center gap-1.5">
+              className="h-8 px-3 rounded-full text-caption font-semibold text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/10 inline-flex items-center gap-1.5">
               <IconComment size={15} />Reply
             </button>
             {childCount > 0 && (
@@ -232,7 +236,7 @@ function CommentNode({ node, depth, opUser, topReplyId, onVote, onReply, posting
           </div>
 
           {replying && (
-            <div className="mt-2 rounded-2xl p-2.5 bg-white/70 border border-[var(--border)]">
+            <div className="mt-2 rounded-2xl p-2.5 bg-[var(--surface)] border border-[var(--border)]">
               <label className="sr-only" htmlFor={`reply-${node.id}`}>Reply to {node.username}</label>
               <textarea id={`reply-${node.id}`} autoFocus rows={2} value={text} onChange={e => setText(e.target.value)} placeholder={`Reply to ${node.username}...`}
                 className="w-full bg-transparent text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] leading-relaxed outline-none resize-none" />
@@ -303,7 +307,7 @@ function WorkoutAttachment({ id, summary }) {
         {groups.map(([eid, sets]) => {
           const seed = exerciseById.get(eid)
           return (
-            <div key={eid} className="rounded-xl border border-[var(--border)] bg-white/60 p-2">
+            <div key={eid} className="rounded-xl border border-[var(--border)] bg-white/5 p-2">
               <div className="flex items-center gap-2 text-sm font-medium text-[var(--text)]">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: muscleColor(seed?.primary_muscle) }} />
                 {seed?.name || eid}
@@ -332,7 +336,7 @@ function ProgramAttachment({ a }) {
       <div className="mt-1 text-caption" style={{ color: '#454c47' }}>{a.enrollment_count || 0} started · open-ended</div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button onClick={() => setStartOpen(true)} className="py-2.5 rounded-xl bg-[var(--accent)] text-[var(--accent-ink)] text-sm font-semibold">Start program</button>
-        <button onClick={() => setDetailOpen(true)} className="py-2.5 rounded-xl bg-white border border-[var(--border)] text-[var(--text)] text-sm font-semibold hover:border-[var(--border-strong)]">View details</button>
+        <button onClick={() => setDetailOpen(true)} className="py-2.5 rounded-xl bg-[var(--surface-alt)] border border-[var(--border)] text-[var(--text)] text-sm font-semibold hover:border-[var(--border-strong)]">View details</button>
       </div>
       <StartProgramSheet open={startOpen} onClose={() => setStartOpen(false)} program={program} onStarted={() => { setStartOpen(false); toast?.(`Started ${a.name}`, 'success') }} />
       {detailOpen && <ProgramDetailSheet program={program} onClose={() => setDetailOpen(false)} />}
