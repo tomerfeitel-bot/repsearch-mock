@@ -10,6 +10,17 @@ For Session 1, the completed sessions list is empty — just say "No previous se
 
 ---
 
+## Session 1 — COMPLETE (2026-06-10)
+
+The app lives in `mobile/` (see `mobile/AGENTS.md` for architecture + commands). Outcomes future sessions must know:
+
+- **Pinned to Expo SDK 54 — do not upgrade before Session 5.** Expo stopped shipping new SDKs to the App Store/Play Store version of Expo Go (May 2026); the store version supports SDK 54 only, and NativeWind v4 officially targets SDK 54. Keep `babel-preset-expo` pinned to `~54.x` — npm pulls the v56 preset by default, which stops lowering private class fields and breaks Hermes bytecode compilation on RN 0.81.
+- **D1:** "RepSearch" / `com.repsearch.app`, placeholder icon/splash until Session 6. **D2 (verified in code):** hybrid backend — Supabase Auth on the client, ALL data via the Express server (`server/`, port 3002, queries Supabase Postgres); nothing is deployed, so `mobile/lib/api.ts` auto-derives the dev machine's LAN IP. **D4:** native pickers (`PickerSheet`).
+- The web `.env` / `server/.env` Supabase URLs include a `/rest/v1/` suffix that supabase-js must NOT receive; the mobile `.env` strips it. (Likely a live bug in the web/server config — flagged separately.)
+- `mobile/hooks/useWorkout.tsx` is a stub and `app/(tabs)/workout.tsx` has temporary overlay-test buttons — Session 3 replaces both.
+
+---
+
 ## Context
 RepSearch is a React 19 + Vite web app (~15,000 lines, 80+ files). The backend has **already been migrated to Supabase** (Postgres + Supabase Auth), replacing the old SQLite + custom-JWT setup. This plan covers everything remaining: pre-work decisions, then building a native iOS + Android app via Expo React Native that matches the web app feature-for-feature. The backend is not rebuilt — the mobile app talks to the same Supabase project.
 
