@@ -1,0 +1,16 @@
+{
+  "asset": "bodybuilder-segmented.glb",
+  "sourceTitle": "Bodybuilder Man Anatomy Practice Basemesh",
+  "creator": "AaronJOlson",
+  "creatorUrl": "https://sketchfab.com/aaolson817",
+  "sourceUrl": "https://sketchfab.com/3d-models/bodybuilder-man-anatomy-practice-basemesh-67f60a34b71e497ead72645e8c5e9151",
+  "license": "Creative Commons Attribution",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "changes": [
+    "Converted OBJ source to GLB",
+    "Normalized scale and centered model for web use",
+    "Segmented the mesh into 14 selectable major muscle-group objects (Chest, Shoulders, Biceps, Triceps, Forearms, Lats, Upper Back, Lower Back, Traps, Core, Quads, Hamstrings, Glutes, Calves) via anatomical coordinate regions",
+    "Filled each group with a soft distinct tint (vertex colors), darkened in the cavity grooves, so muscle groups read as a clean muscle map",
+    "Tagged each group object with a `muscle_group` glTF extra for in-app tap/highlight"
+  ]
+}
