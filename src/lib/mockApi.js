@@ -771,6 +771,150 @@ function shapePost(p) {
 }
 
 // ---------------------------------------------------------------------------
+// templates / programs builders
+// ---------------------------------------------------------------------------
+function makeDraftTemplate(body = {}) {
+  return {
+    id: uid('tpl'),
+    user_id: ME.id,
+    username: ME.username,
+    creator_username: ME.username,
+    name: body.name || 'Untitled template',
+    description: body.description || '',
+    visibility: 'private',
+    status: 'draft',
+    source_workout_id: body.source_workout_id || null,
+    workout_split_type: body.workout_split_type || null,
+    workout_day: body.workout_day || null,
+    strictness: body.strictness || 'adapt',
+    usage_count: 0,
+    created_at: nowIso(),
+    exercises: [],
+  }
+}
+
+function templateExercisesFromPayload(exercises) {
+  return (Array.isArray(exercises) ? exercises : []).map((ex, i) => ({
+    id: uid('tex'),
+    exercise_id: ex.exercise_id || ex.exerciseId,
+    sort_order: i,
+    sets: (Array.isArray(ex.sets) ? ex.sets : []).map(s => ({
+      id: uid('tset'),
+      target_reps: s.target_reps ?? (s.reps != null ? String(s.reps) : ''),
+      target_weight_kg: s.target_weight_kg ?? s.weight_kg ?? null,
+      target_rir: s.target_rir ?? s.rir ?? null,
+      target_rep_range: s.target_rep_range ?? s.rep_range ?? '',
+      set_type: s.set_type || 'working',
+      rom_category: s.rom_category ?? null,
+      tempo_tag: s.tempo_tag ?? null,
+      rest_seconds: s.rest_seconds ?? null,
+      failure: s.failure ? 1 : 0,
+    })),
+  }))
+}
+
+function applyTemplatePayload(t, body = {}) {
+  if (body.name !== undefined) t.name = body.name || 'Untitled template'
+  if (body.description !== undefined) t.description = body.description || ''
+  if (body.status !== undefined) t.status = body.status || 'draft'
+  if (body.visibility !== undefined) t.visibility = body.status === 'draft' ? 'private' : (body.visibility || t.visibility)
+  if (body.strictness !== undefined) t.strictness = body.strictness || 'adapt'
+  if (body.workout_day !== undefined) t.workout_day = body.workout_day || null
+  if (body.workout_split_type !== undefined) t.workout_split_type = body.workout_split_type || null
+  if (Array.isArray(body.exercises)) t.exercises = templateExercisesFromPayload(body.exercises)
+  return t
+}
+
+function templateFromWorkout(workout) {
+  const byExercise = new Map()
+  for (const s of (workout?.sets || [])) {
+    if (!byExercise.has(s.exercise_id)) byExercise.set(s.exercise_id, [])
+    byExercise.get(s.exercise_id).push(s)
+  }
+  return [...byExercise.entries()].map(([exercise_id, sets]) => ({
+    exercise_id,
+    sets: sets.map(s => ({
+      target_reps: s.reps != null ? String(s.reps) : '',
+      target_weight_kg: s.weight_kg ?? null,
+      target_rir: s.rir ?? null,
+      set_type: s.set_type || 'working',
+      rom_category: s.rom_category ?? null,
+      tempo_tag: s.tempo_tag ?? null,
+      rest_seconds: s.rest_seconds ?? null,
+      failure: !!s.failure,
+    })),
+  }))
+}
+
+function makeDraftProgram(body = {}) {
+  return {
+    id: uid('prog'),
+    user_id: ME.id,
+    creator_username: ME.username,
+    name: body.name || 'Untitled program',
+    description: body.description || '',
+    weeks: 1,
+    visibility: 'private',
+    status: 'draft',
+    strictness: body.strictness || 'adapt',
+    is_open_ended: 1,
+    blocks: [{ id: uid('blk'), name: 'Main block', description: '', sort_order: 0, repeat_behavior: 'repeat' }],
+    workouts: [],
+    enrollment: null,
+    phase: null,
+    proof: null,
+  }
+}
+
+function applyProgramPayload(p, body = {}) {
+  if (body.name !== undefined) p.name = body.name || 'Untitled program'
+  if (body.description !== undefined) p.description = body.description || ''
+  if (body.status !== undefined) p.status = body.status || 'draft'
+  if (body.visibility !== undefined) p.visibility = body.status === 'draft' ? 'private' : (body.visibility || p.visibility)
+  if (body.strictness !== undefined) p.strictness = body.strictness || 'adapt'
+  if (body.is_open_ended !== undefined) p.is_open_ended = body.is_open_ended === false ? 0 : 1
+  if (Array.isArray(body.blocks)) {
+    const blocks = []
+    const workouts = []
+    const safeBlocks = body.blocks.length ? body.blocks : [{ name: 'Main block', sessions: [] }]
+    safeBlocks.forEach((block, blockIdx) => {
+      const blockId = uid('blk')
+      blocks.push({
+        id: blockId,
+        program_id: p.id,
+        name: block.name || (blockIdx === 0 ? 'Main block' : `Block ${blockIdx + 1}`),
+        description: block.description || '',
+        sort_order: block.sort_order ?? blockIdx,
+        repeat_behavior: block.repeat_behavior || 'repeat',
+      })
+      ;(Array.isArray(block.sessions) ? block.sessions : []).forEach((session, i) => {
+        if (!session.template_id) return
+        const tpl = store.templates.find(t => t.id === session.template_id)
+        workouts.push({
+          id: uid('pw'),
+          program_id: p.id,
+          template_id: session.template_id,
+          block_id: blockId,
+          sort_order: session.sort_order ?? i,
+          session_label: session.session_label || null,
+          session_note: session.session_note || null,
+          optional: session.optional ? 1 : 0,
+          timing_preset: session.timing_preset || 'after_1_rest_day',
+          timing_min_hours: session.timing_min_hours ?? 0,
+          timing_ideal_hours: session.timing_ideal_hours ?? 0,
+          timing_max_hours: session.timing_max_hours ?? 0,
+          template_name: tpl?.name || 'Saved template',
+          template_description: tpl?.description || '',
+        })
+      })
+    })
+    p.blocks = blocks
+    p.workouts = workouts
+  }
+  return p
+}
+
+// ---------------------------------------------------------------------------
 // router
 // ---------------------------------------------------------------------------
 function parsePath(path) {
@@ -1045,26 +1189,70 @@ function handle(method, path, body) {
   if (p === '/custom-exercises' && m === 'GET') return { exercises: [] }
   if (p === '/custom-exercises' && m === 'POST') return { exercise: { id: uid('custom'), ...(body || {}) } }
 
-  // --- programs / templates (builders, not the focus) ---
+  // --- programs / templates (builders) ---
   if (p === '/programs/active/next' && m === 'GET') {
     return { program: null, phase: null, next_session: null }
   }
-  if (p === '/programs') return m === 'POST' ? { program: { id: uid('prog'), ...(body || {}) } } : { programs: store.programs }
+  // Draft creation must come before the generic /programs/:id matcher.
+  if (p === '/programs/drafts' && m === 'POST') {
+    const program = makeDraftProgram(body)
+    store.programs.unshift(program)
+    return { program }
+  }
+  if (p === '/programs') {
+    if (m === 'POST') {
+      const program = applyProgramPayload(makeDraftProgram(body), { ...(body || {}), status: body?.status || 'final' })
+      store.programs.unshift(program)
+      return { program }
+    }
+    return { programs: store.programs }
+  }
   if (seg[0] === 'programs' && seg.length === 2 && m === 'GET') {
     const program = store.programs.find(x => x.id === seg[1])
     return program ? { program } : { error: 'Program not found' }
   }
+  if (seg[0] === 'programs' && seg.length === 2 && (m === 'PATCH' || m === 'PUT')) {
+    const program = store.programs.find(x => x.id === seg[1])
+    if (!program) return { error: 'Program not found' }
+    applyProgramPayload(program, body || {})
+    return { program }
+  }
+  if (p === '/templates/drafts' && m === 'POST') {
+    const template = makeDraftTemplate(body)
+    store.templates.unshift(template)
+    return { template }
+  }
+  if (seg[0] === 'templates' && seg[1] === 'drafts' && seg[2] === 'from-workout' && m === 'POST') {
+    const workout = store.workouts.find(w => w.id === seg[3])
+    const template = makeDraftTemplate({
+      ...(body || {}),
+      name: body?.name || `${workout?.workout_day || 'Workout'} template draft`,
+      source_workout_id: seg[3],
+      workout_split_type: workout?.workout_split_type,
+      workout_day: workout?.workout_day,
+    })
+    template.exercises = templateExercisesFromPayload(templateFromWorkout(workout))
+    store.templates.unshift(template)
+    return { template }
+  }
   if (p === '/templates') {
     if (m === 'POST') {
-      const template = { id: uid('tpl'), user_id: ME.id, username: ME.username, status: 'final', visibility: 'private', usage_count: 0, ...(body || {}) }
+      const template = { ...makeDraftTemplate(body), status: 'final', ...(body || {}) }
       store.templates.unshift(template)
       return { template }
     }
-    return { templates: store.templates }
+    const wantDrafts = query.status === 'draft'
+    return { templates: store.templates.filter(t => wantDrafts ? t.status === 'draft' : t.status !== 'draft') }
   }
   if (seg[0] === 'templates' && seg.length === 2 && m === 'GET') {
     const template = store.templates.find(x => x.id === seg[1])
     return template ? { template } : { error: 'Template not found' }
+  }
+  if (seg[0] === 'templates' && seg.length === 2 && (m === 'PATCH' || m === 'PUT')) {
+    const template = store.templates.find(x => x.id === seg[1])
+    if (!template) return { error: 'Template not found' }
+    applyTemplatePayload(template, body || {})
+    return { template }
   }
 
   // --- catch-all: benign empties so unmodelled calls don't throw ---
