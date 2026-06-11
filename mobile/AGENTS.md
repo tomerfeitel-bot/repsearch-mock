@@ -41,11 +41,19 @@ Sessions 1–4 are verified in **Expo Go from the App Store / Play Store**, whic
 - **Known divergence:** the search bar infers `targetType` from a parsed config (web leaves it undefined and `stateToPayload` silently drops the exercise/muscle scope — looks like a live web bug).
 - FlatHeader gained `tabsMaxHeight` for Study's two-line mode switch (default 48 clips it).
 
-## Leftovers / stubs for later sessions
+## Hardening & store prep (Session 6)
 
-- `sharePost` (PostCard) shares plain text — nothing is deployed, so there is no post URL. Swap to a universal link in Session 6.
+- **Release builds require `EXPO_PUBLIC_API_URL` and it must be https** — `lib/api.ts` resolves the base lazily and throws (surfaced as a toast on first request) in non-`__DEV__` builds otherwise. The LAN-IP derivation is dev-only.
+- **Deep-link params are constrained**: `lib/navParams.ts` `internalPath()` gates the builders' `returnTo` (internal `/...` paths only), and route params that reach API paths (`username`, post/template/program/workout ids) are `encodeURIComponent`-wrapped at the call sites. A `/security-review` of the whole branch found no findings above these defense-in-depth items.
+- `app.json`: v1.0.0, `runtimeVersion` policy `appVersion`, iOS Privacy Manifest required-reason entries, `ITSAppUsesNonExemptEncryption=false`. `eas.json`: development/preview/production profiles with matching update channels. `expo-updates` (~29.0.18) is installed for OTA; `eas init` + `eas update:configure` still pending (needs the owner's Expo login — see `../docs/app-store-prep.md` for the full pipeline + D5/D6 store metadata and `../docs/privacy-policy.md`).
+
+## Leftovers / deferred
+
+- `sharePost` (PostCard) shares plain text — nothing is deployed, so there is no post URL. Swap to a universal link once a domain exists.
+- No report-content / block-user feature; flagged as an Apple Guideline 1.2 (UGC) rejection risk in `docs/app-store-prep.md`.
+- App icon/splash stay placeholder for TestFlight (decided in Session 6); swap files in `assets/images/` to replace.
 - Custom fonts (Inter / JetBrains Mono) not loaded yet; `lib/theme.ts` exports `monoFont` (system monospace) for numerals meanwhile.
-- The web Study page's radial background gradient is flattened to `STUDY_BG` (no expo-linear-gradient dependency); revisit in Session 6 polish if wanted.
+- The web Study page's radial background gradient is flattened to `STUDY_BG` (no expo-linear-gradient dependency); polish later if wanted.
 - The web `src/components/community/FeedCard.jsx` is dead code (nothing imports it); its planned double-tap heart lives on mobile `PostCard` instead (double-tap = upvote + Reanimated heart burst).
 
 ## Windows gotcha: typed-routes corruption while the dev server runs

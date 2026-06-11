@@ -22,7 +22,7 @@ export default function UserProfileScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await api.get(`/public/users/${username}`));
+      setData(await api.get(`/public/users/${encodeURIComponent(username)}`));
     } catch (err: any) {
       toast(err.message || 'Failed to load profile', 'error');
       setData(null);

@@ -27,7 +27,7 @@ export default function PublicWorkoutScreen() {
     let cancelled = false;
     setLoading(true);
     api
-      .get(`/public/workouts/${id}`)
+      .get(`/public/workouts/${encodeURIComponent(id)}`)
       .then((d) => {
         if (!cancelled) setData(d);
       })

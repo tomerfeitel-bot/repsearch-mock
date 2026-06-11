@@ -6,6 +6,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import { api } from '@/lib/api';
 import { nanoid } from '@/lib/nanoid';
+import { internalPath } from '@/lib/navParams';
 import { colors, monoFont } from '@/lib/theme';
 
 // Port of src/pages/ProgramBuilder.jsx as a full-screen push (decision D3).
@@ -57,9 +58,10 @@ export default function ProgramBuilderScreen() {
     id: idParam,
     createdTemplate: createdTemplateId,
     addToBlock,
-    returnTo,
+    returnTo: returnToParam,
   } = useLocalSearchParams<{ id: string; createdTemplate?: string; addToBlock?: string; returnTo?: string }>();
   const id = idParam === 'new' ? '' : idParam;
+  const returnTo = internalPath(returnToParam);
   const router = useRouter();
   const toast = useToast();
   const insets = useSafeAreaInsets();
@@ -94,13 +96,13 @@ export default function ProgramBuilderScreen() {
         const loadedTemplates = templateData.templates || [];
         setTemplates(loadedTemplates);
         if (id) {
-          const data = await api.get(`/programs/${id}`);
+          const data = await api.get(`/programs/${encodeURIComponent(id)}`);
           if (cancelled) return;
           const hydratedBlocks = hydrate(data.program);
           if (createdTemplateId && consumedTemplateRef.current !== createdTemplateId) {
             const template =
               loadedTemplates.find((t: any) => t.id === createdTemplateId) ||
-              (await api.get(`/templates/${createdTemplateId}`)).template;
+              (await api.get(`/templates/${encodeURIComponent(createdTemplateId)}`)).template;
             if (cancelled) return;
             const blockIdx = Math.min(Math.max(Number(addToBlock) || 0, 0), Math.max(hydratedBlocks.length - 1, 0));
             const nextBlocks = appendTemplateToBlocks(hydratedBlocks, blockIdx, template);

@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import { SEED_EXERCISES } from '@/lib/exercises';
 import { muscleColor, topLevelGroup } from '@/lib/musclePalette';
 import { nanoid } from '@/lib/nanoid';
+import { internalPath } from '@/lib/navParams';
 import { TEMPLATE_RESEARCH_FIELDS, hasResearchValue } from '@/lib/researchFields';
 import { colors, monoFont } from '@/lib/theme';
 import type { WorkoutExercise } from '@/lib/workoutSummary';
@@ -43,12 +44,13 @@ function withParam(path: string, key: string, value: string) {
 }
 
 export default function TemplateBuilderScreen() {
-  const { id: idParam, workout: workoutId, returnTo } = useLocalSearchParams<{
+  const { id: idParam, workout: workoutId, returnTo: returnToParam } = useLocalSearchParams<{
     id: string;
     workout?: string;
     returnTo?: string;
   }>();
   const id = idParam === 'new' ? '' : idParam;
+  const returnTo = internalPath(returnToParam);
   const router = useRouter();
   const toast = useToast();
   const insets = useSafeAreaInsets();
@@ -79,14 +81,14 @@ export default function TemplateBuilderScreen() {
       setLoading(true);
       try {
         if (id) {
-          const data = await api.get(`/templates/${id}`);
+          const data = await api.get(`/templates/${encodeURIComponent(id)}`);
           if (cancelled) return;
           hydrate(data.template);
           return;
         }
         if (!createPromiseRef.current) {
           createPromiseRef.current = workoutId
-            ? api.post(`/templates/drafts/from-workout/${workoutId}`, {})
+            ? api.post(`/templates/drafts/from-workout/${encodeURIComponent(workoutId)}`, {})
             : api.post('/templates/drafts', {});
         }
         const data = await createPromiseRef.current;

@@ -72,6 +72,18 @@ Progress and Study are fully ported with Victory Native XL (Skia) charts (`mobil
 
 ---
 
+## Session 6 — COMPLETE (2026-06-11)
+
+Hardening & store prep are done; what remains needs the owner's accounts, not code. Outcomes:
+
+- **`/security-review` of the whole branch: no HIGH/MEDIUM findings.** Two sub-threshold defense-in-depth items were fixed anyway: deep-link route params are now `encodeURIComponent`-wrapped before reaching API paths, and the builders' `returnTo` param is constrained to internal paths (`mobile/lib/navParams.ts`).
+- **HTTPS is enforced in release builds**: `mobile/lib/api.ts` throws unless `EXPO_PUBLIC_API_URL` is set and https outside `__DEV__` (lazy, so it toasts instead of crashing at boot). The LAN-IP fallback is dev-only.
+- Production config: `app.json` v1.0.0 + `runtimeVersion` (appVersion policy) + iOS Privacy Manifest + encryption-export exemption; `eas.json` development/preview/production channels; `expo-updates` ~29.0.18 installed (OTA). `eas init` / `eas update:configure` / server deployment / store submission are the owner's steps — full ordered checklist in `docs/app-store-prep.md`.
+- **D5 approved**: store listing (description, keywords, Health & Fitness, 12+) baselined in `docs/app-store-prep.md`. **D6 approved**: health-data disclosure + full privacy policy in `docs/privacy-policy.md` (needs hosting at a public URL before submission). **Icon: placeholder ships in TestFlight** (owner decision; swap files in `mobile/assets/images/`).
+- **⚠️ Open risks**: Session 5 charts were still unverified on the dev build at session end (verify Progress + Study in the dev build before TestFlight); no report/block feature = Apple UGC Guideline 1.2 rejection risk (deliberately not built).
+
+---
+
 ## Context
 RepSearch is a React 19 + Vite web app (~15,000 lines, 80+ files). The backend has **already been migrated to Supabase** (Postgres + Supabase Auth), replacing the old SQLite + custom-JWT setup. This plan covers everything remaining: pre-work decisions, then building a native iOS + Android app via Expo React Native that matches the web app feature-for-feature. The backend is not rebuilt — the mobile app talks to the same Supabase project.
 

@@ -90,14 +90,14 @@ export function usePosts(toast: ToastFn) {
   );
 
   const getPost = useCallback(async (id: string) => {
-    return api.get(`/posts/${id}`);
+    return api.get(`/posts/${encodeURIComponent(id)}`);
   }, []);
 
   const votePost = useCallback(
     async (id: string, value: number) => {
       // Optimistic: caller updates local state from the returned score.
       try {
-        return await api.post(`/posts/${id}/vote`, { value });
+        return await api.post(`/posts/${encodeURIComponent(id)}/vote`, { value });
       } catch (err: any) {
         toast?.(err.message || 'Vote failed', 'error');
         return null;
@@ -121,8 +121,8 @@ export function usePosts(toast: ToastFn) {
   const setSaved = useCallback(
     async (id: string, saved: boolean) => {
       try {
-        if (saved) await api.post(`/posts/${id}/save`);
-        else await api.del(`/posts/${id}/save`);
+        if (saved) await api.post(`/posts/${encodeURIComponent(id)}/save`);
+        else await api.del(`/posts/${encodeURIComponent(id)}/save`);
         return saved;
       } catch (err: any) {
         toast?.(err.message || 'Could not update saved', 'error');

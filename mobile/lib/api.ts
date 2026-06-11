@@ -7,18 +7,35 @@ import { supabase } from './supabase';
 // host (e.g. "192.168.1.5:8081") and the server port substituted in.
 function resolveBase(): string {
   const explicit = process.env.EXPO_PUBLIC_API_URL;
-  if (explicit) return explicit.replace(/\/+$/, '');
+  if (explicit) {
+    const base = explicit.replace(/\/+$/, '');
+    if (!__DEV__ && !base.startsWith('https://')) {
+      // Store builds must not talk cleartext HTTP (ATS blocks it on iOS anyway).
+      throw new Error(`EXPO_PUBLIC_API_URL must be https:// in release builds (got "${base}")`);
+    }
+    return base;
+  }
+  if (!__DEV__) {
+    throw new Error('EXPO_PUBLIC_API_URL is required in release builds — the LAN-IP fallback is dev-only.');
+  }
   const hostUri = Constants.expoConfig?.hostUri;
   const host = hostUri?.split(':')[0];
   return host ? `http://${host}:3002/api` : 'http://localhost:3002/api';
 }
 
-export const API_BASE = resolveBase();
+// Lazy so a misconfigured release build surfaces the error on the first
+// request (toast) instead of crashing at module load.
+let cachedBase: string | null = null;
+export function apiBase(): string {
+  if (cachedBase === null) cachedBase = resolveBase();
+  return cachedBase;
+}
 
 async function request(method: string, path: string, body?: unknown) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token || null;
   let res: Response;
+  const API_BASE = apiBase();
   try {
     res = await fetch(`${API_BASE}${path}`, {
       method,
