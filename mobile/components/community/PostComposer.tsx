@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { Sheet } from '@/components/ui/Sheet';
@@ -9,9 +10,9 @@ import { GROUP_BY_OPTIONS, MEASURE_OPTIONS, prettyGroupBy, prettyMeasure } from 
 import { colors } from '@/lib/theme';
 
 // Port of src/components/community/PostComposer.jsx. Differences from web:
-// the <select>s for the Study feature become PickerSheet triggers (D4), and
-// "+ Create new" routes into the builders, which don't exist until Sessions
-// 3/4 — until then it explains via toast instead of navigating.
+// the <select>s for the Study feature become PickerSheet triggers (D4);
+// "+ Create new" for a workout opens the live logger (Session 3), while the
+// program/template/study builders stay a toast until Sessions 4-5.
 const VISIBILITIES = [
   { v: 'public', label: 'Public' },
   { v: 'followers', label: 'Followers' },
@@ -33,6 +34,7 @@ export default function PostComposer({
   initialWorkoutId?: string | null;
 }) {
   const toast = useToast();
+  const router = useRouter();
   const { createPost, loadComposeOptions } = usePosts(toast);
   const [kind, setKind] = useState<string | null>(initialKind);
   const [options, setOptions] = useState<ComposeOptions>({ workouts: [], programs: [], templates: [], studies: [] });
@@ -137,12 +139,15 @@ export default function PostComposer({
   }
 
   function createNew() {
-    // Web: navigate(`/templates/new?returnTo=...`) etc. The workout flow lands
-    // in Session 3 and the builders in Session 4.
-    toast?.(
-      kind === 'workout' ? 'Workout logging arrives in Session 3' : 'The builders arrive in Session 4',
-      'info',
-    );
+    if (kind === 'workout') {
+      // Web sends the user to /workout to log one; the finish screen's
+      // "Share to feed" returns here via ?shareWorkout=<id>.
+      onClose();
+      router.navigate('/workout');
+      return;
+    }
+    // Program/template/study builders land in Sessions 4-5.
+    toast?.('The builders arrive in Session 4', 'info');
   }
 
   const canSubmit =

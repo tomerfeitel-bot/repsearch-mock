@@ -51,9 +51,10 @@ const PLAN_SOURCES = [
 export default function CommunityScreen() {
   const toast = useToast();
   const router = useRouter();
-  // Deep links: ?compose=<kind> (build-new return, Session 4) and
-  // ?shareWorkout=<id> (the finish hook, Session 3).
-  const params = useLocalSearchParams<{ compose?: string; shareWorkout?: string }>();
+  // Deep links: ?compose=<kind> (build-new return, Session 4),
+  // ?shareWorkout=<id> (the post-workout "Share to feed" action), and
+  // ?tab=plans (the StartScreen "Find Plans" banner).
+  const params = useLocalSearchParams<{ compose?: string; shareWorkout?: string; tab?: string }>();
   const [tab, setTab] = useState('feed');
   const { feed, feedLoading, feedMeta, loadFeed, loadMore, patchFeedItem, votePost, setSaved, loadSaved } =
     usePosts(toast);
@@ -97,6 +98,14 @@ export default function CommunityScreen() {
       router.setParams({ compose: undefined, shareWorkout: undefined });
     }
   }, [params.compose, params.shareWorkout, router]);
+
+  useEffect(() => {
+    if (params.tab === 'plans') {
+      setTab('feed');
+      setPlanMode(true);
+      router.setParams({ tab: undefined });
+    }
+  }, [params.tab, router]);
 
   useEffect(() => {
     loadFollowing().then((users: any[]) => setScope((prev) => prev ?? (users.length > 0 ? 'following' : 'global')));

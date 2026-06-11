@@ -84,12 +84,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <WorkoutProvider>
-            <ToastProvider>
+          {/* ToastProvider sits above WorkoutProvider: useWorkout toasts save errors. */}
+          <ToastProvider>
+            <WorkoutProvider>
               <StatusBar style="light" />
               <RootNavigator />
-            </ToastProvider>
-          </WorkoutProvider>
+            </WorkoutProvider>
+          </ToastProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

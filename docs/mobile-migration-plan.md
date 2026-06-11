@@ -33,6 +33,18 @@ Community & social screens are live in Expo Go (`mobile/app/(tabs)/community.tsx
 
 ---
 
+## Session 3 — COMPLETE (2026-06-11)
+
+The full workout logger is live in Expo Go (`mobile/app/(tabs)/workout.tsx`, `mobile/components/workout/`, real `mobile/hooks/useWorkout.tsx`). Outcomes future sessions must know:
+
+- **No new D-gates came up.** D4 (native pickers) was applied to the logger's ROM/tempo/set-type selects and the rest picker — the web's bespoke RestWheel snap-drum became a stepper + PickerSheet.
+- **`useWorkout` is the full state machine** (autosave debounce → `PUT /active-workout`, AsyncStorage fallback + newer-local-copy restore, pinned research values, finish/discard). Provider order matters: ToastProvider wraps WorkoutProvider in `app/_layout.tsx`. The Session-1 dummy-workout test buttons are gone.
+- **Every Session-2 "arrives in Session 3" stub is wired**: PlansTab template Start + program next-session Start, PostDetail template attachment, PostComposer "+ Create new" workout. Foreign templates are copied to the user's library before starting (same as web). New deep link: `/community?tab=plans` (StartScreen "Find Plans").
+- **Still stubbed for Session 4**: builder navigation (CreateMenu, PostComposer non-workout create, CelebrationCard "Save template" → `/templates/new?workout=<id>` on web). CelebrationCard "View progress" navigates to the Progress placeholder tab (real charts in Session 5).
+- New ported libs: `mobile/lib/{nanoid,splits,researchFields,workoutSummary}.ts` (nanoid uses expo-crypto — Hermes has no global `crypto`).
+
+---
+
 ## Context
 RepSearch is a React 19 + Vite web app (~15,000 lines, 80+ files). The backend has **already been migrated to Supabase** (Postgres + Supabase Auth), replacing the old SQLite + custom-JWT setup. This plan covers everything remaining: pre-work decisions, then building a native iOS + Android app via Expo React Native that matches the web app feature-for-feature. The backend is not rebuilt — the mobile app talks to the same Supabase project.
 

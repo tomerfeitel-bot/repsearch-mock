@@ -1,6 +1,6 @@
 # RepSearch mobile (Expo)
 
-Native iOS/Android port of the web app in `../src`. Built per `../docs/mobile-migration-plan.md` — Sessions 1 (foundation, auth, onboarding, tab shell) and 2 (community & social screens) are implemented. Versioned docs: https://docs.expo.dev/versions/v54.0.0/
+Native iOS/Android port of the web app in `../src`. Built per `../docs/mobile-migration-plan.md` — Sessions 1 (foundation, auth, onboarding, tab shell), 2 (community & social screens), and 3 (workout logger) are implemented. Versioned docs: https://docs.expo.dev/versions/v54.0.0/
 
 ## Pinned to Expo SDK 54 — do not upgrade before Session 5
 
@@ -20,13 +20,18 @@ Sessions 1–4 are verified in **Expo Go from the App Store / Play Store**, whic
 - `npx tsc --noEmit` — typecheck.
 - `npx expo export --platform ios` — CI-style bundle check without a device.
 
+## Workout logger (Session 3)
+
+- `hooks/useWorkout.tsx` is the full port of `src/hooks/useWorkout.jsx`: server autosave (1s debounce to `PUT /active-workout`), AsyncStorage fallback copy + newer-local-copy restore, pinned research values, finish/discard, rest timer. `localStorage` reads became async AsyncStorage hydration effects. ToastProvider must stay ABOVE WorkoutProvider in `app/_layout.tsx` (the hook toasts save errors).
+- Screens/components live in `components/workout/`: `StartScreen` (projected-next hero, split/program workspace, history), `ActiveWorkout` (header totals + FlatList; audit "Fix" uses `scrollToIndex`), `ExerciseCard`/`SetRow` (mini research controls; long-press a checkmark for the set action sheet; selects/rest are PickerSheets per D4), `AddExerciseSheet` (200ms-debounced search), `FinishSheet`, `CelebrationCard` (Reanimated ZoomIn). Shared audit/summary builders: `lib/workoutSummary.ts`.
+- All "start workout" entry points are wired: StartScreen, PlansTab templates + program next-session, PostDetail template attachment (foreign templates are copied first, same as web), PostComposer "+ Create new workout". Replace-active-workout confirms use ConfirmSheet. Celebration "Share to feed" deep-links `/community?shareWorkout=<id>`; StartScreen "Find Plans" deep-links `/community?tab=plans`.
+
 ## Leftovers / stubs for later sessions
 
-- `hooks/useWorkout.tsx` is a stub; Session 3 replaces it with the real ActiveWorkout state machine. The "test rest timer / test workout" buttons in `app/(tabs)/workout.tsx` are temporary — remove in Session 3.
-- Session 2 actions that depend on later sessions currently show an explanatory toast: every "Start workout from template/program session" path (PlansTab, PostDetail template attachment → Session 3's `startWorkout`) and every "+ New / open builder" path (CreateMenu, PostComposer "Create new" → Session 4 builders). Community already accepts the `?compose=<kind>` / `?shareWorkout=<id>` deep-link params those sessions will use.
+- Builder navigation still toasts (CreateMenu, PostComposer non-workout "Create new", CelebrationCard "Save template" → Session 4 builders).
 - `sharePost` (PostCard) shares plain text — nothing is deployed, so there is no post URL. Swap to a universal link in Session 6.
 - Study post attachments render the compact bar-row preview in both the feed and the thread; the full Victory/Skia chart variant is Session 5 (dev build).
-- Study/Progress/Profile tab screens are placeholders. Custom fonts (Inter / JetBrains Mono) not loaded yet; `lib/theme.ts` exports `monoFont` (system monospace) for numerals meanwhile.
+- Study/Progress/Profile tab screens are placeholders (CelebrationCard "View progress" lands on the placeholder until Session 5). Custom fonts (Inter / JetBrains Mono) not loaded yet; `lib/theme.ts` exports `monoFont` (system monospace) for numerals meanwhile.
 - The web `src/components/community/FeedCard.jsx` is dead code (nothing imports it); its planned double-tap heart lives on mobile `PostCard` instead (double-tap = upvote + Reanimated heart burst).
 
 ## Windows gotcha: typed-routes corruption while the dev server runs

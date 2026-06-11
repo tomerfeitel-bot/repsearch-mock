@@ -24,8 +24,11 @@ import {
 } from '@/components/community/PostCard';
 import { ProgramDetailSheet, StartProgramSheet } from '@/components/community/PlansTab';
 import { Avatar } from '@/components/ui/Avatar';
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/hooks/useAuth';
 import { usePosts } from '@/hooks/usePosts';
+import { useWorkout } from '@/hooks/useWorkout';
 import { api } from '@/lib/api';
 import { SEED_EXERCISES } from '@/lib/exercises';
 import { labelStyle } from '@/lib/bubbleColors';
@@ -592,8 +595,71 @@ function ProgramAttachment({ a }: { a: any }) {
 }
 
 function TemplateAttachment({ a }: { a: any }) {
+  const { user } = useAuth();
+  const { workout, startWorkout } = useWorkout();
+  const router = useRouter();
   const toast = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   if (!a) return null;
+
+  async function start(skipConfirm = false) {
+    if (workout && !skipConfirm) {
+      setConfirmOpen(true);
+      return;
+    }
+    try {
+      const data = await api.get(`/templates/${a.id}`);
+      let template = data.template;
+      if (template.user_id !== user?.id) {
+        const copied = await api.post('/templates', {
+          name: template.name,
+          description: template.description || '',
+          visibility: 'private',
+          strictness: template.strictness || 'adapt',
+          source_template_id: template.id,
+          workout_day: template.workout_day || null,
+          workout_split_type: template.workout_day || null,
+          exercises: (template.exercises || []).map((e: any) => ({
+            exercise_id: e.exercise_id,
+            sets: (e.sets || []).map((s: any) => ({
+              target_reps: s.target_reps,
+              target_weight_kg: s.target_weight_kg,
+              target_rir: s.target_rir,
+              target_rep_range: s.target_rep_range,
+              set_type: s.set_type,
+              rom_category: s.rom_category,
+              tempo_tag: s.tempo_tag,
+              rest_seconds: s.rest_seconds,
+              failure: s.failure,
+            })),
+          })),
+        });
+        template = copied.template;
+      }
+      const exercises = (template.exercises || []).map((e: any) => {
+        const seed = exerciseById.get(e.exercise_id);
+        return {
+          exerciseId: e.exercise_id,
+          exerciseName: seed?.name || e.exercise_id,
+          primary_muscle: seed?.primary_muscle,
+          equipment_type: seed?.equipment_type,
+          sets: e.sets || [],
+        };
+      });
+      startWorkout({
+        name: template.name,
+        dayLabel: template.workout_day || null,
+        templateId: template.id,
+        exercises,
+        runClassification: template.source_template_id ? 'derived' : 'exact',
+        skipReplaceWarning: true,
+      });
+      router.navigate('/workout');
+    } catch (err: any) {
+      toast?.(err.message || 'Failed to start template', 'error');
+    }
+  }
+
   return (
     <HeroFrame>
       <Text style={{ fontWeight: '700', color: colors.text }}>{a.name}</Text>
@@ -601,10 +667,22 @@ function TemplateAttachment({ a }: { a: any }) {
         {a.exercise_count || 0} exercises · used {a.usage_count || 0}x
       </Text>
       <Pressable
-        onPress={() => toast?.('Starting workouts from a template arrives in Session 3', 'info')}
+        onPress={() => start()}
         style={{ marginTop: 12, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: colors.accent }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: colors.accentInk }}>Start as workout</Text>
       </Pressable>
+      <ConfirmSheet
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          start(true);
+        }}
+        title="Replace workout?"
+        message="Starting this template will replace your current active workout."
+        confirmLabel="Replace"
+        danger
+      />
     </HeroFrame>
   );
 }

@@ -1,4 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
@@ -6,12 +7,15 @@ import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useWorkout } from '@/hooks/useWorkout';
 import { api } from '@/lib/api';
+import { SEED_EXERCISES } from '@/lib/exercises';
 import { colors, monoFont } from '@/lib/theme';
 
-// Port of src/components/community/PlansTab.jsx. "Start" actions that hand a
-// template to the live-workout state machine are stubbed with a toast until
-// Session 3; "+ New" routes into the builders, which land in Session 4.
+// Port of src/components/community/PlansTab.jsx. "Start" hands the template
+// to useWorkout.startWorkout and jumps to the workout tab (Session 3);
+// "+ New" routes into the builders, which land in Session 4.
+const exerciseById = new Map<string, any>(SEED_EXERCISES.map((e: any) => [e.id, e]));
 const TYPES = [
   { v: 'programs', label: 'Programs' },
   { v: 'templates', label: 'Templates' },
@@ -333,14 +337,71 @@ function DraftList({
 function Templates({ templates, onChanged }: { templates: any[]; onChanged?: () => void }) {
   const toast = useToast();
   const { user } = useAuth();
+  const { workout, startWorkout } = useWorkout();
+  const router = useRouter();
   const [confirmDeleteTemplate, setConfirmDeleteTemplate] = useState<any>(null);
+  const [pendingTemplate, setPendingTemplate] = useState<any>(null);
 
   if (!templates.length) return <Empty>Save a finished workout or create a lightweight template.</Empty>;
 
-  function startFromTemplate() {
-    // Web: copies a foreign template, then hands it to useWorkout.startWorkout.
-    // That state machine is Session 3's deliverable.
-    toast?.('Starting workouts from a template arrives in Session 3', 'info');
+  async function startFromTemplate(t: any, skipConfirm = false) {
+    if (workout && !skipConfirm) {
+      setPendingTemplate(t);
+      return;
+    }
+    try {
+      const data = await api.get(`/templates/${t.id}`);
+      let template = data.template;
+      // Foreign templates get copied into the user's library first, exactly
+      // like the web flow, so the run is attributed to their own copy.
+      if (template.user_id !== user?.id) {
+        const copied = await api.post('/templates', {
+          name: template.name,
+          description: template.description || '',
+          visibility: 'private',
+          strictness: template.strictness || 'adapt',
+          source_template_id: template.id,
+          workout_day: template.workout_day || null,
+          workout_split_type: template.workout_split_type || null,
+          exercises: (template.exercises || []).map((e: any) => ({
+            exercise_id: e.exercise_id,
+            sets: (e.sets || []).map((s: any) => ({
+              target_reps: s.target_reps,
+              target_weight_kg: s.target_weight_kg,
+              target_rir: s.target_rir,
+              target_rep_range: s.target_rep_range,
+              set_type: s.set_type,
+              rom_category: s.rom_category,
+              tempo_tag: s.tempo_tag,
+              rest_seconds: s.rest_seconds,
+              failure: s.failure,
+            })),
+          })),
+        });
+        template = copied.template;
+      }
+      const exercises = (template.exercises || []).map((e: any) => {
+        const seed = exerciseById.get(e.exercise_id);
+        return {
+          exerciseId: e.exercise_id,
+          exerciseName: seed?.name || e.exercise_id,
+          primary_muscle: seed?.primary_muscle,
+          equipment_type: seed?.equipment_type,
+          sets: e.sets || [],
+        };
+      });
+      startWorkout({
+        name: template.name,
+        dayLabel: template.workout_day || null,
+        templateId: template.id,
+        exercises,
+        runClassification: template.source_template_id ? 'derived' : 'exact',
+        skipReplaceWarning: true,
+      });
+      router.navigate('/workout');
+    } catch (err: any) {
+      toast?.(err.message || 'Failed to start template', 'error');
+    }
   }
 
   async function doDeleteTemplate() {
@@ -379,7 +440,7 @@ function Templates({ templates, onChanged }: { templates: any[]; onChanged?: () 
               </Text>
             </View>
             <Pressable
-              onPress={startFromTemplate}
+              onPress={() => startFromTemplate(t)}
               style={{
                 height: 36,
                 paddingHorizontal: 14,
@@ -405,6 +466,19 @@ function Templates({ templates, onChanged }: { templates: any[]; onChanged?: () 
         title="Delete template?"
         message={`"${confirmDeleteTemplate?.name}" will be permanently removed.`}
         confirmLabel="Delete"
+        danger
+      />
+      <ConfirmSheet
+        open={!!pendingTemplate}
+        onClose={() => setPendingTemplate(null)}
+        onConfirm={() => {
+          const t = pendingTemplate;
+          setPendingTemplate(null);
+          startFromTemplate(t, true);
+        }}
+        title="Replace workout?"
+        message="Starting this template will replace your current active workout."
+        confirmLabel="Replace"
         danger
       />
     </>
@@ -499,6 +573,9 @@ export function ProgramDetailSheet({
   const [detailError, setDetailError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const [decisionOpen, setDecisionOpen] = useState(false);
+  const [replaceConfirmOpen, setReplaceConfirmOpen] = useState(false);
+  const { workout, startWorkout } = useWorkout();
+  const router = useRouter();
   const toast = useToast();
 
   useEffect(() => {
@@ -535,9 +612,39 @@ export function ProgramDetailSheet({
     ? full.workouts?.find((w: any) => w.id === full.phase.next_session_id)
     : full?.workouts?.[0];
 
-  function startNextSession() {
-    // Hands a template to the live-workout state machine — Session 3.
-    toast?.('Starting program sessions arrives in Session 3', 'info');
+  async function startNextSession(skipConfirm = false) {
+    if (!nextSession?.template_id) return;
+    if (workout && !skipConfirm) {
+      setReplaceConfirmOpen(true);
+      return;
+    }
+    try {
+      const data = await api.get(`/templates/${nextSession.template_id}`);
+      const template = data.template;
+      const exercises = (template.exercises || []).map((e: any) => {
+        const seed = exerciseById.get(e.exercise_id);
+        return {
+          exerciseId: e.exercise_id,
+          exerciseName: seed?.name || e.exercise_id,
+          primary_muscle: seed?.primary_muscle,
+          equipment_type: seed?.equipment_type,
+          sets: e.sets || [],
+        };
+      });
+      startWorkout({
+        name: nextSession.session_label || template.name,
+        dayLabel: nextSession.session_label || null,
+        templateId: template.id,
+        programId: program.id,
+        exercises,
+        runClassification: nextSession.optional ? 'adapted' : 'exact',
+        skipReplaceWarning: true,
+      });
+      onClose();
+      router.navigate('/workout');
+    } catch (err: any) {
+      toast?.(err.message || 'Failed to start next session', 'error');
+    }
   }
 
   async function decide(decision: string) {
@@ -584,7 +691,7 @@ export function ProgramDetailSheet({
             </View>
             {nextSession && full?.enrollment ? (
               <Pressable
-                onPress={startNextSession}
+                onPress={() => startNextSession()}
                 style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.accent }}>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: colors.accentInk }}>Start</Text>
               </Pressable>
@@ -641,6 +748,18 @@ export function ProgramDetailSheet({
           ) : null}
         </View>
         <DecisionSheet open={decisionOpen} onClose={() => setDecisionOpen(false)} onPick={decide} />
+        <ConfirmSheet
+          open={replaceConfirmOpen}
+          onClose={() => setReplaceConfirmOpen(false)}
+          onConfirm={() => {
+            setReplaceConfirmOpen(false);
+            startNextSession(true);
+          }}
+          title="Replace workout?"
+          message="Starting this session will replace your current active workout."
+          confirmLabel="Replace"
+          danger
+        />
       </View>
     </Sheet>
   );
