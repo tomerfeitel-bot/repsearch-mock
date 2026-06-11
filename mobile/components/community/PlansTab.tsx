@@ -1,6 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
@@ -14,7 +14,7 @@ import { colors, monoFont } from '@/lib/theme';
 
 // Port of src/components/community/PlansTab.jsx. "Start" hands the template
 // to useWorkout.startWorkout and jumps to the workout tab (Session 3);
-// "+ New" routes into the builders, which land in Session 4.
+// "+ New" pushes the full-screen builders (Session 4, decision D3).
 const exerciseById = new Map<string, any>(SEED_EXERCISES.map((e: any) => [e.id, e]));
 const TYPES = [
   { v: 'programs', label: 'Programs' },
@@ -75,9 +75,16 @@ export default function PlansTab({
     [source, toast],
   );
 
-  useEffect(() => {
-    loadPlans(source);
-  }, [source, loadPlans]);
+  // Reload on every focus (not just mount): popping back from a builder push
+  // must surface the just-saved template/program. The web page remounts on
+  // route changes, so it gets this for free; the skeleton shows only once.
+  const firstFocusRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      loadPlans(source, firstFocusRef.current);
+      firstFocusRef.current = false;
+    }, [source, loadPlans]),
+  );
 
   const shownPrograms = type === 'templates' ? [] : programs;
   const shownTemplates = type === 'templates' ? templates : [];
@@ -227,11 +234,12 @@ function CreateMenu({
   onDeleted?: () => void;
 }) {
   const toast = useToast();
+  const router = useRouter();
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'draft' | 'program'; item: any } | null>(null);
 
-  function notYet() {
+  function openBuilder(path: string) {
     onClose();
-    toast?.('The template & program builders arrive in Session 4', 'info');
+    router.push(path as any);
   }
 
   async function doDelete() {
@@ -261,7 +269,7 @@ function CreateMenu({
               title="Drafts"
               items={drafts}
               blurb="Private draft"
-              onOpen={notYet}
+              onOpen={(item) => openBuilder(`/templates/builder/${item.id}`)}
               onDelete={(item) => setConfirmDelete({ type: 'draft', item })}
             />
           )}
@@ -270,18 +278,18 @@ function CreateMenu({
               title="Program drafts"
               items={programDrafts}
               blurb="Private program draft"
-              onOpen={notYet}
+              onOpen={(item) => openBuilder(`/programs/builder/${item.id}`)}
               onDelete={(item) => setConfirmDelete({ type: 'program', item })}
             />
           )}
           <View style={{ gap: 8 }}>
-            <Pressable onPress={notYet} style={CARD_STYLE}>
+            <Pressable onPress={() => openBuilder('/templates/builder/new')} style={CARD_STYLE}>
               <Text style={{ fontWeight: '600', color: colors.text }}>Template</Text>
               <Text style={{ marginTop: 4, fontSize: 12, color: colors.inkSoft }}>
                 Build a reusable workout in the full template builder.
               </Text>
             </Pressable>
-            <Pressable onPress={notYet} style={CARD_STYLE}>
+            <Pressable onPress={() => openBuilder('/programs/builder/new')} style={CARD_STYLE}>
               <Text style={{ fontWeight: '600', color: colors.text }}>Program</Text>
               <Text style={{ marginTop: 4, fontSize: 12, color: colors.inkSoft }}>
                 Create a multi-week plan from saved templates.

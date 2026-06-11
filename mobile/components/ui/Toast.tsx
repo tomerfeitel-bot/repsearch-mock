@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // but rendered as a root-level absolutely-positioned view instead of a DOM
 // portal with `fixed`.
 type ToastType = 'info' | 'success' | 'error';
-type ToastFn = (message: string, type?: ToastType) => void;
+export type ToastFn = (message: string, type?: ToastType) => void;
 
 type ToastItem = { id: number; message: string; type: ToastType };
 

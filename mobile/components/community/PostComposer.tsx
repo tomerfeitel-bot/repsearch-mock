@@ -146,8 +146,20 @@ export default function PostComposer({
       router.navigate('/workout');
       return;
     }
-    // Program/template/study builders land in Sessions 4-5.
-    toast?.('The builders arrive in Session 4', 'info');
+    if (kind === 'template' || kind === 'program') {
+      // The builder finishes back to /community?compose=<kind> so this
+      // composer reopens with the new item pickable (web buildNewTarget).
+      onClose();
+      const ret = encodeURIComponent(`/community?compose=${kind}`);
+      router.push(
+        (kind === 'template'
+          ? `/templates/builder/new?returnTo=${ret}`
+          : `/programs/builder/new?returnTo=${ret}`) as any,
+      );
+      return;
+    }
+    // The study explorer lands in Session 5.
+    toast?.('The study builder arrives in Session 5', 'info');
   }
 
   const canSubmit =

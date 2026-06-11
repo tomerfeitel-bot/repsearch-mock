@@ -45,6 +45,18 @@ The full workout logger is live in Expo Go (`mobile/app/(tabs)/workout.tsx`, `mo
 
 ---
 
+## Session 4 — COMPLETE (2026-06-11)
+
+Profile, builders, and settings are live in Expo Go (`mobile/app/(tabs)/profile.tsx`, `mobile/app/templates/builder/[id].tsx`, `mobile/app/programs/builder/[id].tsx`, `mobile/components/profile/DailyLogHub.tsx`). Outcomes future sessions must know:
+
+- **D3 decided: builders are full-screen pushes.** `id="new"` creates the draft and replaces itself with the real id (the web's `/templates/new` & `/programs/new` redirector routes collapse into the `[id]` route). Cross-builder returns use `router.navigate` so the waiting screen is popped back to with updated params (`createdTemplate`/`addToBlock`), not stacked again — details in `mobile/AGENTS.md`.
+- **Every remaining Session-2/3 builder stub is wired**: PlansTab "+ New" + draft rows, PostComposer "+ Create new" (template/program; study still toasts until Session 5), CelebrationCard "Save template" (`/templates/builder/new?workout=<id>`).
+- **Delete account diverges from web on purpose**: since the Supabase migration the server's `DELETE /profile` ignores the password the web still asks for, so mobile uses a danger ConfirmSheet instead of a dead password prompt. (Web cleanup flagged separately.)
+- `PlansTab` now refreshes on screen focus (pushed-screen returns don't remount tabs like web page navigations did).
+- For Session 5: the Profile screen's "View progress" path and the Progress/Study placeholder tabs are the remaining big surfaces; `researchTheme`'s composer trim is still pending its Session-5 extension.
+
+---
+
 ## Context
 RepSearch is a React 19 + Vite web app (~15,000 lines, 80+ files). The backend has **already been migrated to Supabase** (Postgres + Supabase Auth), replacing the old SQLite + custom-JWT setup. This plan covers everything remaining: pre-work decisions, then building a native iOS + Android app via Expo React Native that matches the web app feature-for-feature. The backend is not rebuilt — the mobile app talks to the same Supabase project.
 

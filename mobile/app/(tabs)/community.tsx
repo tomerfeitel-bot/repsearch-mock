@@ -51,10 +51,16 @@ const PLAN_SOURCES = [
 export default function CommunityScreen() {
   const toast = useToast();
   const router = useRouter();
-  // Deep links: ?compose=<kind> (build-new return, Session 4),
+  // Deep links: ?compose=<kind> (builder "save" returns here and reopens the
+  // composer; a ?createdTemplate=<id> rides along and is just cleared),
   // ?shareWorkout=<id> (the post-workout "Share to feed" action), and
   // ?tab=plans (the StartScreen "Find Plans" banner).
-  const params = useLocalSearchParams<{ compose?: string; shareWorkout?: string; tab?: string }>();
+  const params = useLocalSearchParams<{
+    compose?: string;
+    shareWorkout?: string;
+    tab?: string;
+    createdTemplate?: string;
+  }>();
   const [tab, setTab] = useState('feed');
   const { feed, feedLoading, feedMeta, loadFeed, loadMore, patchFeedItem, votePost, setSaved, loadSaved } =
     usePosts(toast);
@@ -95,7 +101,7 @@ export default function CommunityScreen() {
       setComposeKind(sw ? 'workout' : (c as string));
       setComposeWorkoutId((sw as string) || null);
       setComposeOpen(true);
-      router.setParams({ compose: undefined, shareWorkout: undefined });
+      router.setParams({ compose: undefined, shareWorkout: undefined, createdTemplate: undefined });
     }
   }, [params.compose, params.shareWorkout, router]);
 

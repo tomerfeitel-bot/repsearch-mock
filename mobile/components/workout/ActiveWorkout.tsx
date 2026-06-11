@@ -9,7 +9,6 @@ import FinishSheet from './FinishSheet';
 import { SlidersIcon } from './SetRow';
 import { Sheet } from '@/components/ui/Sheet';
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
-import { useToast } from '@/components/ui/Toast';
 import { useWorkout } from '@/hooks/useWorkout';
 import { api } from '@/lib/api';
 import { SEED_EXERCISES } from '@/lib/exercises';
@@ -33,7 +32,6 @@ import {
 export default function ActiveWorkout() {
   const wo = useWorkout();
   const router = useRouter();
-  const toast = useToast();
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<any>>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -200,9 +198,13 @@ export default function ActiveWorkout() {
   }
 
   function handleSaveTemplateFromSummary() {
-    // Web: navigate(`/templates/new?workout=<id>`). The template builder is
-    // Session 4 — until then this explains itself and stays on the summary.
-    toast?.('Saving a workout as a template arrives in Session 4', 'info');
+    // Web: navigate(`/templates/new?workout=<id>`) — the builder opens a
+    // draft pre-filled from the just-saved workout.
+    const workoutId = celebration?.workoutId;
+    if (!workoutId) return;
+    setCelebration(null);
+    wo.clearLocalWorkout();
+    router.push(`/templates/builder/new?workout=${encodeURIComponent(String(workoutId))}` as any);
   }
 
   function handleSharePost() {
