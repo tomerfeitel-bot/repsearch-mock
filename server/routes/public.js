@@ -112,9 +112,10 @@ router.get('/users/:username', authOptional, async (req, res) => {
   const workoutCount = (await getOne('SELECT COUNT(*) AS n FROM workouts WHERE user_id = ?', [user.id])).n;
 
   // Weekly training frequency derived from the last 28 days of logged workouts.
+  const cutoff = new Date(Date.now() - 28 * 24 * 3600 * 1000).toISOString().slice(0, 10);
   const recentWorkouts = (await getOne(
-    "SELECT COUNT(*) AS n FROM workouts WHERE user_id = ? AND date >= date('now', '-28 days')",
-    [user.id]
+    'SELECT COUNT(*) AS n FROM workouts WHERE user_id = ? AND date >= ?',
+    [user.id, cutoff]
   )).n;
   user.derived_weekly_frequency = recentWorkouts ? Math.round(recentWorkouts / 4 * 10) / 10 : null;
   const prs = await getAll(

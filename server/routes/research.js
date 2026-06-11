@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const { db, getAll, runQuery: dbRunQuery } = require('../db');
 const { authRequired } = require('../auth');
 const { runQuery, previewQuery, GROUP_AXES, MEASURES, evidenceStatus } = require('../research/queryEngine');
@@ -305,8 +306,13 @@ router.delete('/saved-questions/:id', authRequired, async (req, res) => {
 
 router.post('/run-batch', authRequired, async (req, res) => {
   const expected = process.env.ADMIN_BATCH_TOKEN;
-  const provided = req.get('x-admin-token');
-  if (!expected || provided !== expected) {
+  const provided = req.get('x-admin-token') || '';
+  const expectedBuf = Buffer.from(String(expected || ''));
+  const providedBuf = Buffer.from(String(provided));
+  const match = expectedBuf.length > 0 &&
+    expectedBuf.length === providedBuf.length &&
+    crypto.timingSafeEqual(expectedBuf, providedBuf);
+  if (!match) {
     return res.status(403).json({ error: 'Batch runs require admin authorization' });
   }
   const summary = await runWeeklyBatch();

@@ -1,7 +1,8 @@
 const { createClient } = require('@supabase/supabase-js')
 const { getOne } = require('./db')
 
-const SUPABASE_URL = process.env.SUPABASE_URL
+// supabase-js expects the bare project URL; a /rest/v1 suffix breaks auth endpoints
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '')
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {

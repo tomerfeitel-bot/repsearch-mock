@@ -4,14 +4,16 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js",
-    "seed": "node seed.js"
+    "start": "node --env-file-if-exists=.env index.js",
+    "dev": "node --env-file-if-exists=.env --watch index.js",
+    "seed": "node --env-file-if-exists=.env seed.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^8.5.2",
     "nanoid": "^3.3.7",
     "node-cron": "^4.2.1",
     "pg": "^8.21.0"

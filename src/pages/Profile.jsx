@@ -192,7 +192,7 @@ function GearMenu({ user, updateUser, refresh, logout, toast }) {
   const [form, setForm] = useState(() => normalizeUser(user))
   const [saving, setSaving] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => setForm(normalizeUser(user)), [user])
@@ -222,7 +222,7 @@ function GearMenu({ user, updateUser, refresh, logout, toast }) {
   async function deleteAccount() {
     setDeleting(true)
     try {
-      await api.del('/profile', { password: deletePassword })
+      await api.del('/profile')
       toast('Account deleted', 'success')
       logout()
     } catch (err) {
@@ -249,7 +249,7 @@ function GearMenu({ user, updateUser, refresh, logout, toast }) {
       </FormBlock>
 
       <FormBlock title="Danger zone">
-        <p className="text-sm text-[var(--text-muted)]">Deleting your account removes your workouts, comments, PRs, templates, and research rows from this device.</p>
+        <p className="text-sm text-[var(--text-muted)]">Deleting your account permanently removes your profile, workouts, posts, comments, PRs, templates, programs, and research data from RepSearch.</p>
         <button onClick={() => setDeleteOpen(true)} className="mt-4 min-h-11 px-4 rounded-full border border-[var(--negative)] active:scale-[0.98] text-sm font-bold text-red-100 transition">Delete account</button>
       </FormBlock>
 
@@ -257,17 +257,18 @@ function GearMenu({ user, updateUser, refresh, logout, toast }) {
         <div className="fixed inset-0 z-[60] bg-black/70 px-4 flex items-center justify-center" onClick={() => setDeleteOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl bg-[var(--surface)] border border-[var(--border)] p-4" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-[var(--text)]">Delete account?</h2>
-            <p className="mt-2 text-sm text-[var(--text-muted)]">Enter your password to confirm. This cannot be undone.</p>
+            <p className="mt-2 text-sm text-[var(--text-muted)]">This permanently deletes your account and all of your data. It cannot be undone. Type DELETE to confirm.</p>
             <input
-              type="password"
-              value={deletePassword}
-              onChange={e => setDeletePassword(e.target.value)}
+              type="text"
+              value={deleteConfirm}
+              onChange={e => setDeleteConfirm(e.target.value)}
               className="mt-4 w-full min-h-11 rounded-xl bg-[var(--bg)] border border-[var(--border)] px-3 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-red-700"
-              placeholder="Password"
+              placeholder="DELETE"
+              autoCapitalize="characters"
             />
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button onClick={() => setDeleteOpen(false)} className="min-h-11 rounded-full border border-[var(--border)] text-sm font-bold text-[var(--text)]">Cancel</button>
-              <button disabled={deleting || !deletePassword} onClick={deleteAccount} className="min-h-11 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-60 text-sm font-semibold text-white">
+              <button disabled={deleting || deleteConfirm.trim().toUpperCase() !== 'DELETE'} onClick={deleteAccount} className="min-h-11 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-60 text-sm font-semibold text-white">
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>

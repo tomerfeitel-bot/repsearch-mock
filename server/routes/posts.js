@@ -24,6 +24,15 @@ async function followingIds(userId) {
   return (await getAll('SELECT following_id FROM follows WHERE follower_id = ?', [userId])).map((r) => r.following_id);
 }
 
+// Visibility gate shared by detail + every interaction (vote/save/comment):
+// a followers-only post is invisible — and untouchable — to non-followers.
+async function canViewPost(post, userId) {
+  if (!post) return false;
+  if (post.user_id === userId) return true;
+  if (post.visibility !== 'followers') return true;
+  return !!(await getOne('SELECT 1 AS x FROM follows WHERE follower_id = ? AND following_id = ?', [userId, post.user_id]));
+}
+
 async function labelsFor(postId) {
   return (await getAll('SELECT label FROM post_labels WHERE post_id = ?', [postId])).map((r) => r.label);
 }
@@ -379,8 +388,10 @@ router.get('/compose-options', authRequired, async (req, res) => {
 // --- comment vote (must precede /:id) ---------------------------------------
 router.post('/comments/:commentId/vote', authRequired, async (req, res) => {
   const value = req.body?.value === -1 ? -1 : req.body?.value === 1 ? 1 : 0;
-  const comment = await getOne('SELECT id FROM comments WHERE id = ?', [req.params.commentId]);
+  const comment = await getOne('SELECT id, post_id FROM comments WHERE id = ?', [req.params.commentId]);
   if (!comment) return res.status(404).json({ error: 'Comment not found' });
+  const post = await getOne('SELECT user_id, visibility FROM posts WHERE id = ?', [comment.post_id]);
+  if (!(await canViewPost(post, req.user.id))) return res.status(403).json({ error: 'Forbidden' });
   const existing = await getOne('SELECT value FROM comment_votes WHERE comment_id = ? AND user_id = ?', [req.params.commentId, req.user.id]);
   if (value === 0 || existing && existing.value === value) {
     await dbRun('DELETE FROM comment_votes WHERE comment_id = ? AND user_id = ?', [req.params.commentId, req.user.id]);
@@ -398,10 +409,7 @@ router.get('/:id', authRequired, async (req, res) => {
   const userId = req.user.id;
   const row = await getOne('SELECT p.*, u.username FROM posts p JOIN users u ON u.id = p.user_id WHERE p.id = ?', [req.params.id]);
   if (!row) return res.status(404).json({ error: 'Post not found' });
-  if (row.visibility === 'followers' && row.user_id !== userId) {
-    const f = await getOne('SELECT 1 AS x FROM follows WHERE follower_id = ? AND following_id = ?', [userId, row.user_id]);
-    if (!f) return res.status(403).json({ error: 'Forbidden' });
-  }
+  if (!(await canViewPost(row, userId))) return res.status(403).json({ error: 'Forbidden' });
   res.json({ post: await shapePost(row, userId), comments: await commentTree(req.params.id, userId) });
 });
 
@@ -445,8 +453,9 @@ async function commentTree(postId, userId) {
 // --- vote / save ------------------------------------------------------------
 router.post('/:id/vote', authRequired, async (req, res) => {
   const value = req.body?.value === -1 ? -1 : req.body?.value === 1 ? 1 : 0;
-  const post = await getOne('SELECT id FROM posts WHERE id = ?', [req.params.id]);
+  const post = await getOne('SELECT id, user_id, visibility FROM posts WHERE id = ?', [req.params.id]);
   if (!post) return res.status(404).json({ error: 'Post not found' });
+  if (!(await canViewPost(post, req.user.id))) return res.status(403).json({ error: 'Forbidden' });
   const existing = await getOne('SELECT value FROM post_votes WHERE post_id = ? AND user_id = ?', [req.params.id, req.user.id]);
   if (value === 0 || existing && existing.value === value) {
     await dbRun('DELETE FROM post_votes WHERE post_id = ? AND user_id = ?', [req.params.id, req.user.id]);
@@ -460,8 +469,9 @@ router.post('/:id/vote', authRequired, async (req, res) => {
 });
 
 router.post('/:id/save', authRequired, async (req, res) => {
-  const post = await getOne('SELECT id FROM posts WHERE id = ?', [req.params.id]);
+  const post = await getOne('SELECT id, user_id, visibility FROM posts WHERE id = ?', [req.params.id]);
   if (!post) return res.status(404).json({ error: 'Post not found' });
+  if (!(await canViewPost(post, req.user.id))) return res.status(403).json({ error: 'Forbidden' });
   await dbRun('INSERT INTO saved_posts (post_id, user_id, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING', [req.params.id, req.user.id, nowIso()]);
   res.json({ saved: true });
 });
@@ -473,8 +483,9 @@ router.delete('/:id/save', authRequired, async (req, res) => {
 
 // --- comments ---------------------------------------------------------------
 router.post('/:id/comments', authRequired, async (req, res) => {
-  const post = await getOne('SELECT id FROM posts WHERE id = ?', [req.params.id]);
+  const post = await getOne('SELECT id, user_id, visibility FROM posts WHERE id = ?', [req.params.id]);
   if (!post) return res.status(404).json({ error: 'Post not found' });
+  if (!(await canViewPost(post, req.user.id))) return res.status(403).json({ error: 'Forbidden' });
   const text = safeStr(req.body?.body, 3000);
   if (!text) return res.status(400).json({ error: 'Comment body required' });
   let parentId = safeStr(req.body?.parent_id, 32);

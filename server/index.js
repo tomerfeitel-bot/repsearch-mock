@@ -1,5 +1,9 @@
 const express = require('express');
+// Express 4 does not forward rejected async handlers to the error middleware;
+// without this patch any awaited DB failure inside a route kills the process.
+require('express-async-errors');
 const cors = require('cors');
+const { rateLimit } = require('express-rate-limit');
 const cron = require('node-cron');
 const { getOne } = require('./db');
 const { runWeeklyBatch } = require('./batch');
@@ -9,6 +13,18 @@ const app = express();
 const corsOrigin = process.env.CORS_ORIGIN;
 app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map((s) => s.trim()).filter(Boolean) } : undefined));
 app.use(express.json({ limit: '2mb' }));
+
+// Generous flood guard, not a quota: the app's chattiest flow (autosave) stays
+// far below this. Behind a reverse proxy set TRUST_PROXY=1 so req.ip is the
+// client, not the proxy (otherwise all users share one bucket).
+if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY));
+app.use(rateLimit({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
+  limit: Number(process.env.RATE_LIMIT_MAX || 300),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, slow down.' },
+}));
 
 app.get('/api/health', async (_req, res) => {
   const exCount = (await getOne('SELECT COUNT(*) as n FROM exercises')).n;

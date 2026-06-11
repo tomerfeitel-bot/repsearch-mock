@@ -51,7 +51,9 @@ async function runExerciseProfileForUser(userId) {
     const e1rmPerWeek = new Map();
     const volumePerWeek = new Map();
     let bestLoggedSingle = null;
-    weeks.forEach(async (w, i) => {
+    // Sequential await: forEach(async) let these writes escape the caller's
+    // transaction and turned any constraint error into an unhandled rejection.
+    for (const [i, w] of weeks.entries()) {
       const wkSets = byWeek.get(w);
       const sessions = new Set(wkSets.map((s) => s.workout_id)).size;
       const avgReps = wkSets.reduce((a, s) => a + s.reps, 0) / wkSets.length;
@@ -141,7 +143,7 @@ async function runExerciseProfileForUser(userId) {
           [rowId, userId, exerciseId, w, ...cols]
         );
       }
-    });
+    }
   }
 }
 

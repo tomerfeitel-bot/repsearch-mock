@@ -20,10 +20,12 @@ if (lanUrls.length > 0) {
 }
 
 const children = [
-  spawn(process.execPath, ['index.js'], {
+  spawn(process.execPath, ['--env-file-if-exists=.env', 'index.js'], {
     cwd: join(root, 'server'),
     stdio: 'inherit',
     shell: false,
+    // Drop inherited PORT (e.g. from tooling) — the vite proxy expects the API on 3002
+    env: Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'PORT')),
   }),
   spawn(process.execPath, [join(root, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '0.0.0.0', '--port', port], {
     cwd: root,

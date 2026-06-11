@@ -452,7 +452,7 @@ async function runQuery(db, opts) {
       ${from}
       WHERE ${whereParts.join(' AND ')}
       GROUP BY bucket
-      HAVING n >= ?
+      HAVING COUNT(DISTINCT u.id) >= ?
       ORDER BY ${bucketOrderSort}
   `
   const groupParams = [...params, minCohort]
@@ -463,7 +463,9 @@ async function runQuery(db, opts) {
     rows = (await db.appQuery(groupSql, groupParams)).rows
     totalCohort = (await db.appQuery(cohortSql, params)).rows[0].n
   } catch (err) {
-    return { error: 'Query failed', detail: err.message }
+    // DB error text can leak schema/SQL internals — log it, never return it.
+    console.error('[research] query failed:', err.message)
+    return { error: 'Query failed' }
   }
 
   return {
@@ -541,7 +543,8 @@ async function previewQuery(db, opts) {
   try {
     baseMatchedUsers = (await db.appQuery(countSql, params)).rows[0].n || 0
   } catch (err) {
-    return { error: 'Preview failed', detail: err.message }
+    console.error('[research] preview failed:', err.message)
+    return { error: 'Preview failed' }
   }
 
   const variables = await Promise.all(groupBys.map(async groupBy => {

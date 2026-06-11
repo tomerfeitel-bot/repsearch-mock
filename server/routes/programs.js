@@ -587,6 +587,9 @@ router.post('/:id/phase-decision', authRequired, async (req, res) => {
 router.get('/:id/results', authRequired, async (req, res) => {
   const program = await getOne('SELECT * FROM programs WHERE id = ?', [req.params.id]);
   if (!program) return res.status(404).json({ error: 'Program not found' });
+  if (program.visibility !== 'public' && program.user_id !== req.user.id) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
   const rows = await getAll(
     `SELECT uep.exercise_id, e.name AS exercise_name, e.primary_muscle,

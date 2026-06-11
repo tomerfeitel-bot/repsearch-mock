@@ -174,6 +174,8 @@ router.get('/', authRequired, async (req, res) => {
   }
 
   if (type === 'all' || type === 'prs') {
+    // PRs surface only when the owner deliberately shared them (feed_posts row),
+    // at the visibility they chose — never straight from the prs table.
     let pRows;
     if (scope === 'following') {
       if (scopeIds.length) {
@@ -183,10 +185,11 @@ router.get('/', authRequired, async (req, res) => {
                   fp.caption AS feed_caption, fp.created_at AS posted_at
              FROM prs p
              JOIN users u ON u.id = p.user_id
-             LEFT JOIN feed_posts fp ON fp.source_type = 'pr' AND fp.source_id = p.id AND fp.user_id = p.user_id
+             JOIN feed_posts fp ON fp.source_type = 'pr' AND fp.source_id = p.id AND fp.user_id = p.user_id
+                  AND fp.visibility IN ('public', 'followers')
              LEFT JOIN exercises e ON e.id = p.exercise_id
             WHERE p.user_id IN (${placeholders})
-            ORDER BY COALESCE(fp.created_at, p.date || '') DESC LIMIT ?`,
+            ORDER BY fp.created_at DESC LIMIT ?`,
           [...scopeIds, limit + offset]
         );
       } else {
@@ -197,12 +200,12 @@ router.get('/', authRequired, async (req, res) => {
         `SELECT p.*, u.username, e.name AS exercise_name,
                 fp.caption AS feed_caption, fp.created_at AS posted_at
            FROM prs p
-           JOIN users u ON u.id = p.user_id
-           JOIN users uu ON uu.id = p.user_id AND uu.is_private = 0
-           LEFT JOIN feed_posts fp ON fp.source_type = 'pr' AND fp.source_id = p.id AND fp.user_id = p.user_id
+           JOIN users u ON u.id = p.user_id AND u.is_private = 0
+           JOIN feed_posts fp ON fp.source_type = 'pr' AND fp.source_id = p.id AND fp.user_id = p.user_id
+                AND fp.visibility = 'public'
            LEFT JOIN exercises e ON e.id = p.exercise_id
           WHERE p.user_id != ?
-          ORDER BY COALESCE(fp.created_at, p.date || '') DESC LIMIT ?`,
+          ORDER BY fp.created_at DESC LIMIT ?`,
         [userId, limit + offset]
       );
     }
@@ -226,6 +229,9 @@ router.get('/', authRequired, async (req, res) => {
       params.push(userId);
     }
     if (scope !== 'following' || scopeIds.length) {
+      // Progression moments are derived from private workout data; like PRs they
+      // only appear once deliberately shared, at the chosen visibility.
+      const fpVisibility = scope === 'following' ? `fp.visibility IN ('public', 'followers')` : `fp.visibility = 'public'`;
       const progressionLimit = limit + offset;
       const progRows = await getAll(
         `SELECT a.id, a.user_id, a.exercise_id, a.week, a.estimated_1rm AS curr_1rm, a.updated_at,
@@ -237,9 +243,10 @@ router.get('/', authRequired, async (req, res) => {
            FROM user_exercise_profile a
            JOIN users u ON u.id = a.user_id
            LEFT JOIN exercises e ON e.id = a.exercise_id
-           LEFT JOIN feed_posts fp ON fp.source_type = 'progression' AND fp.source_id = a.id AND fp.user_id = a.user_id
+           JOIN feed_posts fp ON fp.source_type = 'progression' AND fp.source_id = a.id AND fp.user_id = a.user_id
+                AND ${fpVisibility}
           WHERE a.estimated_1rm IS NOT NULL ${scopeFilter}
-          ORDER BY COALESCE(fp.created_at, a.updated_at) DESC LIMIT ?`,
+          ORDER BY fp.created_at DESC LIMIT ?`,
         [...params, progressionLimit]
       );
       for (const r of progRows) {
