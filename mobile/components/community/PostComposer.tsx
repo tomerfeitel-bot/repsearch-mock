@@ -158,8 +158,10 @@ export default function PostComposer({
       );
       return;
     }
-    // The study explorer lands in Session 5.
-    toast?.('The study builder arrives in Session 5', 'info');
+    // Study: the web links to /study (saved questions become pickable here on
+    // return); mobile lands straight on the Explore builder tab.
+    onClose();
+    router.navigate('/study?tab=explore' as any);
   }
 
   const canSubmit =

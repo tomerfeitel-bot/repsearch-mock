@@ -50,19 +50,23 @@ export default function FlatHeader({
   action,
   tabs,
   collapse,
+  tabsMaxHeight = TABS_MAX_HEIGHT,
 }: {
   title: string;
   titleColor?: string;
   action?: ReactNode;
   tabs?: ReactNode;
   collapse?: ReturnType<typeof useDirectionalCollapse>['collapse'];
+  // Taller sub-navs (e.g. Study's two-line mode switch) pass their real height
+  // so the collapse animation doesn't clip them while expanded.
+  tabsMaxHeight?: number;
 }) {
   const insets = useSafeAreaInsets();
   const still = useSharedValue(0);
   const c = collapse ?? still;
 
   const tabsStyle = useAnimatedStyle(() => ({
-    maxHeight: interpolate(c.value, [0, 1], [TABS_MAX_HEIGHT, 0]),
+    maxHeight: interpolate(c.value, [0, 1], [tabsMaxHeight, 0]),
     opacity: 1 - c.value,
   }));
 

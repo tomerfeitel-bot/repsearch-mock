@@ -1,10 +1,10 @@
 # RepSearch mobile (Expo)
 
-Native iOS/Android port of the web app in `../src`. Built per `../docs/mobile-migration-plan.md` — Sessions 1 (foundation, auth, onboarding, tab shell), 2 (community & social screens), 3 (workout logger), and 4 (profile, builders, settings) are implemented. Versioned docs: https://docs.expo.dev/versions/v54.0.0/
+Native iOS/Android port of the web app in `../src`. Built per `../docs/mobile-migration-plan.md` — Sessions 1 (foundation, auth, onboarding, tab shell), 2 (community & social screens), 3 (workout logger), 4 (profile, builders, settings), and 5 (Progress + Study charts) are implemented. Versioned docs: https://docs.expo.dev/versions/v54.0.0/
 
-## Pinned to Expo SDK 54 — do not upgrade before Session 5
+## Expo SDK 54, now with an EAS dev-build requirement for charts
 
-Sessions 1–4 are verified in **Expo Go from the App Store / Play Store**, which only supports SDK 54 (Expo stopped shipping newer SDKs to the stores as of May 2026; SDK 55+ Expo Go requires a TestFlight beta). NativeWind v4 also officially targets SDK 54. Upgrade the SDK, if desired, in Session 5 when the project moves to an EAS development build.
+Sessions 1–4 are verified in **Expo Go from the App Store / Play Store**, which only supports SDK 54 (Expo stopped shipping newer SDKs to the stores as of May 2026). NativeWind v4 also officially targets SDK 54; `babel-preset-expo` stays pinned `~54.x` (the v56 preset breaks Hermes bytecode on RN 0.81). Session 5 added `victory-native` + `@shopify/react-native-skia` + `expo-dev-client`: **Skia has no native module in Expo Go**, so charts need an EAS development build (`eas.json` has the `development` profile). Everything chart-shaped goes through `components/charts/index.tsx`, which lazily `require`s the Skia-importing `ChartKit.tsx` only outside Expo Go and renders a "needs the dev build" notice inside it — so Expo Go still runs the whole app minus chart plots. An SDK upgrade is now unblocked (dev build, not store Expo Go) but deferred to Session 6 if wanted.
 
 ## Architecture
 
@@ -33,12 +33,19 @@ Sessions 1–4 are verified in **Expo Go from the App Store / Play Store**, whic
 - **Profile tab** (`app/(tabs)/profile.tsx`) ports `src/pages/Profile.jsx`: Profile/Plans/Check-in tabs under FlatHeader, `ProfileSummary` with the Edit-profile sheet (all EDIT_GROUPS fields; selects are PickerSheets, dates are native datetimepickers), gear sheet (units, private toggle, sign out, delete account). Check-in is `components/profile/DailyLogHub.tsx`. Note: the web's delete-account password prompt was dropped — since the Supabase migration the server deletes without verifying a password, so mobile uses a danger ConfirmSheet instead.
 - `PlansTab` reloads quietly on every screen focus (`useFocusEffect`) so plans saved in a pushed builder appear when popping back; the web got this for free from page remounts.
 
+## Progress & Study charts (Session 5)
+
+- **Chart kit:** `components/charts/ChartKit.tsx` is the ONLY module importing `victory-native`/Skia. It exposes `LineSeriesChart` (multi-series, dual-axis via `rightAxis`, `connectMissingData` = Recharts `connectNulls`), `BarsChart` (per-bar color/opacity = Recharts `<Cell>`, optional SD error whiskers), and `GroupedBarsChart` (cohort compare + dashed "your bucket" reference line). Hover tooltips became press readouts: `useChartPressState` → `matchedIndex` mirrored to React state, rendered as a bubble over the plot. Axis fonts use Skia `matchFont` (system monospace) until the Session-6 font pass.
+- **Progress** (`app/(tabs)/progress.tsx`, `components/progress/`): Overview (split-colored calendar + sessions/week bars + day sheet → "Save as template"), Lifts (single-lift line + Compare mode with up to 3 series, PickerSheet selects, native date pickers), Body (bodyweight/sleep/calories/protein dual-axis lines + measurement log sheet), Records (pins in AsyncStorage under `repsearch.progress.pinnedLifts`). Web URL params became route params (`tab`, `highlight`, `seed`) consumed once then cleared via `router.setParams`; tab swaps stay local state.
+- **Study** (`app/(tabs)/study.tsx`, `components/study/`, pure logic in `lib/studyState.ts` + full `lib/researchTheme.ts`): For You (poster wall — plain-View TrendMotif, works in Expo Go), Explore (5-step builder + `lib/queryParser.js`/`queryLexicon.js` natural-language search, verbatim JS copies), Evidence (saved questions + 2-study comparison), Library (**D7: exercise list only — search + 14 group accordions + video links; the web's 3D MuscleModel was explicitly not ported**). The web Study.jsx's `ConceptLab`/`LegacyExplore` dead code was not ported.
+- **Known divergence:** the search bar infers `targetType` from a parsed config (web leaves it undefined and `stateToPayload` silently drops the exercise/muscle scope — looks like a live web bug).
+- FlatHeader gained `tabsMaxHeight` for Study's two-line mode switch (default 48 clips it).
+
 ## Leftovers / stubs for later sessions
 
-- PostComposer "Create new" for **study** posts still toasts (the study explorer is Session 5).
 - `sharePost` (PostCard) shares plain text — nothing is deployed, so there is no post URL. Swap to a universal link in Session 6.
-- Study post attachments render the compact bar-row preview in both the feed and the thread; the full Victory/Skia chart variant is Session 5 (dev build).
-- Study/Progress tab screens are placeholders (CelebrationCard "View progress" lands on the placeholder until Session 5). Custom fonts (Inter / JetBrains Mono) not loaded yet; `lib/theme.ts` exports `monoFont` (system monospace) for numerals meanwhile.
+- Custom fonts (Inter / JetBrains Mono) not loaded yet; `lib/theme.ts` exports `monoFont` (system monospace) for numerals meanwhile.
+- The web Study page's radial background gradient is flattened to `STUDY_BG` (no expo-linear-gradient dependency); revisit in Session 6 polish if wanted.
 - The web `src/components/community/FeedCard.jsx` is dead code (nothing imports it); its planned double-tap heart lives on mobile `PostCard` instead (double-tap = upvote + Reanimated heart burst).
 
 ## Windows gotcha: typed-routes corruption while the dev server runs

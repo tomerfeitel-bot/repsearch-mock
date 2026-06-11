@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Line, Path, Polyline } from 'react-native-svg';
+import { CompareResultChart, SingleResultChart } from '@/components/study/ResultsChart';
 import { Avatar } from '@/components/ui/Avatar';
 import { labelStyle } from '@/lib/bubbleColors';
 import { colors, monoFont } from '@/lib/theme';
@@ -379,7 +380,7 @@ function Attachment({ item }: { item: PostItem }) {
       </HeroFrame>
     );
   }
-  if (item.kind === 'study') return <StudyAttachment a={a} />;
+  if (item.kind === 'study') return <StudyAttachment a={a} compact />;
   return null;
 }
 
@@ -392,15 +393,40 @@ export function HeroFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Study attachment. The web's full variant draws Recharts; charts are a
-// Session 5 / dev-build concern (Skia doesn't run in Expo Go), so both the
-// feed and the thread render the compact bar-row preview until then.
-export function StudyAttachment({ a }: { a: any }) {
+// Study attachment, matching the web's two variants: the feed shows the
+// compact bar-row preview; the post thread (compact=false) draws the full
+// Victory/Skia result chart (Session 5 — falls back to a dev-build notice in
+// Expo Go via components/charts).
+export function StudyAttachment({ a, compact = false }: { a: any; compact?: boolean }) {
   if (!a) return null;
   if (a.error) {
     return (
       <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 12 }}>
         <Text style={{ fontSize: 12, color: colors.inkSoft }}>{a.error}</Text>
+      </View>
+    );
+  }
+  if (!compact) {
+    return (
+      <View style={{ borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceAlt, padding: 12, overflow: 'hidden' }}>
+        <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 11, fontFamily: monoFont, color: colors.textMuted }}>
+            {a.mode === 'compare' ? 'cohort comparison' : `n=${a.totalCohortSize || 0}`}
+          </Text>
+          <Text numberOfLines={1} style={{ fontSize: 11, fontFamily: monoFont, color: colors.textMuted, maxWidth: '60%' }}>
+            {a.measure}
+          </Text>
+        </View>
+        {a.mode === 'compare' ? (
+          <CompareResultChart cohortA={a.cohortA} cohortB={a.cohortB} measure={a.measure} groupBy={a.groupBy} />
+        ) : (
+          <SingleResultChart
+            buckets={a.buckets || []}
+            measure={a.measure}
+            groupBy={a.groupBy}
+            totalCohortSize={a.totalCohortSize || 0}
+          />
+        )}
       </View>
     );
   }

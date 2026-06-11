@@ -57,6 +57,21 @@ Profile, builders, and settings are live in Expo Go (`mobile/app/(tabs)/profile.
 
 ---
 
+## Session 5 — COMPLETE (2026-06-11)
+
+Progress and Study are fully ported with Victory Native XL (Skia) charts (`mobile/app/(tabs)/progress.tsx`, `mobile/app/(tabs)/study.tsx`, `mobile/components/{charts,progress,study}/`). Outcomes future sessions must know:
+
+- **⚠️ Charts are NOT verifiable in Expo Go** — Skia's native module isn't in the store client. `expo-dev-client` + `mobile/eas.json` (development profile) are committed; the first EAS dev build is the verification step for this session. Everything else (builder forms, lists, For You posters) still runs in Expo Go: `components/charts/index.tsx` lazily requires the Skia-importing `ChartKit.tsx` only outside Expo Go (`lib/runtime.ts` `isExpoGo`) and shows a "needs the dev build" notice inside it.
+- **D7 decided (new gate): Study Library ships without the web's 3D muscle model** — exercise list only (search + 14 group accordions + video links). The R3F/GLB `MuscleModel.jsx` port is deferred; treat as its own future session if wanted (needs three/@react-three/fiber native/expo-gl).
+- The plan's "HistoryTab" no longer exists on web — the live tabs are Overview/Lifts/Body/Records with Compare folded into Lifts as a mode switch; mobile mirrors that. Records pins use AsyncStorage; deep links arrive as route params (`/progress?tab=lifts&highlight=<id>`, `?seed=<id>` → Compare).
+- The web Study.jsx `ConceptLab`/`LegacyExplore` blocks and `FeaturedQuestions.jsx`/`FindingsRow.jsx` components are **dead code** — not ported. `queryParser.js`/`queryLexicon.js` were copied verbatim into `mobile/lib/`. `researchTheme.ts` is now the full port (Session 2's composer trim is gone).
+- **Every remaining Session-2/3/4 stub is wired**: PostComposer "+ Create new" study → `/study?tab=explore`, study post attachments draw the full chart in the thread (compact bars stay in the feed), CelebrationCard "View progress" lands on real charts.
+- **Web bug flagged**: the web Explore search bar's parsed configs carry no `targetType`, so `stateToPayload` silently drops the exercise/muscle scope when running from search. Mobile infers it (see `mobile/AGENTS.md`).
+- Versions: victory-native 41.26.0, @shopify/react-native-skia 2.2.12 (SDK 54 pin), expo-dev-client ~6.0.21. `babel-preset-expo` stays pinned `~54.x`.
+- `/code-review` was run on this session's diff per the plan; findings were fixed before commit.
+
+---
+
 ## Context
 RepSearch is a React 19 + Vite web app (~15,000 lines, 80+ files). The backend has **already been migrated to Supabase** (Postgres + Supabase Auth), replacing the old SQLite + custom-JWT setup. This plan covers everything remaining: pre-work decisions, then building a native iOS + Android app via Expo React Native that matches the web app feature-for-feature. The backend is not rebuilt — the mobile app talks to the same Supabase project.
 

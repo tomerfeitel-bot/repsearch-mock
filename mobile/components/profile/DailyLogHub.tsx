@@ -226,7 +226,7 @@ export default function DailyLogHub({
       {/* Check-in */}
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <SectionTitle>Today's check-in</SectionTitle>
+          <SectionTitle>Today&apos;s check-in</SectionTitle>
           <Text style={{ fontSize: 11, fontFamily: monoFont, color: colors.inkSoft }}>{date}</Text>
         </View>
 
