@@ -48,10 +48,14 @@
 gambling, no mature themes). Answer "Yes" only to: Unrestricted user-generated
 content → mitigated per below.
 
-**⚠️ UGC review risk (Apple Guideline 1.2):** the app has a public feed but no
-report-content / block-user feature yet. Apple frequently rejects UGC apps for
-this. Either add report/block before submission or be prepared for a rejection
-cycle. (Flagged, not built — out of Session 6 scope unless you ask.)
+**UGC safety (Apple Guideline 1.2) — addressed 2026-06-12:** the app now ships
+report post/comment/user (⋯ menus + comment rows), block/unblock (mutual
+invisibility, enforced server-side), delete-own-post/comment, and an admin
+review queue at the web app's `/admin` (remove content / ban / dismiss; access
+via `ADMIN_EMAILS` in `server/.env`). When answering the App Review notes,
+state: users can report objectionable content and block abusive users in-app;
+reports are reviewed within 24 hours; offending content is removed and abusive
+accounts are banned via the moderation queue.
 
 **Screenshots checklist (per store: 6.7" + 6.1" iPhone; phone + 7"/10" tablet
 optional on Play):**

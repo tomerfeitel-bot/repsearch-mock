@@ -5,6 +5,7 @@ import Animated from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import DailyLogHub, { Toggle } from '@/components/profile/DailyLogHub';
 import ProfileSummary from '@/components/profile/ProfileSummary';
+import { BlockedUsersSheet } from '@/components/community/ModerationSheets';
 import PlansTab from '@/components/community/PlansTab';
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
 import FlatHeader, { useDirectionalCollapse } from '@/components/ui/FlatHeader';
@@ -273,6 +274,7 @@ function GearMenu({
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [blockedOpen, setBlockedOpen] = useState(false);
 
   useEffect(() => setForm(normalizeUser(user)), [user]);
 
@@ -401,6 +403,23 @@ function GearMenu({
         </Pressable>
       </FormBlock>
 
+      <FormBlock title="Community">
+        <Pressable
+          onPress={() => setBlockedOpen(true)}
+          style={{
+            alignSelf: 'flex-start',
+            minHeight: 44,
+            paddingHorizontal: 16,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: colors.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Blocked users</Text>
+        </Pressable>
+      </FormBlock>
+
       <FormBlock title="Danger zone">
         <Text style={{ fontSize: 14, lineHeight: 20, color: colors.textMuted }}>
           Deleting your account removes your workouts, comments, PRs, templates, and research rows.
@@ -434,6 +453,7 @@ function GearMenu({
         confirmLabel={deleting ? 'Deleting...' : 'Delete'}
         danger
       />
+      <BlockedUsersSheet open={blockedOpen} onClose={() => setBlockedOpen(false)} />
     </View>
   );
 }

@@ -1,6 +1,7 @@
 const express = require('express');
 const { runQuery, getOne, getAll, tx } = require('../db');
 const { authRequired } = require('../auth');
+const { notBlockedSql } = require('../moderation');
 const { nanoid, nowIso, safeStr, safeEnum, safeNum, safeInt } = require('../util');
 
 const router = express.Router();
@@ -40,16 +41,19 @@ async function loadTemplateFull(id) {
 
 router.get('/', authRequired, async (req, res) => {
   const includeDrafts = req.query.status === 'draft';
+  const uid = req.user.id;
+  const where = includeDrafts ?
+  "t.user_id = ? AND t.status = 'draft'" :
+  `(t.status IS NULL OR t.status = 'final') AND (t.user_id = ? OR (t.visibility = 'public' AND u.banned = 0)) AND ${notBlockedSql('t.user_id')}`;
+  const params = includeDrafts ? [uid] : [uid, uid, uid];
   const rows = await getAll(
     `SELECT t.*, u.username AS creator_username
        FROM workout_templates t
        JOIN users u ON u.id = t.user_id
-      WHERE ${includeDrafts ?
-    "t.user_id = ? AND t.status = 'draft'" :
-    "(t.status IS NULL OR t.status = 'final') AND (t.user_id = ? OR t.visibility = 'public')"}
+      WHERE ${where}
       ORDER BY (t.user_id = ?) DESC, t.usage_count DESC, t.created_at DESC
       LIMIT 100`,
-    [req.user.id, req.user.id]
+    [...params, uid]
   );
   res.json({ templates: rows });
 });
@@ -63,8 +67,10 @@ router.get('/start-suggestions', authRequired, async (req, res) => {
   );
   const popular = await getAll(
     `SELECT * FROM workout_templates WHERE visibility = 'public' AND user_id != ? AND (status IS NULL OR status = 'final')
+       AND ${notBlockedSql('user_id')}
+       AND NOT EXISTS (SELECT 1 FROM users bu WHERE bu.id = user_id AND bu.banned = 1)
        ORDER BY usage_count DESC, created_at DESC LIMIT 5`,
-    [req.user.id]
+    [req.user.id, req.user.id, req.user.id]
   );
   res.json({ mine, popular });
 });

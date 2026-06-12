@@ -17,10 +17,30 @@ async function userFromToken(token) {
   const { data, error } = await supabaseAdmin.auth.getUser(token)
   if (error || !data?.user) return null
   const profile = await getOne(
-    'SELECT id, email, username, onboarded FROM users WHERE id = ?',
+    'SELECT id, email, username, onboarded, banned FROM users WHERE id = ?',
     [data.user.id],
   )
-  return profile || null
+  // A banned account fails auth on every data route — moderation, not deletion.
+  if (!profile || profile.banned) return null
+  return profile
+}
+
+// Admin = email allow-listed in ADMIN_EMAILS (comma-separated). Env-based so
+// granting/revoking admin never requires editing the database.
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+)
+
+function isAdminUser(user) {
+  return !!(user?.email && ADMIN_EMAILS.has(user.email.toLowerCase()))
+}
+
+function adminRequired(req, res, next) {
+  authRequired(req, res, (err) => {
+    if (err) return next(err)
+    if (!isAdminUser(req.user)) return res.status(403).json({ error: 'Admin access required' })
+    next()
+  })
 }
 
 async function authSessionRequired(req, res, next) {
@@ -67,4 +87,4 @@ async function authOptional(req, _res, next) {
   }
 }
 
-module.exports = { supabaseAdmin, authSessionRequired, authRequired, authOptional }
+module.exports = { supabaseAdmin, authSessionRequired, authRequired, authOptional, adminRequired, isAdminUser }

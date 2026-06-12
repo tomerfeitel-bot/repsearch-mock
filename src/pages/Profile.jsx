@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useToast } from '../components/ui/Toast.jsx'
 import ProfileSummary from '../components/profile/ProfileSummary.jsx'
@@ -189,6 +190,7 @@ function EditProfileMenu({ user, updateUser, refresh, toast, onClose }) {
 }
 
 function GearMenu({ user, updateUser, refresh, logout, toast }) {
+  const navigate = useNavigate()
   const [form, setForm] = useState(() => normalizeUser(user))
   const [saving, setSaving] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -247,6 +249,13 @@ function GearMenu({ user, updateUser, refresh, logout, toast }) {
           {saving ? 'Saving...' : 'Save changes'}
         </button>
       </FormBlock>
+
+      {!!user.is_admin && (
+        <FormBlock title="Moderation">
+          <p className="text-sm text-[var(--text-muted)]">Review user reports: remove content, ban accounts, or dismiss.</p>
+          <button onClick={() => navigate('/admin')} className="mt-4 min-h-11 px-4 rounded-full border border-[var(--border)] active:scale-[0.98] text-sm font-bold text-[var(--text)] transition">Open report queue</button>
+        </FormBlock>
+      )}
 
       <FormBlock title="Danger zone">
         <p className="text-sm text-[var(--text-muted)]">Deleting your account permanently removes your profile, workouts, posts, comments, PRs, templates, programs, and research data from RepSearch.</p>

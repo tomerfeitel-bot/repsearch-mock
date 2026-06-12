@@ -1,7 +1,12 @@
 const express = require('express');
 const { getAll, getOne, runQuery } = require('../db');
 const { authRequired } = require('../auth');
+const { notBlockedSql } = require('../moderation');
 const { nanoid, nowIso, safeEnum, safeStr } = require('../util');
+
+// Block filtering below only touches the global-scope queries: blocking severs
+// the follow edges both ways and re-follows are rejected, so following-scope
+// results can't contain a blocked user.
 
 const router = express.Router();
 
@@ -165,9 +170,10 @@ router.get('/', authRequired, async (req, res) => {
            FROM workouts w
            JOIN users u ON u.id = w.user_id
            LEFT JOIN feed_posts fp ON fp.source_type = 'workout' AND fp.source_id = w.id AND fp.user_id = w.user_id
-          WHERE w.visibility = 'public' AND w.user_id != ? AND u.is_private = 0
+          WHERE w.visibility = 'public' AND w.user_id != ? AND u.is_private = 0 AND u.banned = 0
+            AND ${notBlockedSql('w.user_id')}
           ORDER BY COALESCE(fp.created_at, w.created_at) DESC LIMIT ?`,
-        [userId, limit + offset]
+        [userId, userId, userId, limit + offset]
       );
     }
     for (const w of wRows) {
@@ -202,13 +208,13 @@ router.get('/', authRequired, async (req, res) => {
         `SELECT p.*, u.username, e.name AS exercise_name,
                 fp.caption AS feed_caption, fp.created_at AS posted_at
            FROM prs p
-           JOIN users u ON u.id = p.user_id AND u.is_private = 0
+           JOIN users u ON u.id = p.user_id AND u.is_private = 0 AND u.banned = 0
            JOIN feed_posts fp ON fp.source_type = 'pr' AND fp.source_id = p.id AND fp.user_id = p.user_id
                 AND fp.visibility = 'public'
            LEFT JOIN exercises e ON e.id = p.exercise_id
-          WHERE p.user_id != ?
+          WHERE p.user_id != ? AND ${notBlockedSql('p.user_id')}
           ORDER BY fp.created_at DESC LIMIT ?`,
-        [userId, limit + offset]
+        [userId, userId, userId, limit + offset]
       );
     }
     for (const p of pRows) {
@@ -227,8 +233,8 @@ router.get('/', authRequired, async (req, res) => {
     } else if (scope === 'following' && !scopeIds.length) {
 
       // No follows -> no progression items
-    } else {scopeFilter = `AND a.user_id != ? AND u.is_private = 0`;
-      params.push(userId);
+    } else {scopeFilter = `AND a.user_id != ? AND u.is_private = 0 AND u.banned = 0 AND ${notBlockedSql('a.user_id')}`;
+      params.push(userId, userId, userId);
     }
     if (scope !== 'following' || scopeIds.length) {
       // Progression moments are derived from private workout data; like PRs they
@@ -277,8 +283,8 @@ router.get('/', authRequired, async (req, res) => {
     } else if (scope === 'following' && !scopeIds.length) {
       scopeFilter = 'AND 1 = 0';
     } else {
-      scopeFilter = 'AND p.user_id != ?';
-      params.push(userId);
+      scopeFilter = `AND p.user_id != ? AND ${notBlockedSql('p.user_id')}`;
+      params.push(userId, userId, userId);
     }
 
     const published = await getAll(
@@ -287,7 +293,7 @@ router.get('/', authRequired, async (req, res) => {
          FROM programs p
          JOIN users u ON u.id = p.user_id
         WHERE p.visibility = 'public' AND COALESCE(p.status, 'final') = 'final' ${scopeFilter}
-          ${scope === 'global' ? 'AND u.is_private = 0' : ''}
+          ${scope === 'global' ? 'AND u.is_private = 0 AND u.banned = 0' : ''}
         ORDER BY p.created_at DESC LIMIT ?`,
       [...params, limit + offset]
     );
@@ -308,8 +314,8 @@ router.get('/', authRequired, async (req, res) => {
          JOIN programs p ON p.id = pe.program_id
          JOIN users u ON u.id = pe.user_id
         WHERE p.visibility = 'public' AND COALESCE(p.status, 'final') = 'final'
-          ${scope === 'following' && scopeIds.length ? `AND pe.user_id IN (${scopeIds.map(() => '?').join(',')})` : scope === 'following' ? 'AND 1 = 0' : 'AND pe.user_id != ?'}
-          ${scope === 'global' ? 'AND u.is_private = 0' : ''}
+          ${scope === 'following' && scopeIds.length ? `AND pe.user_id IN (${scopeIds.map(() => '?').join(',')})` : scope === 'following' ? 'AND 1 = 0' : `AND pe.user_id != ? AND ${notBlockedSql('pe.user_id')}`}
+          ${scope === 'global' ? 'AND u.is_private = 0 AND u.banned = 0' : ''}
         ORDER BY pe.started_at DESC LIMIT ?`,
       [...params, limit + offset]
     );

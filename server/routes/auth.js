@@ -1,6 +1,6 @@
 const express = require('express')
 const { runQuery, getOne } = require('../db')
-const { authRequired, authSessionRequired } = require('../auth')
+const { authRequired, authSessionRequired, isAdminUser } = require('../auth')
 const { nowIso, userWithDerivedFields } = require('../util')
 
 const router = express.Router()
@@ -41,8 +41,10 @@ router.post('/profile', authSessionRequired, asyncHandler(async (req, res) => {
 }))
 
 router.get('/me', authRequired, asyncHandler(async (req, res) => {
-  const user = await getOne('SELECT * FROM users WHERE id = ?', [req.user.id])
-  res.json({ user: publicUser(user) })
+  const user = publicUser(await getOne('SELECT * FROM users WHERE id = ?', [req.user.id]))
+  // Derived from ADMIN_EMAILS, not a column — gates the web /admin page link.
+  if (user) user.is_admin = isAdminUser(user) ? 1 : 0
+  res.json({ user })
 }))
 
 module.exports = router

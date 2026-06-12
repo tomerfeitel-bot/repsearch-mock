@@ -155,6 +155,35 @@ export function usePosts(toast: ToastFn) {
     [toast],
   );
 
+  const deletePost = useCallback(
+    async (id: string) => {
+      try {
+        await api.del(`/posts/${encodeURIComponent(id)}`);
+        setFeed((prev) => prev.filter((item) => item.id !== id));
+        toast?.('Post deleted', 'success');
+        return true;
+      } catch (err: any) {
+        toast?.(err.message || 'Failed to delete post', 'error');
+        return false;
+      }
+    },
+    [toast],
+  );
+
+  const deleteComment = useCallback(
+    async (commentId: string) => {
+      try {
+        await api.del(`/posts/comments/${encodeURIComponent(commentId)}`);
+        toast?.('Comment deleted', 'success');
+        return true;
+      } catch (err: any) {
+        toast?.(err.message || 'Failed to delete comment', 'error');
+        return false;
+      }
+    },
+    [toast],
+  );
+
   const loadComposeOptions = useCallback(async () => {
     try {
       return await api.get('/posts/compose-options');
@@ -183,6 +212,8 @@ export function usePosts(toast: ToastFn) {
     setSaved,
     loadSaved,
     addComment,
+    deletePost,
+    deleteComment,
     loadComposeOptions,
   };
 }

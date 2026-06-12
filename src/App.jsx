@@ -20,6 +20,7 @@ import ConceptProfileMaterials from './pages/ConceptProfileMaterials.jsx'
 import Swatch from './pages/Swatch.jsx'
 import Profile from './pages/Profile.jsx'
 import UserProfile from './pages/UserProfile.jsx'
+import AdminReports from './pages/AdminReports.jsx'
 import PublicWorkout from './pages/PublicWorkout.jsx'
 import PostDetail from './pages/PostDetail.jsx'
 import TemplateBuilder from './pages/TemplateBuilder.jsx'
@@ -89,6 +90,7 @@ export default function App() {
           <Route path="/concepts/palette/:paletteId" element={<ConceptShowcase />} />
           <Route path="/concepts/swatch" element={<Swatch />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<AdminReports />} />
           <Route path="/user/:username" element={<UserProfile />} />
           <Route path="/user/:username/workout/:id" element={<PublicWorkout />} />
           <Route path="/auth" element={<Navigate to="/community" replace />} />

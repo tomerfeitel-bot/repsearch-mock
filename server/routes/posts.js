@@ -3,6 +3,7 @@ const { db, getAll, getOne, runQuery: dbRun, tx } = require('../db');
 const { authRequired } = require('../auth');
 const { nanoid, nowIso, safeStr, safeEnum } = require('../util');
 const { sanitizeLabels } = require('../postLabels');
+const { isBlockedEitherWay, notBlockedSql, removePost, removeComment } = require('../moderation');
 const { runQuery: researchQuery } = require('../research/queryEngine');
 
 const router = express.Router();
@@ -25,10 +26,12 @@ async function followingIds(userId) {
 }
 
 // Visibility gate shared by detail + every interaction (vote/save/comment):
-// a followers-only post is invisible — and untouchable — to non-followers.
+// a followers-only post is invisible — and untouchable — to non-followers,
+// and a block in either direction hides the post entirely.
 async function canViewPost(post, userId) {
   if (!post) return false;
   if (post.user_id === userId) return true;
+  if (await isBlockedEitherWay(userId, post.user_id)) return false;
   if (post.visibility !== 'followers') return true;
   return !!(await getOne('SELECT 1 AS x FROM follows WHERE follower_id = ? AND following_id = ?', [userId, post.user_id]));
 }
@@ -312,7 +315,10 @@ router.get('/', authRequired, async (req, res) => {
   } else {
     where.push(`p.visibility = 'public'`);
     where.push('u.is_private = 0');
+    where.push('u.banned = 0');
   }
+  where.push(notBlockedSql('p.user_id'));
+  params.push(userId, userId);
   if (kind) {where.push('p.kind = ?');params.push(kind);}
   if (label) {
     where.push('EXISTS (SELECT 1 FROM post_labels pl WHERE pl.post_id = p.id AND pl.label = ?)');
@@ -346,9 +352,9 @@ router.get('/saved', authRequired, async (req, res) => {
     `SELECT p.*, u.username FROM saved_posts sp
        JOIN posts p ON p.id = sp.post_id
        JOIN users u ON u.id = p.user_id
-      WHERE sp.user_id = ?
+      WHERE sp.user_id = ? AND ${notBlockedSql('p.user_id')}
       ORDER BY sp.created_at DESC`,
-    [userId]
+    [userId, userId, userId]
   );
   res.json({ items: await shapePostsBatch(rows, userId) });
 });
@@ -393,8 +399,8 @@ router.get('/compose-options', authRequired, async (req, res) => {
 // --- comment vote (must precede /:id) ---------------------------------------
 router.post('/comments/:commentId/vote', authRequired, async (req, res) => {
   const value = req.body?.value === -1 ? -1 : req.body?.value === 1 ? 1 : 0;
-  const comment = await getOne('SELECT id, post_id FROM comments WHERE id = ?', [req.params.commentId]);
-  if (!comment) return res.status(404).json({ error: 'Comment not found' });
+  const comment = await getOne('SELECT id, post_id, deleted FROM comments WHERE id = ?', [req.params.commentId]);
+  if (!comment || comment.deleted) return res.status(404).json({ error: 'Comment not found' });
   const post = await getOne('SELECT user_id, visibility FROM posts WHERE id = ?', [comment.post_id]);
   if (!(await canViewPost(post, req.user.id))) return res.status(403).json({ error: 'Forbidden' });
   const existing = await getOne('SELECT value FROM comment_votes WHERE comment_id = ? AND user_id = ?', [req.params.commentId, req.user.id]);
@@ -419,10 +425,13 @@ router.get('/:id', authRequired, async (req, res) => {
 });
 
 async function commentTree(postId, userId) {
+  // Blocked authors' comments vanish; replies under them re-root via the
+  // missing-parent fallback below. Soft-deleted comments stay as placeholders
+  // so their replies keep their place, but author and body are masked.
   const rows = await getAll(
     `SELECT c.*, u.username FROM comments c JOIN users u ON u.id = c.user_id
-      WHERE c.post_id = ?`,
-    [postId]
+      WHERE c.post_id = ? AND ${notBlockedSql('c.user_id')}`,
+    [postId, userId, userId]
   );
   const votes = new Map(
     (await getAll('SELECT comment_id, value FROM comment_votes WHERE user_id = ? AND comment_id IN (SELECT id FROM comments WHERE post_id = ?)', [userId, postId])).
@@ -433,9 +442,10 @@ async function commentTree(postId, userId) {
     nodes.set(r.id, {
       id: r.id,
       parent_id: r.parent_id,
-      user_id: r.user_id,
-      username: r.username,
-      body: r.body,
+      user_id: r.deleted ? null : r.user_id,
+      username: r.deleted ? null : r.username,
+      body: r.deleted ? '' : r.body,
+      deleted: r.deleted ? 1 : 0,
       score: r.score,
       created_at: r.created_at,
       viewer_vote: votes.get(r.id) || 0,
@@ -504,10 +514,27 @@ router.post('/:id/comments', authRequired, async (req, res) => {
     'INSERT INTO comments (id, post_id, parent_id, user_id, body, score, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)',
     [id, req.params.id, parentId, req.user.id, text, now]
   );
-  await dbRun('UPDATE posts SET comment_count = (SELECT COUNT(*) FROM comments WHERE post_id = ?) WHERE id = ?', [req.params.id, req.params.id]);
+  await dbRun('UPDATE posts SET comment_count = (SELECT COUNT(*) FROM comments WHERE post_id = ? AND deleted = 0) WHERE id = ?', [req.params.id, req.params.id]);
   res.status(201).json({
     comment: { id, post_id: req.params.id, parent_id: parentId, user_id: req.user.id, username: req.user.username, body: text, score: 0, created_at: now, viewer_vote: 0, children: [] }
   });
+});
+
+// --- delete own content (moderation) -----------------------------------------
+router.delete('/comments/:commentId', authRequired, async (req, res) => {
+  const comment = await getOne('SELECT id, post_id, user_id, deleted FROM comments WHERE id = ?', [req.params.commentId]);
+  if (!comment || comment.deleted) return res.status(404).json({ error: 'Comment not found' });
+  if (comment.user_id !== req.user.id) return res.status(403).json({ error: 'You can only delete your own comments' });
+  await removeComment(comment);
+  res.json({ ok: true });
+});
+
+router.delete('/:id', authRequired, async (req, res) => {
+  const post = await getOne('SELECT id, user_id FROM posts WHERE id = ?', [req.params.id]);
+  if (!post) return res.status(404).json({ error: 'Post not found' });
+  if (post.user_id !== req.user.id) return res.status(403).json({ error: 'You can only delete your own posts' });
+  await removePost(post.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

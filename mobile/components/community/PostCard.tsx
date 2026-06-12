@@ -41,10 +41,12 @@ export default function PostCard({
   item,
   onVote,
   onToggleSave,
+  onMenu,
 }: {
   item: PostItem;
   onVote: (id: string, value: number) => void;
   onToggleSave: (id: string, next: boolean) => void;
+  onMenu?: (item: PostItem) => void;
 }) {
   const router = useRouter();
   const meta = KIND_META[item.kind] || KIND_META.discussion;
@@ -160,6 +162,11 @@ export default function PostCard({
             <IconShare size={18} color={colors.textMuted} />
           </Pressable>
           <SaveButton saved={!!item.saved} onPress={() => onToggleSave(item.id, !item.saved)} flat />
+          {onMenu ? (
+            <Pressable onPress={() => onMenu(item)} accessibilityLabel="Post options" style={{ height: 36, width: 28, borderRadius: 999, alignItems: 'center', justifyContent: 'center' }}>
+              <IconDots size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
         </View>
       </View>
 
@@ -531,6 +538,16 @@ export function IconBookmark({ size = 18, filled = false, color = '#fff' }: { si
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'}>
       <Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function IconDots({ size = 18, color = '#fff' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <Circle cx={5} cy={12} r={1.8} />
+      <Circle cx={12} cy={12} r={1.8} />
+      <Circle cx={19} cy={12} r={1.8} />
     </Svg>
   );
 }

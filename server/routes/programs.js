@@ -1,6 +1,7 @@
 const express = require('express');
 const { runQuery, getOne, getAll, tx } = require('../db');
 const { authRequired } = require('../auth');
+const { notBlockedSql } = require('../moderation');
 const { nanoid, nowIso, safeStr, safeInt, safeEnum } = require('../util');
 
 const router = express.Router();
@@ -388,10 +389,10 @@ router.get('/', authRequired, async (req, res) => {
                 WHERE pe.program_id = p.id AND uep.progression_rate IS NOT NULL) AS avg_progression
          FROM programs p
          JOIN users u ON u.id = p.user_id
-        WHERE ${finalPublic} AND u.is_private = 0
+        WHERE ${finalPublic} AND u.is_private = 0 AND u.banned = 0 AND ${notBlockedSql('p.user_id')}
         ORDER BY avg_progression DESC NULLS LAST
         LIMIT ?`,
-      [limit]
+      [userId, userId, limit]
     );
   } else if (sort === 'for_you') {
     rows = await getAll(
@@ -401,10 +402,11 @@ router.get('/', authRequired, async (req, res) => {
          JOIN users u ON u.id = p.user_id
         WHERE ${finalPublic}
           AND (u.is_private = 0 OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?))
+          AND u.banned = 0 AND ${notBlockedSql('p.user_id')}
         ORDER BY (p.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?)) DESC,
                  enrollment_count DESC, p.created_at DESC
         LIMIT ?`,
-      [userId, userId, limit]
+      [userId, userId, userId, userId, limit]
     );
   } else {
     rows = await getAll(
@@ -412,10 +414,10 @@ router.get('/', authRequired, async (req, res) => {
               (SELECT COUNT(*) FROM program_enrollments WHERE program_id = p.id) AS enrollment_count
          FROM programs p
          JOIN users u ON u.id = p.user_id
-        WHERE ${finalPublic} AND u.is_private = 0
+        WHERE ${finalPublic} AND u.is_private = 0 AND u.banned = 0 AND ${notBlockedSql('p.user_id')}
         ORDER BY enrollment_count DESC, p.created_at DESC
         LIMIT ?`,
-      [limit]
+      [userId, userId, limit]
     );
   }
   res.json({ programs: await withProof(rows), sort });

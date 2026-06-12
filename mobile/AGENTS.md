@@ -47,10 +47,13 @@ Sessions 1–4 are verified in **Expo Go from the App Store / Play Store**, whic
 - **Deep-link params are constrained**: `lib/navParams.ts` `internalPath()` gates the builders' `returnTo` (internal `/...` paths only), and route params that reach API paths (`username`, post/template/program/workout ids) are `encodeURIComponent`-wrapped at the call sites. A `/security-review` of the whole branch found no findings above these defense-in-depth items.
 - `app.json`: v1.0.0, `runtimeVersion` policy `appVersion`, iOS Privacy Manifest required-reason entries, `ITSAppUsesNonExemptEncryption=false`. `eas.json`: development/preview/production profiles with matching update channels. `expo-updates` (~29.0.18) is installed for OTA; `eas init` + `eas update:configure` still pending (needs the owner's Expo login — see `../docs/app-store-prep.md` for the full pipeline + D5/D6 store metadata and `../docs/privacy-policy.md`).
 
+## Moderation (UGC safety, 2026-06-12)
+
+Apple Guideline 1.2 set, all enforced by the server (`server/routes/moderation.js` + block filters in posts/public/feed/programs/templates routes): report post (⋯ on PostCard / PostDetail top bar), report comment ("Report" on comment rows), report user (⋯ on the public-profile header), block/unblock (same menus; manager in Profile → gear → Blocked users), delete own posts/comments. `hooks/useModeration.ts` + `components/community/ModerationSheets.tsx` (ReportSheet / PostMenuSheet / BlockedUsersSheet). Blocked users vanish in both directions; a profile that blocked you renders as private. Admin review is the WEB app's `/admin` page (gated by `ADMIN_EMAILS` in `server/.env`). E2E: `npm run check:moderation` in `server/`.
+
 ## Leftovers / deferred
 
 - `sharePost` (PostCard) shares plain text — nothing is deployed, so there is no post URL. Swap to a universal link once a domain exists.
-- No report-content / block-user feature; flagged as an Apple Guideline 1.2 (UGC) rejection risk in `docs/app-store-prep.md`.
 - App icon/splash stay placeholder for TestFlight (decided in Session 6); swap files in `assets/images/` to replace.
 - Custom fonts (Inter / JetBrains Mono) not loaded yet; `lib/theme.ts` exports `monoFont` (system monospace) for numerals meanwhile.
 - The web Study page's radial background gradient is flattened to `STUDY_BG` (no expo-linear-gradient dependency); polish later if wanted.

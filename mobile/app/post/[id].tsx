@@ -15,6 +15,7 @@ import {
   AvatarWithDot,
   HeroFrame,
   IconComment,
+  IconDots,
   IconShare,
   KIND_META,
   SaveButton,
@@ -22,11 +23,13 @@ import {
   StudyAttachment,
   VotePill,
 } from '@/components/community/PostCard';
+import { PostMenuSheet, ReportSheet } from '@/components/community/ModerationSheets';
 import { ProgramDetailSheet, StartProgramSheet } from '@/components/community/PlansTab';
 import { Avatar } from '@/components/ui/Avatar';
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useModeration } from '@/hooks/useModeration';
 import { usePosts } from '@/hooks/usePosts';
 import { useWorkout } from '@/hooks/useWorkout';
 import { api } from '@/lib/api';
@@ -55,12 +58,20 @@ export default function PostDetailScreen() {
   const router = useRouter();
   const toast = useToast();
   const insets = useSafeAreaInsets();
-  const { getPost, votePost, voteComment, setSaved, addComment } = usePosts(toast);
+  const { user } = useAuth();
+  const { getPost, votePost, voteComment, setSaved, addComment, deletePost, deleteComment } = usePosts(toast);
+  const { block } = useModeration(toast);
   const [post, setPost] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState('');
   const [posting, setPosting] = useState(false);
+  // Moderation flow: top-bar ⋯ menu for the post, Report/Delete per comment.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ type: 'post' | 'comment'; id: string } | null>(null);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [deletePostOpen, setDeletePostOpen] = useState(false);
+  const [deleteCommentTarget, setDeleteCommentTarget] = useState<any>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,6 +111,23 @@ export default function PostDetailScreen() {
     } finally {
       setPosting(false);
     }
+  }
+
+  async function confirmBlock() {
+    setBlockOpen(false);
+    if (await block(post.user_id, post.username)) router.back();
+  }
+
+  async function confirmDeletePost() {
+    setDeletePostOpen(false);
+    if (await deletePost(post.id)) router.back();
+  }
+
+  async function confirmDeleteComment() {
+    const target = deleteCommentTarget;
+    setDeleteCommentTarget(null);
+    if (!target) return;
+    if (await deleteComment(target.id)) await load();
   }
 
   // The standout reply: highest-scored top-level comment.
@@ -162,6 +190,12 @@ export default function PostDetailScreen() {
             @{post.username}
           </Text>
         </View>
+        <Pressable
+          onPress={() => setMenuOpen(true)}
+          accessibilityLabel="Post options"
+          style={{ marginLeft: 'auto', height: 40, width: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+          <IconDots size={20} color={colors.textMuted} />
+        </Pressable>
       </View>
 
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
@@ -267,8 +301,11 @@ export default function PostDetailScreen() {
               depth={0}
               opUser={post.username}
               topReplyId={topReplyId}
+              viewerId={user?.id}
               onVote={voteComment}
               onReply={submitComment}
+              onReport={(node) => setReportTarget({ type: 'comment', id: node.id })}
+              onDelete={setDeleteCommentTarget}
               posting={posting}
             />
           ))}
@@ -321,6 +358,58 @@ export default function PostDetailScreen() {
           <Text style={{ fontSize: 14, fontWeight: '700', color: colors.accentInk }}>Comment</Text>
         </Pressable>
       </View>
+
+      <PostMenuSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        isOwn={post.user_id === user?.id}
+        username={post.username}
+        onReport={() => {
+          setMenuOpen(false);
+          setReportTarget({ type: 'post', id: post.id });
+        }}
+        onBlock={() => {
+          setMenuOpen(false);
+          setBlockOpen(true);
+        }}
+        onDelete={() => {
+          setMenuOpen(false);
+          setDeletePostOpen(true);
+        }}
+      />
+      <ReportSheet
+        open={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        targetType={reportTarget?.type ?? 'post'}
+        targetId={reportTarget?.id ?? null}
+      />
+      <ConfirmSheet
+        open={blockOpen}
+        onClose={() => setBlockOpen(false)}
+        onConfirm={confirmBlock}
+        title={`Block @${post.username}?`}
+        message="You won't see each other's posts, comments, workouts, or profiles. They won't be notified."
+        confirmLabel="Block"
+        danger
+      />
+      <ConfirmSheet
+        open={deletePostOpen}
+        onClose={() => setDeletePostOpen(false)}
+        onConfirm={confirmDeletePost}
+        title="Delete post?"
+        message="This removes the post and its comments for everyone. This cannot be undone."
+        confirmLabel="Delete"
+        danger
+      />
+      <ConfirmSheet
+        open={!!deleteCommentTarget}
+        onClose={() => setDeleteCommentTarget(null)}
+        onConfirm={confirmDeleteComment}
+        title="Delete comment?"
+        message="Replies to it will stay visible. This cannot be undone."
+        confirmLabel="Delete"
+        danger
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -330,16 +419,22 @@ function CommentNode({
   depth,
   opUser,
   topReplyId,
+  viewerId,
   onVote,
   onReply,
+  onReport,
+  onDelete,
   posting,
 }: {
   node: any;
   depth: number;
   opUser: string;
   topReplyId: string | null;
+  viewerId?: string;
   onVote: (id: string, value: number) => Promise<any>;
   onReply: (body: string, parentId: string | null, done?: () => void) => void;
+  onReport: (node: any) => void;
+  onDelete: (node: any) => void;
   posting: boolean;
 }) {
   const router = useRouter();
@@ -359,19 +454,26 @@ function CommentNode({
 
   const childCount = countReplies(node);
   const kids = node.children || [];
-  const isOp = node.username === opUser;
+  const isDeleted = !!node.deleted;
+  const isOwn = !isDeleted && viewerId && node.user_id === viewerId;
+  const isOp = !isDeleted && node.username === opUser;
   const isTop = node.id === topReplyId;
 
   return (
     <View style={{ paddingTop: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 8 }}>
-        <Pressable onPress={() => router.push(`/user/${node.username}`)} accessibilityLabel={`View ${node.username}`} style={{ marginTop: 2 }}>
-          <Avatar username={node.username} size="sm" />
+        <Pressable
+          onPress={() => !isDeleted && router.push(`/user/${node.username}`)}
+          accessibilityLabel={isDeleted ? 'Deleted comment' : `View ${node.username}`}
+          style={{ marginTop: 2 }}>
+          <Avatar username={isDeleted ? '?' : node.username} size="sm" />
         </Pressable>
         <View style={{ flex: 1, minWidth: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-            <Pressable onPress={() => router.push(`/user/${node.username}`)}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }}>{node.username}</Text>
+            <Pressable disabled={isDeleted} onPress={() => router.push(`/user/${node.username}`)}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: isDeleted ? colors.textMuted : colors.text }}>
+                {isDeleted ? '[deleted]' : node.username}
+              </Text>
             </Pressable>
             {isOp && (
               <View style={{ borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.emerald }}>
@@ -385,16 +487,34 @@ function CommentNode({
             )}
             <Text style={{ fontSize: 12, color: colors.textMuted }}>· {timeAgo(node.created_at)}</Text>
           </View>
-          <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: colors.text }}>{node.body}</Text>
+          {isDeleted ? (
+            <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, fontStyle: 'italic', color: colors.textMuted }}>
+              This comment was deleted.
+            </Text>
+          ) : (
+            <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: colors.text }}>{node.body}</Text>
+          )}
 
           <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-            <VotePill score={score} vote={vote} onVote={doVote} size="sm" />
-            <Pressable
-              onPress={() => setReplying((r) => !r)}
-              style={{ height: 32, paddingHorizontal: 12, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <IconComment size={15} color={colors.textMuted} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>Reply</Text>
-            </Pressable>
+            {!isDeleted && <VotePill score={score} vote={vote} onVote={doVote} size="sm" />}
+            {!isDeleted && (
+              <Pressable
+                onPress={() => setReplying((r) => !r)}
+                style={{ height: 32, paddingHorizontal: 12, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <IconComment size={15} color={colors.textMuted} />
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>Reply</Text>
+              </Pressable>
+            )}
+            {!isDeleted &&
+              (isOwn ? (
+                <Pressable onPress={() => onDelete(node)} style={{ height: 32, paddingHorizontal: 12, justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#fca5a5' }}>Delete</Text>
+                </Pressable>
+              ) : (
+                <Pressable onPress={() => onReport(node)} style={{ height: 32, paddingHorizontal: 12, justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>Report</Text>
+                </Pressable>
+              ))}
             {childCount > 0 && (
               <Pressable onPress={() => setCollapsed((c) => !c)} style={{ height: 32, paddingHorizontal: 12, justifyContent: 'center' }}>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>
@@ -456,8 +576,11 @@ function CommentNode({
                   depth={depth + 1}
                   opUser={opUser}
                   topReplyId={topReplyId}
+                  viewerId={viewerId}
                   onVote={onVote}
                   onReply={onReply}
+                  onReport={onReport}
+                  onDelete={onDelete}
                   posting={posting}
                 />
               ))}

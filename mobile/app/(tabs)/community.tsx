@@ -4,14 +4,18 @@ import { Pressable, RefreshControl, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 import DailyCheckinModal from '@/components/community/DailyCheckinModal';
+import { PostMenuSheet, ReportSheet } from '@/components/community/ModerationSheets';
 import PlansTab from '@/components/community/PlansTab';
 import PostCard from '@/components/community/PostCard';
 import PostComposer from '@/components/community/PostComposer';
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
 import FlatHeader, { useDirectionalCollapse } from '@/components/ui/FlatHeader';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import UnderlineTabs from '@/components/ui/UnderlineTabs';
+import { useAuth } from '@/hooks/useAuth';
 import { useDailyCheckin } from '@/hooks/useDailyCheckin';
+import { useModeration } from '@/hooks/useModeration';
 import { usePosts, type PostItem } from '@/hooks/usePosts';
 import { useSocial } from '@/hooks/useSocial';
 import { POST_LABELS } from '@/lib/postLabels';
@@ -62,8 +66,10 @@ export default function CommunityScreen() {
     createdTemplate?: string;
   }>();
   const [tab, setTab] = useState('feed');
-  const { feed, feedLoading, feedMeta, loadFeed, loadMore, patchFeedItem, votePost, setSaved, loadSaved } =
+  const { user } = useAuth();
+  const { feed, feedLoading, feedMeta, loadFeed, loadMore, patchFeedItem, votePost, setSaved, loadSaved, deletePost } =
     usePosts(toast);
+  const { block } = useModeration(toast);
   const { loadFollowing } = useSocial(toast);
   const {
     showModal: showDailyModal,
@@ -91,6 +97,11 @@ export default function CommunityScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [saved, setSavedList] = useState<PostItem[]>([]);
   const [savedLoading, setSavedLoading] = useState(false);
+  // Moderation flow: ⋯ menu on a card → report sheet / block confirm / delete confirm.
+  const [menuPost, setMenuPost] = useState<PostItem | null>(null);
+  const [reportPost, setReportPost] = useState<PostItem | null>(null);
+  const [blockPost, setBlockPost] = useState<PostItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PostItem | null>(null);
 
   const { collapse, onScroll } = useDirectionalCollapse();
 
@@ -161,6 +172,26 @@ export default function CommunityScreen() {
       await loadMore({ scope, sort, kind, label, q, limit: 20 });
     } finally {
       setLoadingMore(false);
+    }
+  }
+
+  async function confirmBlock() {
+    const target = blockPost;
+    setBlockPost(null);
+    if (!target) return;
+    if (await block(target.user_id, target.username)) {
+      // The server now filters this author everywhere; refresh + prune local copies.
+      setSavedList((prev) => prev.filter((p) => p.user_id !== target.user_id));
+      if (scope) loadFeed({ scope, sort, kind, label, q, limit: 20 });
+    }
+  }
+
+  async function confirmDelete() {
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    if (!target) return;
+    if (await deletePost(target.id)) {
+      setSavedList((prev) => prev.filter((p) => p.id !== target.id));
     }
   }
 
@@ -374,7 +405,7 @@ export default function CommunityScreen() {
           data={list}
           keyExtractor={(item: PostItem) => item.id}
           renderItem={({ item }: { item: PostItem }) => (
-            <PostCard item={item} onVote={onVote} onToggleSave={onToggleSave} />
+            <PostCard item={item} onVote={onVote} onToggleSave={onToggleSave} onMenu={setMenuPost} />
           )}
           onScroll={onScroll}
           scrollEventThrottle={16}
@@ -454,6 +485,48 @@ export default function CommunityScreen() {
           if (scope) loadFeed({ scope, sort, kind, label, q, limit: 20 });
           if (tab === 'saved') refreshSaved();
         }}
+      />
+      <PostMenuSheet
+        open={!!menuPost}
+        onClose={() => setMenuPost(null)}
+        isOwn={!!menuPost && menuPost.user_id === user?.id}
+        username={menuPost?.username}
+        onReport={() => {
+          setReportPost(menuPost);
+          setMenuPost(null);
+        }}
+        onBlock={() => {
+          setBlockPost(menuPost);
+          setMenuPost(null);
+        }}
+        onDelete={() => {
+          setDeleteTarget(menuPost);
+          setMenuPost(null);
+        }}
+      />
+      <ReportSheet
+        open={!!reportPost}
+        onClose={() => setReportPost(null)}
+        targetType="post"
+        targetId={reportPost?.id ?? null}
+      />
+      <ConfirmSheet
+        open={!!blockPost}
+        onClose={() => setBlockPost(null)}
+        onConfirm={confirmBlock}
+        title={`Block @${blockPost?.username}?`}
+        message="You won't see each other's posts, comments, workouts, or profiles. They won't be notified."
+        confirmLabel="Block"
+        danger
+      />
+      <ConfirmSheet
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title="Delete post?"
+        message="This removes the post and its comments for everyone. This cannot be undone."
+        confirmLabel="Delete"
+        danger
       />
     </View>
   );

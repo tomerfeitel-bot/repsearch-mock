@@ -49,6 +49,7 @@ app.use('/api/feed', require('./routes/feed'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/public', require('./routes/public'));
 app.use('/api/research', require('./routes/research'));
+app.use('/api/moderation', require('./routes/moderation'));
 
 app.use((err, _req, res, next) => {
   void next;

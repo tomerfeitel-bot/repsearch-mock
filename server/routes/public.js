@@ -3,6 +3,7 @@ const { getOne, getAll } = require('../db');
 const { authOptional } = require('../auth');
 const { userWithDerivedFields } = require('../util');
 const { canViewWorkout } = require('../visibility');
+const { isBlocked } = require('../moderation');
 
 const router = express.Router();
 
@@ -49,12 +50,33 @@ function stripPrivateFields(user, isSelf) {
 
 router.get('/users/:username', authOptional, async (req, res) => {
   const user = userWithDerivedFields(await getOne(
-    `SELECT ${USER_COLUMNS} FROM users WHERE username = ?`,
+    `SELECT ${USER_COLUMNS}, banned FROM users WHERE username = ?`,
     [req.params.username]
   ));
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   const isSelf = req.user && req.user.id === user.id;
+  // Banned accounts disappear from public view entirely.
+  if (user.banned && !isSelf) return res.status(404).json({ error: 'User not found' });
+  delete user.banned;
+
+  // If they blocked the viewer, behave exactly like a private profile — no
+  // signal. If the viewer blocked them, return a stub the UI renders as the
+  // "you blocked @x" state with an Unblock action.
+  if (req.user && (await isBlocked(user.id, req.user.id))) {
+    return res.json({
+      user: { id: user.id, username: user.username, is_private: 1 },
+      private: true
+    });
+  }
+  if (req.user && (await isBlocked(req.user.id, user.id))) {
+    return res.json({
+      user: { id: user.id, username: user.username },
+      blocked: true,
+      viewer: { is_self: false, follows_them: false, blocked: true }
+    });
+  }
+
   const followsThem = req.user ?
   !!(await getOne('SELECT 1 AS x FROM follows WHERE follower_id = ? AND following_id = ?', [req.user.id, user.id])) :
   false;
