@@ -487,7 +487,11 @@ async function runQuery(db, opts) {
 
 async function previewQuery(db, opts) {
   const filters = Array.isArray(opts.filters) ? opts.filters : []
-  const groupBys = Array.isArray(opts.groupBys) ? opts.groupBys.filter(Boolean) : []
+  // Each axis fires two aggregate queries; dedupe + cap (matching /scan's
+  // limit) so a hostile payload can't fan out unbounded work.
+  const groupBys = Array.isArray(opts.groupBys)
+    ? [...new Set(opts.groupBys.filter(Boolean))].slice(0, 24)
+    : []
   const measureKey = opts.measure
   const exerciseId = opts.exerciseId
   const muscle = opts.muscle

@@ -1,5 +1,5 @@
 const express = require('express');
-const { getAll } = require('../db');
+const { getAll, getOne } = require('../db');
 const { authRequired } = require('../auth');
 
 const router = express.Router();
@@ -74,7 +74,7 @@ function cleanMetric(value) {
   return METRICS.includes(value) ? value : 'top_set';
 }
 
-async function rowsForUser(userId, query = {}) {
+function liftRowsWhere(userId, query = {}) {
   const wheres = ['w.user_id = ?', 'e.id IS NOT NULL'];
   const params = [userId];
   if (query.from) {wheres.push('w.date >= ?');params.push(String(query.from));}
@@ -98,6 +98,12 @@ async function rowsForUser(userId, query = {}) {
     wheres.push(`COALESCE(s.set_type, 'working') IN (${SET_TYPES.map(() => '?').join(',')})`);
     params.push(...SET_TYPES);
   }
+  wheres.push('s.weight_kg IS NOT NULL', 's.reps IS NOT NULL');
+  return { wheres, params };
+}
+
+async function rowsForUser(userId, query = {}) {
+  const { wheres, params } = liftRowsWhere(userId, query);
   return await getAll(
     `SELECT w.id AS workout_id, w.date, w.created_at, w.workout_day, w.duration_min,
             w.program_id, w.template_id, w.session_effort, w.feel_rating, w.run_classification,
@@ -108,9 +114,21 @@ async function rowsForUser(userId, query = {}) {
        JOIN workouts w ON w.id = s.workout_id
        JOIN exercises e ON e.id = s.exercise_id
       WHERE ${wheres.join(' AND ')}
-        AND s.weight_kg IS NOT NULL
-        AND s.reps IS NOT NULL
       ORDER BY w.date ASC, w.created_at ASC, s.session_position ASC, s.set_number ASC`,
+    params
+  );
+}
+
+// The exercise picker only needs one row per exercise — aggregating in SQL
+// avoids streaming the user's entire set history just to build the list.
+async function exercisesForUser(userId, query = {}) {
+  const { wheres, params } = liftRowsWhere(userId, query);
+  return await getAll(
+    `SELECT DISTINCT s.exercise_id, e.name AS exercise_name, e.primary_muscle, e.equipment_type
+       FROM sets s
+       JOIN workouts w ON w.id = s.workout_id
+       JOIN exercises e ON e.id = s.exercise_id
+      WHERE ${wheres.join(' AND ')}`,
     params
   );
 }
@@ -304,7 +322,21 @@ function bodySummary(history) {
 }
 
 router.get('/summary', authRequired, async (req, res) => {
-  const workouts = await workoutRows(req.user.id);
+  // Dates only — joining every set just to count workouts made this the most
+  // expensive query on the most-visited tab.
+  const workouts = await getAll(
+    'SELECT date FROM workouts WHERE user_id = ? ORDER BY date DESC, created_at DESC',
+    [req.user.id]
+  );
+  const lastWorkout = await getOne(
+    `SELECT w.*,
+            (SELECT COUNT(*) FROM sets s WHERE s.workout_id = w.id) AS set_count,
+            (SELECT COUNT(DISTINCT s.exercise_id) FROM sets s WHERE s.workout_id = w.id) AS exercise_count
+       FROM workouts w
+      WHERE w.user_id = ?
+      ORDER BY w.date DESC, w.created_at DESC LIMIT 1`,
+    [req.user.id]
+  );
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const weekStart = weekKey(isoLocal(now));
@@ -315,7 +347,7 @@ router.get('/summary', authRequired, async (req, res) => {
       totalWorkouts: workouts.length,
       sessionsThisMonth,
       trainingDaysThisWeek,
-      lastWorkout: workouts[0] || null,
+      lastWorkout: lastWorkout || null,
       weeklySessions: computeWeeklySessions(workouts)
     }
   });
@@ -334,9 +366,15 @@ router.get('/history', authRequired, async (req, res) => {
 });
 
 router.get('/lifts', authRequired, async (req, res) => {
-  const rows = await rowsForUser(req.user.id, req.query);
+  const metric = cleanMetric(req.query.metric);
+  const groupBy = cleanGroup(req.query.group_by);
+  // Without an exercise filter only the picker list is needed; skip loading
+  // the user's full set history.
+  const exerciseRows = req.query.exercise_id ?
+  await rowsForUser(req.user.id, req.query) :
+  await exercisesForUser(req.user.id, req.query);
   const exerciseMap = new Map();
-  for (const row of rows) {
+  for (const row of exerciseRows) {
     exerciseMap.set(row.exercise_id, {
       id: row.exercise_id,
       name: row.exercise_name,
@@ -345,10 +383,8 @@ router.get('/lifts', authRequired, async (req, res) => {
       equipment_type: row.equipment_type
     });
   }
-  const metric = cleanMetric(req.query.metric);
-  const groupBy = cleanGroup(req.query.group_by);
   const series = req.query.exercise_id ?
-  buildSeries(rows, metric, groupBy, req.query) :
+  buildSeries(exerciseRows, metric, groupBy, req.query) :
   [];
   res.json({
     exercises: [...exerciseMap.values()].sort((a, b) => a.name.localeCompare(b.name)),

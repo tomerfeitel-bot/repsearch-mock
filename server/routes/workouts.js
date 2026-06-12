@@ -1,7 +1,7 @@
 const express = require('express');
-const { db, runQuery, getOne, getAll } = require('../db');
+const { runQuery, getOne, getAll, tx } = require('../db');
 const { authRequired } = require('../auth');
-const { nanoid, nowIso, safeNum, safeInt, safeStr, safeEnum, safeBool } = require('../util');
+const { nanoid, nowIso, safeNum, safeInt, safeStr, safeEnum, safeBool, safeDateStr } = require('../util');
 const { canViewWorkout } = require('../visibility');
 
 const router = express.Router();
@@ -42,8 +42,8 @@ function addHours(iso, hours) {
   return new Date(new Date(iso).getTime() + (Number(hours) || 0) * 60 * 60 * 1000).toISOString();
 }
 
-async function orderedProgramSessions(programId) {
-  return await getAll(
+async function orderedProgramSessions(t, programId) {
+  return await t.getAll(
     `SELECT pw.*, pb.sort_order AS block_sort_order
        FROM program_workouts pw
        LEFT JOIN program_blocks pb ON pb.id = pw.block_id
@@ -53,9 +53,9 @@ async function orderedProgramSessions(programId) {
   );
 }
 
-async function advanceProgramPhase(userId, programId, sessionId, runClassification, completedAt) {
+async function advanceProgramPhase(t, userId, programId, sessionId, runClassification, completedAt) {
   if (!programId) return null;
-  const enrollment = await getOne(
+  const enrollment = await t.getOne(
     `SELECT pe.*, p.is_open_ended
        FROM program_enrollments pe
        JOIN programs p ON p.id = pe.program_id
@@ -63,9 +63,9 @@ async function advanceProgramPhase(userId, programId, sessionId, runClassificati
     [userId, programId]
   );
   if (!enrollment) return null;
-  const sessions = await orderedProgramSessions(programId);
+  const sessions = await orderedProgramSessions(t, programId);
   if (!sessions.length) return null;
-  const phase = await getOne(
+  const phase = await t.getOne(
     'SELECT * FROM user_program_phase WHERE user_id = ? AND program_id = ?',
     [userId, programId]
   );
@@ -80,21 +80,21 @@ async function advanceProgramPhase(userId, programId, sessionId, runClassificati
     nextSession = sessions[0];
   }
   if (!nextSession) {
-    await runQuery(
+    await t.runQuery(
       `UPDATE program_enrollments
           SET status = 'completed', completed_at = ?
         WHERE id = ?`,
       [completedAt, enrollment.id]
     );
     if (phase) {
-      await runQuery(
+      await t.runQuery(
         `UPDATE user_program_phase
             SET sequence_position = ?, next_session_id = NULL, next_suggested_at = NULL,
                 timing_status = 'completed', adaptation_decision = ?, updated_at = ?
           WHERE id = ?`,
         [currentIndex + 1, runClassification, now, phase.id]
       );
-      return await getOne('SELECT * FROM user_program_phase WHERE id = ?', [phase.id]);
+      return await t.getOne('SELECT * FROM user_program_phase WHERE id = ?', [phase.id]);
     }
     return null;
   }
@@ -103,30 +103,32 @@ async function advanceProgramPhase(userId, programId, sessionId, runClassificati
   const nextSuggestedAt = addHours(completedAt, window.ideal);
   const nextWeek = Math.max(1, Number(nextSession.week_number) || 1);
   if (phase) {
-    await runQuery(
+    await t.runQuery(
       `UPDATE user_program_phase
           SET week_number = ?, block_id = ?, sequence_position = ?, next_session_id = ?,
               next_suggested_at = ?, timing_status = 'on_track', adaptation_decision = ?, updated_at = ?
         WHERE id = ?`,
       [nextWeek, nextSession.block_id, nextIndex, nextSession.id, nextSuggestedAt, runClassification, now, phase.id]
     );
-    return await getOne('SELECT * FROM user_program_phase WHERE id = ?', [phase.id]);
+    return await t.getOne('SELECT * FROM user_program_phase WHERE id = ?', [phase.id]);
   }
 
   const phaseId = nanoid();
-  await runQuery(
+  await t.runQuery(
     `INSERT INTO user_program_phase (
        id, user_id, program_id, week_number, block_id, sequence_position,
        next_session_id, next_suggested_at, timing_status, adaptation_decision, started_at, updated_at
      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'on_track', ?, ?, ?)`,
     [phaseId, userId, programId, nextWeek, nextSession.block_id, nextIndex, nextSession.id, nextSuggestedAt, runClassification, completedAt, now]
   );
-  return await getOne('SELECT * FROM user_program_phase WHERE id = ?', [phaseId]);
+  return await t.getOne('SELECT * FROM user_program_phase WHERE id = ?', [phaseId]);
 }
 
 function cleanRir(value) {
-  if (value === '5+') return '5+';
-  return safeInt(value, { min: 0, max: 4 });
+  // The clients offer '5+' as a tier; sets.rir is an integer column in
+  // Postgres (SQLite tolerated the string), so store it as 5.
+  if (value === '5+') return 5;
+  return safeInt(value, { min: 0, max: 5 });
 }
 
 function cleanSet(rawSet) {
@@ -152,7 +154,7 @@ function cleanSet(rawSet) {
   };
 }
 
-async function detectPRs(userId, workoutSets, workoutDate) {
+async function detectPRs(t, userId, workoutSets, workoutDate) {
   const hits = [];
   const bestByRepTarget = new Map();
   for (const set of workoutSets) {
@@ -164,14 +166,14 @@ async function detectPRs(userId, workoutSets, workoutDate) {
   }
 
   for (const set of bestByRepTarget.values()) {
-    const existing = await getOne(
+    const existing = await t.getOne(
       'SELECT MAX(weight_kg) AS best FROM prs WHERE user_id = ? AND exercise_id = ? AND reps = ?',
       [userId, set.exercise_id, set.reps]
     );
     const prevBest = existing?.best || 0;
     if (set.weight_kg > prevBest) {
       const prId = nanoid();
-      await runQuery(
+      await t.runQuery(
         `INSERT INTO prs (id, user_id, exercise_id, weight_kg, reps, date, set_id)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [prId, userId, set.exercise_id, set.weight_kg, set.reps, workoutDate, set._setId]
@@ -211,7 +213,7 @@ router.post('/', authRequired, async (req, res) => {
   const userId = req.user.id;
   const id = nanoid();
   const now = nowIso();
-  const date = safeStr(body.date, 32) || now.slice(0, 10);
+  const date = safeDateStr(body.date) || now.slice(0, 10);
 
   const duration = safeInt(body.duration_min, { min: 0, max: 24 * 60 });
   const visibility = safeEnum(body.visibility, VISIBILITY) ?? 'private';
@@ -250,43 +252,49 @@ router.post('/', authRequired, async (req, res) => {
   map(([eid]) => eid);
   const positionByExercise = new Map(exerciseOrder.map((eid, i) => [eid, i + 1]));
 
-  await db.exec('BEGIN');
   try {
-    await runQuery(
-      `INSERT INTO workouts (
-         id, user_id, created_at, date, duration_min, start_time, notes, visibility,
-         program_id, template_id, workout_split_type, workout_day,
-         session_effort, feel_rating, adherence, substitutions_note, soreness_note, run_classification
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, now, date, duration, startTime, notes, visibility,
-      programId, templateId, splitType, day,
-      sessionEffort, feelRating, adherence, subsNote, soreness, runClassification]
-    );
-
-    for (const s of saveableSets) {
-      const setId = nanoid();
-      s._setId = setId;
-      const pos = positionByExercise.get(s.exercise_id);
-      await runQuery(
-        `INSERT INTO sets (
-           id, workout_id, user_id, exercise_id, set_number,
-           weight_kg, reps, rir, failure, rom_category, tempo_tag,
-           equipment_type, set_type, session_position,
-           session_set_order, rest_seconds, pain_flag, set_notes, planned_exercise_id, template_set_id, substitution_for
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [setId, id, userId, s.exercise_id, s.set_number,
-        s.weight_kg, s.reps, s.rir, s.failure, s.rom_category, s.tempo_tag,
-        s.equipment_type, s.set_type, pos,
-        s.session_set_order, s.rest_seconds, s.pain_flag, s.set_notes, s.planned_exercise_id, s.template_set_id, s.substitution_for]
+    const { prsHit, updatedPhase } = await tx(async (t) => {
+      await t.runQuery(
+        `INSERT INTO workouts (
+           id, user_id, created_at, date, duration_min, start_time, notes, visibility,
+           program_id, template_id, workout_split_type, workout_day,
+           session_effort, feel_rating, adherence, substitutions_note, soreness_note, run_classification
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, userId, now, date, duration, startTime, notes, visibility,
+        programId, templateId, splitType, day,
+        sessionEffort, feelRating, adherence, subsNote, soreness, runClassification]
       );
-    }
-    const prsHit = await detectPRs(userId, saveableSets, date);
-    const updatedPhase = await advanceProgramPhase(userId, programId, programSessionId, runClassification, now);
-    await db.exec('COMMIT');
+
+      for (const s of saveableSets) {
+        const setId = nanoid();
+        s._setId = setId;
+        const pos = positionByExercise.get(s.exercise_id);
+        await t.runQuery(
+          `INSERT INTO sets (
+             id, workout_id, user_id, exercise_id, set_number,
+             weight_kg, reps, rir, failure, rom_category, tempo_tag,
+             equipment_type, set_type, session_position,
+             session_set_order, rest_seconds, pain_flag, set_notes, planned_exercise_id, template_set_id, substitution_for
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [setId, id, userId, s.exercise_id, s.set_number,
+          s.weight_kg, s.reps, s.rir, s.failure, s.rom_category, s.tempo_tag,
+          s.equipment_type, s.set_type, pos,
+          s.session_set_order, s.rest_seconds, s.pain_flag, s.set_notes, s.planned_exercise_id, s.template_set_id, s.substitution_for]
+        );
+      }
+      if (templateId) {
+        await t.runQuery(
+          'UPDATE workout_templates SET usage_count = usage_count + 1 WHERE id = ?',
+          [templateId]
+        );
+      }
+      const prsHit = await detectPRs(t, userId, saveableSets, date);
+      const updatedPhase = await advanceProgramPhase(t, userId, programId, programSessionId, runClassification, now);
+      return { prsHit, updatedPhase };
+    });
     const workout = await loadWorkoutWithSets(id, userId);
     res.json({ workout, prsHit, phase: updatedPhase });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Workout save failed:', err);
     res.status(500).json({ error: 'Failed to save workout' });
   }
@@ -375,27 +383,26 @@ router.delete('/:id', authRequired, async (req, res) => {
   const w = await getOne('SELECT user_id FROM workouts WHERE id = ?', [req.params.id]);
   if (!w) return res.status(404).json({ error: 'Workout not found' });
   if (w.user_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
-  await db.exec('BEGIN');
   try {
-    const prRows = await getAll(
-      `SELECT p.id
-         FROM prs p
-         JOIN sets s ON s.id = p.set_id
-        WHERE s.workout_id = ? AND p.user_id = ?`,
-      [req.params.id, req.user.id]
-    );
-    if (prRows.length) {
-      const placeholders = prRows.map(() => '?').join(',');
-      const prIds = prRows.map((p) => p.id);
-      await runQuery(`DELETE FROM feed_posts WHERE source_type = 'pr' AND source_id IN (${placeholders})`, prIds);
-      await runQuery(`DELETE FROM prs WHERE id IN (${placeholders})`, prIds);
-    }
-    await runQuery('DELETE FROM feed_posts WHERE source_type = ? AND source_id = ?', ['workout', req.params.id]);
-    await runQuery('DELETE FROM workouts WHERE id = ?', [req.params.id]);
-    await db.exec('COMMIT');
+    await tx(async (t) => {
+      const prRows = await t.getAll(
+        `SELECT p.id
+           FROM prs p
+           JOIN sets s ON s.id = p.set_id
+          WHERE s.workout_id = ? AND p.user_id = ?`,
+        [req.params.id, req.user.id]
+      );
+      if (prRows.length) {
+        const placeholders = prRows.map(() => '?').join(',');
+        const prIds = prRows.map((p) => p.id);
+        await t.runQuery(`DELETE FROM feed_posts WHERE source_type = 'pr' AND source_id IN (${placeholders})`, prIds);
+        await t.runQuery(`DELETE FROM prs WHERE id IN (${placeholders})`, prIds);
+      }
+      await t.runQuery('DELETE FROM feed_posts WHERE source_type = ? AND source_id = ?', ['workout', req.params.id]);
+      await t.runQuery('DELETE FROM workouts WHERE id = ?', [req.params.id]);
+    });
     res.json({ ok: true });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Workout delete failed:', err);
     res.status(500).json({ error: 'Failed to delete workout' });
   }

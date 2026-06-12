@@ -23,12 +23,13 @@ router.put('/', authRequired, async (req, res) => {
   const json = JSON.stringify(state);
   if (json.length > 200000) return res.status(413).json({ error: 'State too large' });
   const now = nowIso();
-  const existing = await getOne('SELECT user_id FROM active_workouts WHERE user_id = ?', [req.user.id]);
-  if (existing) {
-    await runQuery('UPDATE active_workouts SET state_json = ?, updated_at = ? WHERE user_id = ?', [json, now, req.user.id]);
-  } else {
-    await runQuery('INSERT INTO active_workouts (user_id, state_json, updated_at) VALUES (?, ?, ?)', [req.user.id, json, now]);
-  }
+  // Atomic upsert: two in-flight debounced autosaves must not race a
+  // SELECT-then-INSERT into a duplicate-key failure.
+  await runQuery(
+    `INSERT INTO active_workouts (user_id, state_json, updated_at) VALUES (?, ?, ?)
+     ON CONFLICT (user_id) DO UPDATE SET state_json = EXCLUDED.state_json, updated_at = EXCLUDED.updated_at`,
+    [req.user.id, json, now]
+  );
   res.json({ ok: true, updated_at: now });
 });
 

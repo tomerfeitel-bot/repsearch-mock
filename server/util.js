@@ -29,6 +29,16 @@ function safeEnum(value, allowed) {
   return allowed.includes(value) ? value : null
 }
 
+// Calendar-date strings are compared lexically (date >= ?) and used in unique
+// keys, so anything that isn't a real YYYY-MM-DD must be rejected.
+function safeDateStr(value) {
+  const s = safeStr(value, 32)
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null
+  const d = new Date(`${s}T00:00:00Z`)
+  if (isNaN(d.getTime())) return null
+  return s
+}
+
 function safeBool(value) {
   if (value === true || value === 1 || value === '1' || value === 'true') return 1
   if (value === false || value === 0 || value === '0' || value === 'false') return 0
@@ -86,6 +96,6 @@ function estimate1RM(weight, reps) {
 
 module.exports = {
   nanoid, nowIso,
-  safeNum, safeInt, safeStr, safeEnum, safeBool,
+  safeNum, safeInt, safeStr, safeEnum, safeBool, safeDateStr,
   ageRangeFromDob, trainingAgeFromStart, userWithDerivedFields, isoWeek, estimate1RM,
 }

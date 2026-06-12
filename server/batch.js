@@ -1,4 +1,4 @@
-const { db, getAll, getOne, runQuery } = require('./db');
+const { getAll, tx } = require('./db');
 const { nanoid, nowIso, isoWeek, estimate1RM } = require('./util');
 
 function stddev(values) {
@@ -21,9 +21,9 @@ function linearSlope(points) {
   return (n * sumXY - sumX * sumY) / denom;
 }
 
-async function runExerciseProfileForUser(userId) {
+async function runExerciseProfileForUser(t, userId) {
   // For each (user, exercise, week) compute aggregates over weeks ending at that point.
-  const sets = await getAll(
+  const sets = await t.getAll(
     `SELECT s.*, w.date FROM sets s JOIN workouts w ON w.id = s.workout_id
       WHERE s.user_id = ? AND s.weight_kg IS NOT NULL AND s.reps IS NOT NULL AND s.set_type != 'warmup'
       ORDER BY w.date ASC, s.session_position, s.set_number`,
@@ -114,14 +114,14 @@ async function runExerciseProfileForUser(userId) {
       const recoveryVolumeTolerance = sustainedVolumes.length >= 2 ? mean(sustainedVolumes) : mean(allVolumes);
 
       const rowId = nanoid();
-      const existing = await getOne('SELECT id FROM user_exercise_profile WHERE user_id = ? AND exercise_id = ? AND week = ?', [userId, exerciseId, w]);
+      const existing = await t.getOne('SELECT id FROM user_exercise_profile WHERE user_id = ? AND exercise_id = ? AND week = ?', [userId, exerciseId, w]);
       const cols = [
       sessions, weeksOfData, weeklyFrequency, avgSessionPos, avgReps, avgWeight, e1rm,
       progressionRate, rirRate, typicalEquipment, weeksOfData >= 4 && sessions >= 1 ? 1 : 0,
       topSetPctChange, loggedOneRm, improvementFrequency, recoveryVolumeTolerance, nowIso()];
 
       if (existing) {
-        await runQuery(
+        await t.runQuery(
           `UPDATE user_exercise_profile SET
              total_sessions = ?, weeks_of_data = ?, avg_weekly_frequency = ?, avg_session_position = ?,
              avg_reps = ?, avg_weight_kg = ?, estimated_1rm = ?, progression_rate = ?,
@@ -132,7 +132,7 @@ async function runExerciseProfileForUser(userId) {
           [...cols, existing.id]
         );
       } else {
-        await runQuery(
+        await t.runQuery(
           `INSERT INTO user_exercise_profile (
              id, user_id, exercise_id, week,
              total_sessions, weeks_of_data, avg_weekly_frequency, avg_session_position,
@@ -147,10 +147,10 @@ async function runExerciseProfileForUser(userId) {
   }
 }
 
-async function runSystemicProfileForUser(userId) {
-  const dailyRows = await getAll('SELECT * FROM daily_log WHERE user_id = ? ORDER BY date ASC', [userId]);
-  const activityRows = await getAll('SELECT * FROM activity_log WHERE user_id = ? ORDER BY date ASC', [userId]);
-  const workoutRows = await getAll('SELECT date FROM workouts WHERE user_id = ? ORDER BY date ASC', [userId]);
+async function runSystemicProfileForUser(t, userId) {
+  const dailyRows = await t.getAll('SELECT * FROM daily_log WHERE user_id = ? ORDER BY date ASC', [userId]);
+  const activityRows = await t.getAll('SELECT * FROM activity_log WHERE user_id = ? ORDER BY date ASC', [userId]);
+  const workoutRows = await t.getAll('SELECT date FROM workouts WHERE user_id = ? ORDER BY date ASC', [userId]);
 
   const byWeek = new Map();
   const ensure = (w) => {if (!byWeek.has(w)) byWeek.set(w, { sleep: [], nut: [], stress: [], bw: [], cardio: { all: 0, run: 0, cyc: 0, swm: 0, oth: 0, min: 0 }, sessions: 0 });return byWeek.get(w);};
@@ -202,14 +202,14 @@ async function runSystemicProfileForUser(userId) {
     })();
     const trainingConsistency = b.sessions / 7;
 
-    const existing = await getOne('SELECT id FROM user_systemic_profile WHERE user_id = ? AND week = ?', [userId, week]);
+    const existing = await t.getOne('SELECT id FROM user_systemic_profile WHERE user_id = ? AND week = ?', [userId, week]);
     const cols = [
     avgSleepDur, avgSleepQuality, sleepVariance, avgNut, avgStress,
     b.cardio.min, b.cardio.all, b.cardio.run, b.cardio.cyc, b.cardio.swm, b.cardio.oth,
     bwTrend, dataCompleteness, trainingConsistency, nowIso()];
 
     if (existing) {
-      await runQuery(
+      await t.runQuery(
         `UPDATE user_systemic_profile SET
            avg_sleep_duration = ?, avg_sleep_quality = ?, sleep_variance = ?,
            avg_nutrition_quality = ?, avg_stress = ?,
@@ -220,7 +220,7 @@ async function runSystemicProfileForUser(userId) {
         [...cols, existing.id]
       );
     } else {
-      await runQuery(
+      await t.runQuery(
         `INSERT INTO user_systemic_profile (
            id, user_id, week,
            avg_sleep_duration, avg_sleep_quality, sleep_variance,
@@ -238,20 +238,20 @@ async function runSystemicProfileForUser(userId) {
 async function runWeeklyBatch() {
   const start = Date.now();
   const users = await getAll('SELECT id FROM users');
-  await db.exec('BEGIN');
-  try {
-    for (const u of users) {
-      try {await runExerciseProfileForUser(u.id);} catch (e) {console.error('uep failed for', u.id, e.message);}
-      try {await runSystemicProfileForUser(u.id);} catch (e) {console.error('usp failed for', u.id, e.message);}
-    }
-    await db.exec('COMMIT');
-  } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
-    throw err;
+  // One transaction per user, not one for the whole batch: a failed user only
+  // rolls back their own recompute, and the lock window stays short.
+  let failed = 0;
+  for (const u of users) {
+    try {
+      await tx((t) => runExerciseProfileForUser(t, u.id));
+    } catch (e) {failed += 1;console.error('uep failed for', u.id, e.message);}
+    try {
+      await tx((t) => runSystemicProfileForUser(t, u.id));
+    } catch (e) {failed += 1;console.error('usp failed for', u.id, e.message);}
   }
   const ms = Date.now() - start;
-  console.log(`[batch] Recomputed profiles for ${users.length} users in ${ms}ms`);
-  return { users: users.length, ms };
+  console.log(`[batch] Recomputed profiles for ${users.length} users in ${ms}ms (${failed} failures)`);
+  return { users: users.length, failed, ms };
 }
 
 module.exports = { runWeeklyBatch, runExerciseProfileForUser, runSystemicProfileForUser };

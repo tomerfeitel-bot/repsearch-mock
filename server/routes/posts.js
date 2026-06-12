@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, getAll, getOne, runQuery: dbRun } = require('../db');
+const { db, getAll, getOne, runQuery: dbRun, tx } = require('../db');
 const { authRequired } = require('../auth');
 const { nanoid, nowIso, safeStr, safeEnum } = require('../util');
 const { sanitizeLabels } = require('../postLabels');
@@ -245,14 +245,6 @@ router.post('/', authRequired, async (req, res) => {
     if ((kind === 'program' || kind === 'template') && item.status === 'draft') {
       return res.status(400).json({ error: 'Finish this draft before sharing it.' });
     }
-    // Sharing makes the carried item visible — but never more exposed than the
-    // post itself. A followers-only post must not flip its workout world-public.
-    if (visibility === 'public') {
-      await dbRun(`UPDATE ${table} SET visibility = 'public' WHERE id = ?`, [id]);
-    } else {
-      // followers post: only lift a fully-private item up to 'followers'.
-      await dbRun(`UPDATE ${table} SET visibility = 'followers' WHERE id = ? AND visibility = 'private'`, [id]);
-    }
     attachmentType = kind;
     attachmentId = id;
   } else if (kind === 'study') {
@@ -266,19 +258,30 @@ router.post('/', authRequired, async (req, res) => {
 
   const id = nanoid();
   const now = nowIso();
-  await db.exec('BEGIN');
   try {
-    await dbRun(
-      `INSERT INTO posts (id, user_id, kind, title, body, attachment_type, attachment_id, study_feature_json, score, comment_count, visibility, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
-      [id, userId, kind, title, text, attachmentType, attachmentId, studyFeatureJson, visibility, now]
-    );
-    for (const label of labels) {
-      await dbRun('INSERT INTO post_labels (post_id, label) VALUES (?, ?) ON CONFLICT DO NOTHING', [id, label]);
-    }
-    await db.exec('COMMIT');
+    await tx(async (t) => {
+      if (attachmentId) {
+        const table = ITEM_KINDS[kind];
+        // Sharing makes the carried item visible — but never more exposed than
+        // the post itself, and only once the post actually exists. A
+        // followers-only post must not flip its workout world-public.
+        if (visibility === 'public') {
+          await t.runQuery(`UPDATE ${table} SET visibility = 'public' WHERE id = ?`, [attachmentId]);
+        } else {
+          // followers post: only lift a fully-private item up to 'followers'.
+          await t.runQuery(`UPDATE ${table} SET visibility = 'followers' WHERE id = ? AND visibility = 'private'`, [attachmentId]);
+        }
+      }
+      await t.runQuery(
+        `INSERT INTO posts (id, user_id, kind, title, body, attachment_type, attachment_id, study_feature_json, score, comment_count, visibility, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
+        [id, userId, kind, title, text, attachmentType, attachmentId, studyFeatureJson, visibility, now]
+      );
+      for (const label of labels) {
+        await t.runQuery('INSERT INTO post_labels (post_id, label) VALUES (?, ?) ON CONFLICT DO NOTHING', [id, label]);
+      }
+    });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Post create failed:', err);
     return res.status(500).json({ error: 'Failed to create post' });
   }
@@ -295,7 +298,9 @@ router.get('/', authRequired, async (req, res) => {
   const label = sanitizeLabels([req.query.label])[0];
   const q = safeStr(req.query.q, 100);
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 50);
-  const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+  // Deep offsets force the DB to walk (and hot-rank) every skipped row; the
+  // feed UX never legitimately pages past a few hundred items.
+  const offset = Math.min(Math.max(parseInt(req.query.offset) || 0, 0), 500);
 
   const where = [];
   const params = [];

@@ -9,10 +9,16 @@ if (!DATABASE_URL) {
 const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
-  max: Number(process.env.DATABASE_POOL_MAX || 1),
+  max: Number(process.env.DATABASE_POOL_MAX || 10),
+  connectionTimeoutMillis: Number(process.env.DATABASE_CONNECT_TIMEOUT_MS || 10_000),
+  // Client-side cancel: works through Supavisor/pgbouncer transaction pooling,
+  // unlike a server-side statement_timeout SET which leaks across pooled sessions.
+  query_timeout: Number(process.env.DATABASE_QUERY_TIMEOUT_MS || 15_000),
 })
 
-pool.exec = (sql) => pool.query(sql)
+pool.on('error', (err) => {
+  console.error('[db] idle client error', err.message)
+})
 
 function sqlWithPgPlaceholders(sql) {
   let index = 0

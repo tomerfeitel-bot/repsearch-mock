@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, runQuery, getOne, getAll } = require('../db');
+const { runQuery, getOne, getAll, tx } = require('../db');
 const { authRequired } = require('../auth');
 const { nanoid, nowIso, safeStr, safeInt, safeEnum } = require('../util');
 
@@ -146,16 +146,16 @@ async function loadProgramFull(programId, userId) {
   return { ...p, blocks, workouts, enrollment, phase, proof: await proofSummary(programId) };
 }
 
-async function canUseTemplate(templateId, userId) {
+async function canUseTemplate(t, templateId, userId) {
   if (!templateId) return false;
-  const t = await getOne('SELECT id, user_id, visibility, status FROM workout_templates WHERE id = ?', [templateId]);
-  return !!t && t.status !== 'draft' && (t.visibility === 'public' || t.user_id === userId);
+  const row = await t.getOne('SELECT id, user_id, visibility, status FROM workout_templates WHERE id = ?', [templateId]);
+  return !!row && row.status !== 'draft' && (row.visibility === 'public' || row.user_id === userId);
 }
 
-async function createProgramShell(userId, body = {}, status = 'draft') {
+async function createProgramShell(t, userId, body = {}, status = 'draft') {
   const id = nanoid();
   const now = nowIso();
-  await runQuery(
+  await t.runQuery(
     `INSERT INTO programs (
        id, user_id, name, description, weeks, visibility, status,
        strictness, is_open_ended, checkpoint_weeks, source_program_id, creator_verified, created_at
@@ -178,13 +178,13 @@ async function createProgramShell(userId, body = {}, status = 'draft') {
   return id;
 }
 
-async function replaceProgramStructure(programId, userId, blocks = []) {
-  await runQuery('DELETE FROM program_workouts WHERE program_id = ?', [programId]);
-  await runQuery('DELETE FROM program_blocks WHERE program_id = ?', [programId]);
+async function replaceProgramStructure(t, programId, userId, blocks = []) {
+  await t.runQuery('DELETE FROM program_workouts WHERE program_id = ?', [programId]);
+  await t.runQuery('DELETE FROM program_blocks WHERE program_id = ?', [programId]);
   const safeBlocks = Array.isArray(blocks) && blocks.length ? blocks : [{ name: 'Main block', sessions: [] }];
   for (const [blockIdx, block] of safeBlocks.entries()) {
     const blockId = nanoid();
-    await runQuery(
+    await t.runQuery(
       `INSERT INTO program_blocks (id, program_id, name, description, sort_order, repeat_behavior)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
@@ -199,10 +199,10 @@ async function replaceProgramStructure(programId, userId, blocks = []) {
     const sessions = Array.isArray(block.sessions) ? block.sessions : [];
     for (const [i, session] of sessions.entries()) {
       const templateId = safeStr(session.template_id, 32);
-      if (!(await canUseTemplate(templateId, userId))) continue;
+      if (!(await canUseTemplate(t, templateId, userId))) continue;
       const preset = safeEnum(session.timing_preset, TIMING_PRESETS) ?? 'after_1_rest_day';
       const defaults = TIMING_DEFAULTS[preset] || TIMING_DEFAULTS.after_1_rest_day;
-      await runQuery(
+      await t.runQuery(
         `INSERT INTO program_workouts (
            id, program_id, template_id, block_id, week_number, day_number, sort_order,
            session_label, session_note, optional, timing_preset,
@@ -429,25 +429,31 @@ router.get('/:id', authRequired, async (req, res) => {
 });
 
 router.post('/drafts', authRequired, async (req, res) => {
-  const id = await createProgramShell(req.user.id, req.body || {}, 'draft');
-  if (!(await getAll('SELECT id FROM program_blocks WHERE program_id = ?', [id])).length) {
-    await replaceProgramStructure(id, req.user.id, [{ name: 'Main block', sessions: [] }]);
+  try {
+    const id = await tx(async (t) => {
+      const programId = await createProgramShell(t, req.user.id, req.body || {}, 'draft');
+      await replaceProgramStructure(t, programId, req.user.id, [{ name: 'Main block', sessions: [] }]);
+      return programId;
+    });
+    res.json({ program: await loadProgramFull(id, req.user.id) });
+  } catch (err) {
+    console.error('Program draft create failed:', err);
+    res.status(500).json({ error: 'Failed to create program draft' });
   }
-  res.json({ program: await loadProgramFull(id, req.user.id) });
 });
 
 router.post('/', authRequired, async (req, res) => {
   const body = req.body || {};
   const name = safeStr(body.name, 100);
   if (!name) return res.status(400).json({ error: 'name required' });
-  await db.exec('BEGIN');
   try {
-    const id = await createProgramShell(req.user.id, body, 'final');
-    await replaceProgramStructure(id, req.user.id, body.blocks || legacyBlocks(body.workouts));
-    await db.exec('COMMIT');
+    const id = await tx(async (t) => {
+      const programId = await createProgramShell(t, req.user.id, body, 'final');
+      await replaceProgramStructure(t, programId, req.user.id, body.blocks || legacyBlocks(body.workouts));
+      return programId;
+    });
     res.json({ program: await loadProgramFull(id, req.user.id) });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Program create failed:', err);
     res.status(500).json({ error: 'Failed to create program' });
   }
@@ -460,31 +466,30 @@ router.patch('/:id', authRequired, async (req, res) => {
   const body = req.body || {};
   const requestedStatus = safeEnum(body.status, STATUS);
   const status = current.status === 'final' && requestedStatus === 'draft' ? 'final' : requestedStatus || current.status || 'draft';
-  await db.exec('BEGIN');
   try {
-    await runQuery(
-      `UPDATE programs
-          SET name = ?, description = ?, visibility = ?, status = ?, strictness = ?,
-              is_open_ended = ?, checkpoint_weeks = ?, source_program_id = ?, weeks = ?
-        WHERE id = ?`,
-      [
-      safeStr(body.name, 100) || current.name,
-      safeStr(body.description, 2000) ?? '',
-      status === 'draft' ? 'private' : safeEnum(body.visibility, VISIBILITY) ?? current.visibility,
-      status,
-      safeEnum(body.strictness, STRICTNESS) ?? current.strictness,
-      body.is_open_ended === false ? 0 : 1,
-      safeInt(body.checkpoint_weeks, { min: 1 }) ?? current.checkpoint_weeks ?? 6,
-      safeStr(body.source_program_id, 32) ?? current.source_program_id,
-      safeInt(body.weeks, { min: 1 }) ?? current.weeks ?? 1,
-      req.params.id]
+    await tx(async (t) => {
+      await t.runQuery(
+        `UPDATE programs
+            SET name = ?, description = ?, visibility = ?, status = ?, strictness = ?,
+                is_open_ended = ?, checkpoint_weeks = ?, source_program_id = ?, weeks = ?
+          WHERE id = ?`,
+        [
+        safeStr(body.name, 100) || current.name,
+        safeStr(body.description, 2000) ?? '',
+        status === 'draft' ? 'private' : safeEnum(body.visibility, VISIBILITY) ?? current.visibility,
+        status,
+        safeEnum(body.strictness, STRICTNESS) ?? current.strictness,
+        body.is_open_ended === false ? 0 : 1,
+        safeInt(body.checkpoint_weeks, { min: 1 }) ?? current.checkpoint_weeks ?? 6,
+        safeStr(body.source_program_id, 32) ?? current.source_program_id,
+        safeInt(body.weeks, { min: 1 }) ?? current.weeks ?? 1,
+        req.params.id]
 
-    );
-    if (Array.isArray(body.blocks)) await replaceProgramStructure(req.params.id, req.user.id, body.blocks);
-    await db.exec('COMMIT');
+      );
+      if (Array.isArray(body.blocks)) await replaceProgramStructure(t, req.params.id, req.user.id, body.blocks);
+    });
     res.json({ program: await loadProgramFull(req.params.id, req.user.id) });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Program update failed:', err);
     res.status(500).json({ error: 'Failed to update program' });
   }

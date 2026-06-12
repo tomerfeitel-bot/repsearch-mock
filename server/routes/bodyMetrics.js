@@ -1,7 +1,7 @@
 const express = require('express');
 const { runQuery, getAll } = require('../db');
 const { authRequired } = require('../auth');
-const { nanoid, nowIso, safeNum, safeStr } = require('../util');
+const { nanoid, nowIso, safeNum, safeDateStr } = require('../util');
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ const MEASUREMENTS = {
 
 router.post('/', authRequired, async (req, res) => {
   const body = req.body || {};
-  const date = safeStr(body.date, 32) || nowIso().slice(0, 10);
+  const date = safeDateStr(body.date) || nowIso().slice(0, 10);
   const now = nowIso();
   const cleaned = {};
   for (const [k, range] of Object.entries(MEASUREMENTS)) {

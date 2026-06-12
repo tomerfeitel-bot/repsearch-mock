@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, runQuery, getOne, getAll } = require('../db');
+const { runQuery, getOne, getAll, tx } = require('../db');
 const { authRequired } = require('../auth');
 const { nanoid, nowIso, safeStr, safeEnum, safeNum, safeInt } = require('../util');
 
@@ -90,19 +90,20 @@ function setValue(s, key, fallback = null) {
   return s[key] !== undefined ? s[key] : fallback;
 }
 
-async function replaceTemplateExercises(templateId, exercises) {
-  await runQuery('DELETE FROM template_exercises WHERE template_id = ?', [templateId]);
+async function replaceTemplateExercises(t, templateId, exercises) {
+  await t.runQuery('DELETE FROM template_exercises WHERE template_id = ?', [templateId]);
   for (const [i, ex] of (Array.isArray(exercises) ? exercises : []).entries()) {
     const exerciseId = safeStr(ex.exercise_id || ex.exerciseId, 64);
-    if (!exerciseId) return;
+    // One malformed entry must not silently drop every exercise after it.
+    if (!exerciseId) continue;
     const teId = nanoid();
-    await runQuery(
+    await t.runQuery(
       `INSERT INTO template_exercises (id, template_id, exercise_id, sort_order) VALUES (?, ?, ?, ?)`,
       [teId, templateId, exerciseId, i]
     );
     const sets = Array.isArray(ex.sets) ? ex.sets : [];
     for (const s of sets) {
-      await runQuery(
+      await t.runQuery(
         `INSERT INTO template_sets (
            id, template_exercise_id, target_reps, target_weight_kg, target_rir,
            target_rep_range, set_type, rom_category, tempo_tag,
@@ -123,14 +124,14 @@ async function replaceTemplateExercises(templateId, exercises) {
   }
 }
 
-async function createTemplateShell(req, overrides = {}) {
+async function createTemplateShell(t, req, overrides = {}) {
   const body = req.body || {};
   const id = nanoid();
   const now = nowIso();
   const status = safeEnum(overrides.status ?? body.status, STATUS) ?? 'final';
   const name = safeStr(overrides.name ?? body.name, 80) || (status === 'draft' ? 'Untitled template' : '');
   if (!name) return { error: 'name required' };
-  await runQuery(
+  await t.runQuery(
     `INSERT INTO workout_templates (
        id, user_id, name, description, visibility, status, source_workout_id,
        workout_split_type, workout_day, strictness, source_template_id, created_at
@@ -150,32 +151,30 @@ async function createTemplateShell(req, overrides = {}) {
 }
 
 router.post('/', authRequired, async (req, res) => {
-  await db.exec('BEGIN');
   try {
-    const created = await createTemplateShell(req);
-    if (created.error) {
-      await db.exec('ROLLBACK');
-      return res.status(400).json({ error: created.error });
-    }
-    await replaceTemplateExercises(created.id, req.body?.exercises);
-    await db.exec('COMMIT');
+    const created = await tx(async (t) => {
+      const shell = await createTemplateShell(t, req);
+      if (shell.error) return shell;
+      await replaceTemplateExercises(t, shell.id, req.body?.exercises);
+      return shell;
+    });
+    if (created.error) return res.status(400).json({ error: created.error });
     res.json({ template: await loadTemplateFull(created.id) });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Template create failed:', err);
     res.status(500).json({ error: 'Failed to create template' });
   }
 });
 
 router.post('/drafts', authRequired, async (req, res) => {
-  await db.exec('BEGIN');
   try {
-    const created = await createTemplateShell(req, { status: 'draft', name: req.body?.name || 'Untitled template' });
-    await replaceTemplateExercises(created.id, req.body?.exercises);
-    await db.exec('COMMIT');
+    const created = await tx(async (t) => {
+      const shell = await createTemplateShell(t, req, { status: 'draft', name: req.body?.name || 'Untitled template' });
+      await replaceTemplateExercises(t, shell.id, req.body?.exercises);
+      return shell;
+    });
     res.json({ template: await loadTemplateFull(created.id) });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Template draft create failed:', err);
     res.status(500).json({ error: 'Failed to create template draft' });
   }
@@ -219,21 +218,22 @@ async function workoutToExercises(workoutId) {
 router.post('/drafts/from-workout/:wid', authRequired, async (req, res) => {
   const workout = await getOne('SELECT * FROM workouts WHERE id = ?', [req.params.wid]);
   if (!(await canReadWorkout(workout, req.user.id))) return res.status(workout ? 403 : 404).json({ error: workout ? 'Forbidden' : 'Workout not found' });
-  await db.exec('BEGIN');
   try {
-    const created = await createTemplateShell(req, {
-      status: 'draft',
-      name: req.body?.name || `${workout.workout_day || 'Workout'} template draft`,
-      source_workout_id: req.params.wid,
-      workout_split_type: workout.workout_split_type,
-      workout_day: workout.workout_day,
-      strictness: req.body?.strictness || 'adapt'
+    const exercises = await workoutToExercises(req.params.wid);
+    const created = await tx(async (t) => {
+      const shell = await createTemplateShell(t, req, {
+        status: 'draft',
+        name: req.body?.name || `${workout.workout_day || 'Workout'} template draft`,
+        source_workout_id: req.params.wid,
+        workout_split_type: workout.workout_split_type,
+        workout_day: workout.workout_day,
+        strictness: req.body?.strictness || 'adapt'
+      });
+      await replaceTemplateExercises(t, shell.id, exercises);
+      return shell;
     });
-    await replaceTemplateExercises(created.id, await workoutToExercises(req.params.wid));
-    await db.exec('COMMIT');
     res.json({ template: await loadTemplateFull(created.id) });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Template draft from workout failed:', err);
     res.status(500).json({ error: 'Failed to create template draft' });
   }
@@ -248,27 +248,26 @@ router.patch('/:id', authRequired, async (req, res) => {
   const nextStatus = current.status === 'final' && requestedStatus === 'draft' ? 'final' : requestedStatus;
   const name = safeStr(body.name, 80) || current.name;
   if (nextStatus === 'final' && !name.trim()) return res.status(400).json({ error: 'name required' });
-  await db.exec('BEGIN');
   try {
-    await runQuery(
-      `UPDATE workout_templates
-          SET name = ?, description = ?, visibility = ?, status = ?,
-              workout_split_type = ?, workout_day = ?, strictness = ?
-        WHERE id = ?`,
-      [name,
-      safeStr(body.description, 1000) ?? current.description ?? '',
-      nextStatus === 'draft' ? 'private' : safeEnum(body.visibility, VISIBILITY) ?? current.visibility ?? 'private',
-      nextStatus,
-      safeStr(body.workout_split_type, 40) ?? current.workout_split_type,
-      safeStr(body.workout_day, 40) ?? current.workout_day,
-      safeEnum(body.strictness, STRICTNESS) ?? current.strictness ?? 'adapt',
-      req.params.id]
-    );
-    if (Array.isArray(body.exercises)) await replaceTemplateExercises(req.params.id, body.exercises);
-    await db.exec('COMMIT');
+    await tx(async (t) => {
+      await t.runQuery(
+        `UPDATE workout_templates
+            SET name = ?, description = ?, visibility = ?, status = ?,
+                workout_split_type = ?, workout_day = ?, strictness = ?
+          WHERE id = ?`,
+        [name,
+        safeStr(body.description, 1000) ?? current.description ?? '',
+        nextStatus === 'draft' ? 'private' : safeEnum(body.visibility, VISIBILITY) ?? current.visibility ?? 'private',
+        nextStatus,
+        safeStr(body.workout_split_type, 40) ?? current.workout_split_type,
+        safeStr(body.workout_day, 40) ?? current.workout_day,
+        safeEnum(body.strictness, STRICTNESS) ?? current.strictness ?? 'adapt',
+        req.params.id]
+      );
+      if (Array.isArray(body.exercises)) await replaceTemplateExercises(t, req.params.id, body.exercises);
+    });
     res.json({ template: await loadTemplateFull(req.params.id) });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Template update failed:', err);
     res.status(500).json({ error: 'Failed to update template' });
   }
@@ -316,44 +315,43 @@ router.post('/from-workout/:wid', authRequired, async (req, res) => {
   const name = safeStr(req.body?.name, 80) || `Template from ${workout.date}`;
   const id = nanoid();
   const now = nowIso();
-  await db.exec('BEGIN');
   try {
-    await runQuery(
-      `INSERT INTO workout_templates (
-         id, user_id, name, description, visibility, status, source_workout_id,
-         workout_split_type, workout_day, strictness, source_template_id, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, req.user.id, name, safeStr(req.body?.description, 1000) ?? '',
-      safeEnum(req.body?.visibility, VISIBILITY) ?? 'private',
-      'final',
-      req.params.wid, workout.workout_split_type, workout.workout_day,
-      safeEnum(req.body?.strictness, STRICTNESS) ?? 'adapt',
-      safeStr(req.body?.source_template_id, 32),
-      now]
-    );
-    let sort = 0;
-    for (const [exerciseId, exSets] of byExercise) {
-      const teId = nanoid();
-      await runQuery(
-        `INSERT INTO template_exercises (id, template_id, exercise_id, sort_order) VALUES (?, ?, ?, ?)`,
-        [teId, id, exerciseId, sort++]
+    await tx(async (t) => {
+      await t.runQuery(
+        `INSERT INTO workout_templates (
+           id, user_id, name, description, visibility, status, source_workout_id,
+           workout_split_type, workout_day, strictness, source_template_id, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, req.user.id, name, safeStr(req.body?.description, 1000) ?? '',
+        safeEnum(req.body?.visibility, VISIBILITY) ?? 'private',
+        'final',
+        req.params.wid, workout.workout_split_type, workout.workout_day,
+        safeEnum(req.body?.strictness, STRICTNESS) ?? 'adapt',
+        safeStr(req.body?.source_template_id, 32),
+        now]
       );
-      for (const s of exSets) {
-        if (s.set_type === 'warmup') continue;
-        await runQuery(
-          `INSERT INTO template_sets (
-             id, template_exercise_id, target_reps, target_weight_kg, target_rir,
-             set_type, rom_category, tempo_tag, rest_seconds, failure
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [nanoid(), teId, String(s.reps ?? ''), s.weight_kg, s.rir, s.set_type ?? 'working',
-          s.rom_category, s.tempo_tag, s.rest_seconds, s.failure ? 1 : 0]
+      let sort = 0;
+      for (const [exerciseId, exSets] of byExercise) {
+        const teId = nanoid();
+        await t.runQuery(
+          `INSERT INTO template_exercises (id, template_id, exercise_id, sort_order) VALUES (?, ?, ?, ?)`,
+          [teId, id, exerciseId, sort++]
         );
+        for (const s of exSets) {
+          if (s.set_type === 'warmup') continue;
+          await t.runQuery(
+            `INSERT INTO template_sets (
+               id, template_exercise_id, target_reps, target_weight_kg, target_rir,
+               set_type, rom_category, tempo_tag, rest_seconds, failure
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [nanoid(), teId, String(s.reps ?? ''), s.weight_kg, s.rir, s.set_type ?? 'working',
+            s.rom_category, s.tempo_tag, s.rest_seconds, s.failure ? 1 : 0]
+          );
+        }
       }
-    }
-    await db.exec('COMMIT');
+    });
     res.json({ template: await loadTemplateFull(id) });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Template-from-workout failed:', err);
     res.status(500).json({ error: 'Failed to create template' });
   }

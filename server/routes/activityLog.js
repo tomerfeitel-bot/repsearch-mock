@@ -1,7 +1,7 @@
 const express = require('express');
 const { runQuery, getAll } = require('../db');
 const { authRequired } = require('../auth');
-const { nanoid, nowIso, safeInt, safeStr, safeEnum } = require('../util');
+const { nanoid, nowIso, safeInt, safeStr, safeEnum, safeDateStr } = require('../util');
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.post('/', authRequired, async (req, res) => {
   const body = req.body || {};
   const id = nanoid();
   const now = nowIso();
-  const date = safeStr(body.date, 32) || now.slice(0, 10);
+  const date = safeDateStr(body.date) || now.slice(0, 10);
   const type = safeEnum(body.activity_type, ACTIVITIES) ?? 'other';
   const duration = safeInt(body.duration_min, { min: 0, max: 24 * 60 });
   const intensity = safeInt(body.intensity, { min: 1, max: 5 });

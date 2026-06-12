@@ -122,7 +122,9 @@ router.get('/', authRequired, async (req, res) => {
   const scope = safeEnum(req.query.scope, SCOPES) ?? 'following';
   const type = safeEnum(req.query.type, TYPES) ?? 'all';
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 25, 1), 50);
-  const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+  // offset feeds straight into each sub-query's LIMIT (limit + offset rows are
+  // fetched then merge-sorted in memory) — an unbounded value is a DoS lever.
+  const offset = Math.min(Math.max(parseInt(req.query.offset) || 0, 0), 500);
   const userId = req.user.id;
 
   const followIds = await followingIds(userId);

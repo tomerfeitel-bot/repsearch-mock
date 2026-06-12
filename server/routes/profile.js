@@ -1,5 +1,5 @@
 const express = require('express');
-const { db, runQuery, getOne } = require('../db');
+const { runQuery, getOne } = require('../db');
 const { authRequired, supabaseAdmin } = require('../auth');
 const {
   safeNum, safeInt, safeStr, safeEnum, safeBool, ageRangeFromDob,
@@ -234,14 +234,17 @@ router.delete('/', authRequired, async (req, res) => {
   const user = await getOne('SELECT id FROM users WHERE id = ?', [req.user.id]);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  await db.exec('BEGIN');
   try {
+    // Auth first: public.users.id references auth.users(id) ON DELETE CASCADE,
+    // so this one call atomically removes the profile row and every table
+    // hanging off it. Deleting the row ourselves first deadlocks — the
+    // cascade (running in GoTrue's session) blocks on our uncommitted delete.
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(req.user.id);
+    if (error) throw new Error(`Supabase auth delete failed: ${error.message || error.code || 'unknown'}`);
+    // Mop-up in case the FK cascade is ever dropped; normally a no-op.
     await runQuery('DELETE FROM users WHERE id = ?', [req.user.id]);
-    await supabaseAdmin.auth.admin.deleteUser(req.user.id);
-    await db.exec('COMMIT');
     res.json({ ok: true });
   } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
     console.error('Account delete failed:', err);
     res.status(500).json({ error: 'Failed to delete account' });
   }

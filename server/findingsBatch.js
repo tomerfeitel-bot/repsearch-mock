@@ -1,4 +1,4 @@
-const { db, runQuery, getOne } = require('./db');
+const { db, tx } = require('./db');
 const { runQuery: runResearchQuery } = require('./research/queryEngine');
 const { nanoid, nowIso } = require('./util');
 
@@ -50,9 +50,10 @@ function titleFor(combo, low, high, direction) {
 }
 
 async function runFindingsBatch() {
-  let inserted = 0;
-  await db.exec('BEGIN');
-  try {
+  // The research reads run on the pool; only the findings writes need the
+  // transaction, so a failed combo never leaves a half-written batch.
+  const inserted = await tx(async (t) => {
+    let count = 0;
     for (const combo of COMBINATIONS) {
       const queryJson = JSON.stringify(combo);
       const result = await runResearchQuery(db, {
@@ -81,16 +82,16 @@ async function runFindingsBatch() {
         if (high.label === assumption.worse && low.label === assumption.better) surprising = 1;
       }
 
-      const existing = await getOne('SELECT id FROM findings WHERE query_json = ?', [queryJson]);
+      const existing = await t.getOne('SELECT id FROM findings WHERE query_json = ?', [queryJson]);
       if (existing) {
-        await runQuery(
+        await t.runQuery(
           `UPDATE findings
               SET discovered_at = ?, title = ?, effect_size = ?, n = ?, significance = ?, surprising = ?
             WHERE id = ?`,
           [nowIso(), titleFor(combo, low, high, d), Math.round(d * 1000) / 1000, n, null, surprising, existing.id]
         );
       } else {
-        await runQuery(
+        await t.runQuery(
           `INSERT INTO findings (id, discovered_at, title, query_json, effect_size, n, significance, surprising)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [
@@ -103,14 +104,11 @@ async function runFindingsBatch() {
           surprising]
 
         );
-        inserted += 1;
+        count += 1;
       }
     }
-    await db.exec('COMMIT');
-  } catch (err) {
-    try {await db.exec('ROLLBACK');} catch {/* noop */}
-    throw err;
-  }
+    return count;
+  });
   console.log(`[findingsBatch] Discovered ${inserted} new findings`);
   return { inserted };
 }
